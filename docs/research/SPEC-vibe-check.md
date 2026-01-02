@@ -521,7 +521,7 @@ workflow.add_conditional_edges(
 │  │                         OUTPUT ARTIFACTS                             │   │
 │  ├──────────────────────────────────────────────────────────────────────┤   │
 │  │  • scored_sqpsychconv.jsonl     (full structured output)             │   │
-│  │  • scored_sqpsychconv.csv       (flat for pandas)                    │   │
+│  │  • scored_sqpsychconv.csv       (flat CSV)                           │   │
 │  │  • embeddings/*.npz             (vector store for retrieval)         │   │
 │  │  • validation_report.json       (inter-model agreement stats)        │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
@@ -1146,8 +1146,8 @@ readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
 authors = [{ name = "CLARITY-DIGITAL-TWIN" }]
-classifiers = [
-    "Development Status :: 4 - Beta",
+ classifiers = [
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.11",
@@ -1173,7 +1173,7 @@ dependencies = [
     "pydantic>=2.10.0",
     "pydantic-settings>=2.7.0",
     "datasets>=3.0.0",
-    "pandas>=2.2.0",
+    "pyarrow>=18.0.0",
     "numpy>=2.0.0",
 
     # Metrics
@@ -1324,7 +1324,7 @@ directory = "htmlcov"
 ```yaml
 # .pre-commit-config.yaml
 # Modern Python pre-commit using uv + ruff (2026)
-# Install: uv run pre-commit install
+# Install: make dev
 
 repos:
   # ─────────────────────────────────────────────────────────────
@@ -1342,6 +1342,9 @@ repos:
         args: ['--maxkb=1000']
       - id: check-merge-conflict
       - id: detect-private-key
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: mixed-line-ending
 
   # ─────────────────────────────────────────────────────────────
   # Ruff (linting + formatting, replaces black/isort/flake8)
@@ -1350,7 +1353,7 @@ repos:
     rev: v0.9.2
     hooks:
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        args: [--fix, --show-fixes, --exit-non-zero-on-fix]
       - id: ruff-format
 
   # ─────────────────────────────────────────────────────────────
@@ -1359,11 +1362,11 @@ repos:
   - repo: local
     hooks:
       - id: mypy
-        name: mypy (strict)
+        name: mypy (strict via pyproject.toml)
         entry: uv run mypy
         language: system
         types: [python]
-        args: [src, tests, scripts]
+        args: [src, tests]
         pass_filenames: false
         require_serial: true
 ```
@@ -1384,12 +1387,20 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PYTHONHASHSEED: "0"
+
 jobs:
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -1398,7 +1409,7 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Install dependencies
-        run: uv sync --locked --all-extras --dev
+        run: uv sync --locked --all-extras
 
       - name: Ruff lint
         run: uv run ruff check . --output-format=github
@@ -1409,8 +1420,13 @@ jobs:
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -1419,14 +1435,21 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Install dependencies
-        run: uv sync --locked --all-extras --dev
+        run: uv sync --locked --all-extras
 
       - name: Mypy
-        run: uv run mypy src tests scripts --strict
+        run: uv run mypy src tests
+
+      - name: Smoke import
+        run: uv run python -c "import vibe_check; print(vibe_check.__version__)"
+
+      - name: Build sdist + wheel
+        run: uv build --sdist --wheel --out-dir dist --clear --no-create-gitignore
 
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -1434,22 +1457,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Set Python version
-        run: uv python pin ${{ matrix.python-version }}
-
       - name: Install dependencies
-        run: uv sync --locked --all-extras --dev
+        run: uv sync --locked --all-extras
 
       - name: Run tests with coverage
         run: |
           uv run pytest tests/ \
-            -n auto \
             --cov=src/vibe_check \
             --cov-report=xml \
             --cov-report=term-missing \
@@ -1460,13 +1483,14 @@ jobs:
         with:
           files: coverage.xml
           fail_ci_if_error: false
+          # token: ${{ secrets.CODECOV_TOKEN }}  # uncomment for private repos
 ```
 
 ### 10.4 Makefile
 
 ```makefile
 # Makefile - Developer convenience commands
-.PHONY: help install dev test lint format typecheck ci clean
+.PHONY: help install dev test test-unit lint lint-fix format format-check typecheck ci clean
 
 # Default target
 help:
@@ -1476,10 +1500,10 @@ help:
 	@echo "  make install      Install production dependencies only"
 	@echo "  make test         Run all tests with coverage"
 	@echo "  make test-unit    Run unit tests only (fast)"
-	@echo "  make test-parallel Run tests in parallel"
 	@echo "  make lint         Run ruff linter"
 	@echo "  make lint-fix     Auto-fix linting issues"
 	@echo "  make format       Format code with ruff"
+	@echo "  make format-check Check formatting without changes"
 	@echo "  make typecheck    Run mypy strict type checking"
 	@echo "  make ci           Full CI: lint + typecheck + test"
 	@echo "  make clean        Remove build artifacts"
@@ -1491,7 +1515,7 @@ install:
 	uv sync --locked
 
 dev:
-	uv sync --locked --all-extras --dev
+	uv sync --locked --all-extras
 	uv run pre-commit install
 
 # ─────────────────────────────────────────────────────────────
@@ -1502,9 +1526,6 @@ test:
 
 test-unit:
 	uv run pytest tests/unit/ -v
-
-test-parallel:
-	uv run pytest tests/ -n auto --dist=loadscope
 
 # ─────────────────────────────────────────────────────────────
 # Code Quality
@@ -1522,7 +1543,7 @@ format-check:
 	uv run ruff format --check .
 
 typecheck:
-	uv run mypy src tests scripts --strict
+	uv run mypy src tests
 
 # ─────────────────────────────────────────────────────────────
 # CI

@@ -1,0 +1,152 @@
+# SPEC-04: Juror Scoring Agent (Structured PHQ-8 Output)
+
+**Status**: DRAFT (2026-01-02)
+**Slice Type**: Vertical (Single Dialogue → `PHQ8Report`)
+**Dependencies**: SPEC-01 (DevEx), SPEC-02 (Dialogue Views), SPEC-03 (PHQ-8 Schemas)
+**Estimated Scope**: ~300 lines of code, ~250 lines of tests
+
+---
+
+## 1. Objective
+
+Implement a single-model “juror” scoring agent that:
+
+1. Takes a preprocessed dialogue view (default: `client_qa_text`)
+2. Prompts an LLM to score **PHQ-8** (not PHQ-9) with evidence
+3. Produces a validated `PHQ8Report` (Pydantic schema)
+4. Never logs raw transcript text (data governance)
+
+This slice is the smallest end-to-end unit that touches LLM I/O while remaining testable and deterministic via a fake transport.
+
+### Success Criteria
+
+```python
+from vibe_check.preprocessing import preprocess_dialogue
+from vibe_check.schemas.input import SQPsychConvDialogue
+from vibe_check.schemas.scoring import PHQ8Report
+from vibe_check.scoring import JurorScorer, FakeLLMClient
+
+dialogue = SQPsychConvDialogue(
+    file_id="active82",
+    condition="mdd",
+    client_model="qwq_qwen",
+    therapist_model="qwq_qwen",
+    dialogue="Therapist: ...\nClient: ...",
+    computed_split="train",
+)
+views = preprocess_dialogue(dialogue)
+
+client = FakeLLMClient.for_fixture("tests/fixtures/juror_outputs/valid_report.json")
+scorer = JurorScorer(client=client, model_id="fake-model", run_number=1, prompt_version="v1")
+
+report: PHQ8Report = scorer.score(views.client_qa_text)
+assert report.total_score == sum(report.item_scores.values())
+```
+
+---
+
+## 2. Deliverables
+
+### 2.1 New Source Files
+
+| File | Purpose |
+|------|---------|
+| `src/vibe_check/scoring/__init__.py` | Public API exports |
+| `src/vibe_check/scoring/prompting.py` | Prompt builder + prompt versioning |
+| `src/vibe_check/scoring/parsing.py` | Robust parsing + canonicalization into `PHQ8Report` |
+| `src/vibe_check/scoring/client.py` | `LLMClient` protocol + provider adapters (stubbed initially) |
+| `src/vibe_check/security/redaction.py` | `SensitiveString` + safe logging helpers |
+| `src/vibe_check/settings.py` | Pydantic-settings for API keys/model IDs (no secrets committed) |
+
+### 2.2 New Test Files
+
+| File | Purpose |
+|------|---------|
+| `tests/unit/test_prompting.py` | Prompt structure + PHQ-8 invariants |
+| `tests/unit/test_parsing.py` | Parse/canonicalize raw model output into `PHQ8Report` |
+| `tests/unit/test_redaction.py` | Ensure transcripts can’t leak via repr/logging |
+| `tests/integration/test_juror_scorer.py` | End-to-end scoring via `FakeLLMClient` |
+| `tests/fixtures/juror_outputs/*.json` | Golden juror outputs for deterministic tests |
+
+### 2.3 pyproject.toml Updates
+
+Add dependencies needed for real provider calls (implementation choice):
+
+- **Preferred**: lightweight official SDKs per provider
+- **Alternative**: keep provider integration deferred; implement only `FakeLLMClient` + interfaces in this spec
+
+Hard requirement: tests must not require network or API keys; any real-provider tests must be `@pytest.mark.e2e` and skipped by default.
+
+---
+
+## 3. Core Design
+
+### 3.1 Public API
+
+Expose a small stable surface:
+
+- `JurorScorer.score(text: str) -> PHQ8Report`
+- `LLMClient.complete(prompt: str) -> str` (raw text, usually JSON)
+- `FakeLLMClient` for deterministic tests
+
+### 3.2 Prompting Requirements
+
+The prompt must:
+
+- Score **PHQ-8 items only**
+- Include the PHQ-8 item definitions (0–3 rubric) in the prompt
+- Require JSON-only output (no markdown, no prose wrapper)
+- Allow `insufficient_evidence=true` per item
+- Include self-harm as a **separate boolean tag** (not a PHQ-9 item)
+- Use the preprocessed view text (default `client_qa_text`) and explicitly forbid using dropped preamble content
+
+### 3.3 Parsing + Canonicalization
+
+Parsing must be resilient to common LLM failures:
+
+- Non-JSON wrappers (leading/trailing text)
+- Missing `total_score` or incorrect `total_score`
+
+Canonicalization rule:
+
+- Compute `total_score` as the sum of the 8 item scores and construct `PHQ8Report` from canonical fields.
+
+Failures must be typed and machine-actionable (e.g., `ParseError`, `SchemaError`) without including transcript text in exception messages.
+
+### 3.4 Redaction (Data Governance)
+
+Implement `SensitiveString` such that:
+
+- `repr(SensitiveString("..."))` does not reveal content
+- Exceptions and logs never include raw transcript text
+
+---
+
+## 4. Testing Strategy
+
+### 4.1 Unit Tests (Deterministic)
+
+- Prompt invariants: PHQ-8 only; JSON-only response instruction; includes view name/version
+- Parser invariants: handles missing/incorrect totals via canonicalization
+- Redaction: no transcript appears in repr/exception strings
+
+### 4.2 Integration Tests (Deterministic)
+
+Use `FakeLLMClient` with golden JSON fixtures and assert:
+
+- `PHQ8Report` validates
+- Evidence lists are capped at 3
+- `insufficient_evidence` paths work (ties into SPEC-03 arbitration)
+
+### 4.3 Optional E2E Tests (Off by Default)
+
+- One test per provider, marked `e2e`, requiring API keys
+- Only asserts: call succeeds + output parses into `PHQ8Report`
+
+---
+
+## 5. Non-Goals
+
+- Multi-agent orchestration (SPEC-05)
+- Batch scoring across the full corpus (SPEC-06)
+- Any attempt to “optimize” prompts based on SQPsychConv artifacts (avoid overfitting to synthetic generator leakage)
