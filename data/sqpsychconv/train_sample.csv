@@ -1945,7 +1945,7 @@ Therapist: Let’s celebrate your courage to clap despite the tightness! Small s
 Client: Deep breathing helps some days. Just trying not to give up, even when it feels pointless.
 Therapist: Let’s reinforce progress: Each deep breath reminds you of your strength. What’s one self-compassionate phrase to say when doubt creeps in? We’ll close here, next session reviews your goals. Any final reflections?
 Client: I’m still figuring out the phrases, but ""this passes"" keeps me going sometimes. Thanks for sticking with me. See you next week. [/END]"
-active82,mdd,qwq_qwen,qwq_qwen,"Alright, let's start by reviewing the client's information. She's a 54-year-old woman with a long-standing diagnosis of major depressive disorder, recurrent, severe without psychotic features. Her BDI score is 27 (moderate depression), and her HAMD is 17 (also moderate). The HAMA shows mild anxiety. She's been dealing with this for over two decades, had many hospitalizations, and is currently on disability. Family history includes a sister with bipolar disorder. 
+active82,mdd,qwq_qwen,qwq_qwen,"Alright, let's start by reviewing the client's information. She's a 54-year-old woman with a long-standing diagnosis of major depressive disorder, recurrent, severe without psychotic features. Her BDI score is 27 (moderate depression), and her HAMD is 17 (also moderate). The HAMA shows mild anxiety. She's been dealing with this for over two decades, had many hospitalizations, and is currently on disability. Family history includes a sister with bipolar disorder.
 
 Her BDI answers highlight feelings of failure, guilt, loss of pleasure, and occasional suicidal thoughts. The HAMD notes significant somatic symptoms like fatigue and weight loss. The HAMA points out muscular discomfort and concentration issues. Given her chronic condition and high number of episodes, building a therapeutic alliance is crucial.
 
@@ -18265,7 +18265,7 @@ Therapist: Thank you for your honesty. A 5 shows willingness to engage despite c
 Client: The knot eases slightly when I breathe, but doubts creep back. Still aiming for that 5 hope. See you next week. [/END]"
 active2511,mdd,qwq_qwen,qwq_qwen,"Alright, let me tackle this query step by step. The user wants me to act as a licensed therapist using CBT for a client with specific details provided. First, I need to recall all the guidelines given. The workflow involves checking the client's mood, setting an agenda, reviewing diagnoses, reinforcing the cognitive model, planning goals, and ending with feedback.
 
-Looking at the client's info, she's a 50-year-old woman with recurrent major depressive disorder in partial remission, plus moderate anxiety. Her BDI score is 18 (mild depression) and HAMA 18 (moderate anxiety). She's employed part-time, lives with her partner, has two kids, and there's a family history of depression. Her answers mention feeling guilty, failure, and some physical symptoms like heaviness in limbs and tiredness. 
+Looking at the client's info, she's a 50-year-old woman with recurrent major depressive disorder in partial remission, plus moderate anxiety. Her BDI score is 18 (mild depression) and HAMA 18 (moderate anxiety). She's employed part-time, lives with her partner, has two kids, and there's a family history of depression. Her answers mention feeling guilty, failure, and some physical symptoms like heaviness in limbs and tiredness.
 
 I need to structure the session following the steps. Starting with a greeting. Since the conversation history is empty, I'll begin with ""Good morning!"" Then set an agenda. Maybe ask how she's been feeling lately. Next, reference her diagnosis and maybe point out a cognitive distortion from her BDI answers, like feeling guilty without evidence. Use validation, then challenge with questions. Keep responses under 64 words, concise, and avoid repeating previous statements. Also, make sure to cover all six workflow steps without ending too soon. Need to check the questionnaires again to pick relevant points. For example, her feeling guilty (BDI5) and self-criticism (BDI8) could be key areas. Maybe address those by asking if she notices patterns where her thoughts might exaggerate failures. Offer strategies like challenging negative thoughts. End with encouragement and a plan for the next session. Wait, but the user said the session shouldn’t end until at least 20 turns. So I need to generate one turn at a time, ensuring each response adheres strictly to the guidelines. Alright, let's draft the first few interactions.
 Client: I keep replaying mistakes at work. Even small ones feel huge lately. Can’t shake the guilt.
@@ -21697,7 +21697,7 @@ Also, considering the BDI and HAMA scores indicate mild depression/anxiety, so p
 
 Putting it together: Validate their courage in planning the lunch, acknowledge fears are natural but not necessarily accurate. Remind them of past instances where fears were unfounded. Encourage focusing on observable facts during the interaction, not internal guesses. Keep it supportive and solution-focused without being overly positive.
 
-Check for guideline adherence: No markdown, under 64 words, starts correctly, no client lines. Previous utterances included questions about evidence and strategies. Now perhaps a statement reinforcing the plan with a prompt to note observations. 
+Check for guideline adherence: No markdown, under 64 words, starts correctly, no client lines. Previous utterances included questions about evidence and strategies. Now perhaps a statement reinforcing the plan with a prompt to note observations.
 
 Finalize:
 Client: I’ll try the lunch… but my palms still sweat just thinking about it. Focusing on their words, not my panic. Last time, they thanked me—it’s a tiny win. Maybe this can be too?
@@ -23099,7 +23099,7 @@ Therapist: Noticing your hands shook but you followed the manual highlights resi
 Client: I tried journaling yesterday... wrote down fixing the machine, but the guilt still whispers louder. How do I drown it out?
 Therapist: Let’s shift focus to the physical evidence—the photos you took and the working machine afterward. How might anchoring yourself to tangible results reduce the guilt’s power? We’ll revisit this progress next week. [/END]
 Client: The guilt’s still loud, but I’ll try keeping track. Next week, maybe? Thanks... see you then. [/END]"
-active799,mdd,qwq_qwen,qwq_qwen,"Okay, let's start by looking at the client's information. She's a 44-year-old woman with a long history of major depressive disorder, recurrent episodes, currently in an acute phase. The BDI shows moderate depression, while the HAMD and HAMA indicate mild depression and anxiety. Her background includes living alone, receiving wage replacement benefits, and a family history of mental illnesses like schizophrenia and addiction. 
+active799,mdd,qwq_qwen,qwq_qwen,"Okay, let's start by looking at the client's information. She's a 44-year-old woman with a long history of major depressive disorder, recurrent episodes, currently in an acute phase. The BDI shows moderate depression, while the HAMD and HAMA indicate mild depression and anxiety. Her background includes living alone, receiving wage replacement benefits, and a family history of mental illnesses like schizophrenia and addiction.
 
 First step: Greeting. Since the conversation history is empty, I need to greet her warmly. ""Good afternoon! It's good to see you again.
 Client: Hi... Thanks. It feels like another day, you know? Just uh… stuck in this same loop."" That captures her repetitive feelings, uses a pause and filler, fits the guidelines. Checks all boxes—emotionally authentic, concise, aligned with her diagnoses and history. No prior utterances mentioned, so it's original. Okay, that works.
@@ -57579,7 +57579,7 @@ Therapist: Hearing your successful use of breathing in stressful moments shows a
 Client: Feels doable. Maybe try it when reviewing work emails before bed. Less stressed, more clarity. Thanks for the guidance. See ya next week! [/END]"
 control3285,control,qwq_qwen,qwq_qwen,"Okay, let me start by going through all the provided information carefully. The user wants me to act as a licensed therapist using CBT principles for a session with this client. First, I need to make sure I follow the workflow steps they outlined.
 
-The client is a 62-year-old woman with mild depression and anxiety based on her BDI and HAMD scores. She lives with her spouse, works part-time, and has some family history of depression. Her BDI answers show she feels like she's had many failures and lacks motivation, while HAMA highlights significant tension and insomnia. 
+The client is a 62-year-old woman with mild depression and anxiety based on her BDI and HAMD scores. She lives with her spouse, works part-time, and has some family history of depression. Her BDI answers show she feels like she's had many failures and lacks motivation, while HAMA highlights significant tension and insomnia.
 
 I need to structure the session starting with a greeting, then setting the agenda, reviewing her diagnosis, reinforcing her cognitive model, planning goals, and ending with feedback. Each step requires specific elements like validation, identifying cognitive distortions, challenging thoughts, providing strategies, and encouragement without being too prescriptive.
 
@@ -58443,11 +58443,11 @@ Therapist: Magnifying small errors amplifies their significance. Let’s dissect
 Client: Like that report I botched earlier this week—it haunts me. Even though it was fixable, I kept seeing it as proof I’ll never measure up. Can’t stop the loop.
 Therapist: Acknowledging your frustration helps clarify this pattern. Let’s explore—if that report truly proved you
 Client: I guess fixing it showed I could recover, but the shame sticks around longer. Why does failure echo louder than success? Feels unfair.
-Therapist:, no markdown. 
+Therapist:, no markdown.
 
-Check for repetition. Previous answers discussed evidence for capabilities, reframing self-talk, labeling magnification. Now addressing the imbalance between failure and success. Maybe ask if he notices this pattern and suggest tracking. Also, validate his effort in recognizing it. 
+Check for repetition. Previous answers discussed evidence for capabilities, reframing self-talk, labeling magnification. Now addressing the imbalance between failure and success. Maybe ask if he notices this pattern and suggest tracking. Also, validate his effort in recognizing it.
 
-Finalizing the response: Validate his observation, question the imbalance, propose tracking exercises, note progress in awareness. Keep it brief and structured per guidelines. Avoid questions only; include some insight first. 
+Finalizing the response: Validate his observation, question the imbalance, propose tracking exercises, note progress in awareness. Keep it brief and structured per guidelines. Avoid questions only; include some insight first.
 
 Example:
 Client: Yeah, the shame clings way harder than pride does. It’s like my brain auto-replays mess-ups on loop, but wins fade fast. Wish I could flip that volume knob.
@@ -62154,7 +62154,7 @@ Client: Breaking it down might help, but starting feels so hard. I’ll try open
 Therapist: Recognizing that starting is hardest builds momentum. After opening the document, could you jot down one success from today—even small—to counterbalance critical thoughts? This practice trains your brain to notice progress.
 Client: A success? Like finishing a shower counts? I mean, some days just getting out of bed feels impossible...
 Therapist: Absolutely, every effort matters—from showers to studying. Noticing these
-Client:, short, simple language. Ensure it doesn't repeat prior responses. Use context-appropriate pauses or fillers occasionally. 
+Client:, short, simple language. Ensure it doesn't repeat prior responses. Use context-appropriate pauses or fillers occasionally.
 
 Putting it all together: The client might respond by questioning if noticing small acts like showering is enough, showing his disbelief but openness. For example:
 Therapist: Small actions build resilience. Celebrating them reinforces your ability to cope. What’s one tiny victory you had today, no matter how minor?
@@ -66643,7 +66643,7 @@ Therapist: Recognizing the ebb and flow of doubt builds resilience. Let’s note
 Client: The journal highlights good days when walks ease the guilt. I’m hanging on to those. Next Thursday, yes.
 Therapist: Great noticing how walks create space from guilt! Let’s expand this by scheduling daily short walks paired with tracking moods. Small rituals build stability. Shall we aim for this before our next session?
 Client: Walking helps, but deadlines loom. Some days, the journal sits blank. I’m trying, though.
-Therapist: Celebrate the days you walk despite deadlines—the act of showing up matters. Let’s adjust: allow yourself shorter entries on tough days, focusing just on mood ratings. Progress isn’t linear; self-compassion fuels persistence. 
+Therapist: Celebrate the days you walk despite deadlines—the act of showing up matters. Let’s adjust: allow yourself shorter entries on tough days, focusing just on mood ratings. Progress isn’t linear; self-compassion fuels persistence.
 Client: The walks calm me briefly, but the guilt rushes back. Some days, I stare at the page, numb. Still here.
 Therapist: Noticing the struggle to maintain routines is valid. Let’s experiment with a 5-minute “mindful breath” practice before journaling to ground yourself. Even small efforts acknowledge your courage. Shall we revisit this approach next week?
 Client: The breath exercises help start the journal. It’s glimmers, not floods—but enough to keep going. Next Thursday.
@@ -67509,7 +67509,7 @@ Therapist: Your willingness to attempt grounding techniques shows resilience. Le
 Client: I tried the warm cup thing once, but it didn’t really change how I felt. The guilt still lingers like smoke.
 Therapist: Thank you for sharing your experience. Let’s explore why the warmth felt temporary—could the lingering guilt relate to beliefs about deserving happiness? Next week, we’ll delve deeper into challenging those core ideas. Until then, notice moments when guilt surfaces and gently name the feeling without judgment.
 Client: The guilt feels like it’s part of me now. I keep waiting for it to lift, but nothing works.
-Therapist: You deserve compassion despite persistent feelings. Let’s focus on tolerating emotions rather than fighting them today. Notice where guilt lives in your body—can you allow space for it without reacting? This acceptance is powerful. 
+Therapist: You deserve compassion despite persistent feelings. Let’s focus on tolerating emotions rather than fighting them today. Notice where guilt lives in your body—can you allow space for it without reacting? This acceptance is powerful.
 Client: Sometimes I wonder if any of this matters. The guilt just keeps rolling back.
 Therapist: Your persistence in seeking understanding is commendable. Let’s track one daily instance where guilt arises and note its intensity on a scale of 1-10. Over time, this record might reveal patterns or exceptions. What aspect of this exercise feels feasible to try this week?
 Client: It’s hard to believe things can get better when the same thoughts keep looping. I just want the guilt to stop crushing me.
