@@ -11,12 +11,20 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PYTHONHASHSEED: "0"
+
 jobs:
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -36,8 +44,13 @@ jobs:
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -49,11 +62,15 @@ jobs:
         run: uv sync --locked --all-extras
 
       - name: Mypy
-        run: uv run mypy src tests --strict
+        run: uv run mypy src tests
+
+      - name: Smoke import
+        run: uv run python -c "import vibe_check; print(vibe_check.__version__)"
 
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -61,14 +78,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
-
-      - name: Set Python version
-        run: uv python pin ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: uv sync --locked --all-extras
@@ -86,3 +104,4 @@ jobs:
         with:
           files: coverage.xml
           fail_ci_if_error: false
+          # token: ${{ secrets.CODECOV_TOKEN }}  # uncomment for private repos

@@ -35,10 +35,10 @@ repos:
   - repo: local
     hooks:
       - id: mypy
-        name: mypy (strict)
+        name: mypy (strict via pyproject.toml)
         entry: uv run mypy
         language: system
         types: [python]
-        args: [src, tests, --strict]
+        args: [src, tests]
         pass_filenames: false
         require_serial: true

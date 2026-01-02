@@ -208,7 +208,7 @@ def load_corpus(
 
 **Implementation Notes**:
 - Arrow format: Use `datasets.load_from_disk()` (supports `Dataset` and `DatasetDict`)
-- CSV format: Use `pandas.read_csv()` with proper quoting
+- CSV format: Use the standard library `csv` module (with robust quoting)
 - Auto-detect: Prefer HuggingFace `save_to_disk()` layouts (`dataset_dict.json` / `dataset_info.json`), then `.arrow`, then `.csv`
 - If multiple HF splits are present: concatenate all splits, then **dedupe by `file_id`** (conflicting content for the same `file_id` is a hard error)
 - Always compute deterministic split after loading (ignore HF train/test labels)

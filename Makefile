@@ -52,7 +52,7 @@ format-check:
 	uv run ruff format --check .
 
 typecheck:
-	uv run mypy src tests --strict
+	uv run mypy src tests
 
 # ─────────────────────────────────────────────────────────────
 # CI

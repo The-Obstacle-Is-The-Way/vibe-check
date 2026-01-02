@@ -136,7 +136,7 @@ dev = [
 | `lint` | `uv run ruff check .` | Lint check |
 | `lint-fix` | `uv run ruff check . --fix` | Auto-fix lint issues |
 | `format` | `uv run ruff format .` | Format code |
-| `typecheck` | `uv run mypy src tests --strict` | Type check |
+| `typecheck` | `uv run mypy src tests` | Type check (strict via `pyproject.toml`) |
 | `ci` | `format-check lint typecheck test` | Full CI locally |
 | `clean` | Remove `.pytest_cache`, `.mypy_cache`, `__pycache__`, etc. | Cleanup |
 
@@ -174,14 +174,17 @@ The existing Python `.gitignore` template already covers: `__pycache__`, `.venv`
 
 **Jobs**:
 1. **lint**: ruff check + format check
-2. **typecheck**: mypy strict
+2. **typecheck**: mypy (strict via `pyproject.toml`) + smoke import
 3. **test**: pytest with coverage on Python 3.11 and 3.12
 
 **Key Features**:
+- Uses `actions/setup-python@v5` to pin the interpreter
 - Uses `astral-sh/setup-uv@v7` for fast uv installs
 - Caches dependencies via `uv.lock`
 - Uploads coverage to Codecov
 - Concurrency: cancel-in-progress for same ref
+- Sets `PYTHONHASHSEED=0` for deterministic hashing
+- Adds per-job timeouts to prevent hung runs
 
 ---
 
@@ -282,7 +285,7 @@ No mocks. No stubs. Just "does the infrastructure function?"
 1. Create directory structure
 2. Write `pyproject.toml` (complete config)
 3. Write `.python-version`
-4. Run `uv sync --dev` to generate `uv.lock`
+4. Run `uv sync --all-extras` to generate `uv.lock`
 5. Write `src/vibe_check/__init__.py` with `__version__`
 6. Write `tests/conftest.py` and `tests/unit/test_canary.py`
 7. Run `make test` to verify
