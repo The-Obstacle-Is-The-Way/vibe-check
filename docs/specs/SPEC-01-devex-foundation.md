@@ -39,6 +39,7 @@ make ci           # Full CI pipeline passes locally
 | `src/vibe_check/__init__.py` | Package marker |
 | `tests/conftest.py` | Pytest configuration |
 | `tests/unit/test_canary.py` | Smoke test proving toolchain works |
+| `.gitignore` | Comprehensive Python + macOS gitignore (already exists, verify complete) |
 
 ### 2.2 Directory Structure (Minimal)
 
@@ -139,7 +140,35 @@ dev = [
 | `ci` | `format-check lint typecheck test` | Full CI locally |
 | `clean` | Remove `.pytest_cache`, `.mypy_cache`, `__pycache__`, etc. | Cleanup |
 
-### 3.5 CI Workflow
+### 3.5 .gitignore Requirements
+
+The `.gitignore` must include (already added to repo):
+
+**macOS System Files** (critical for multi-platform teams):
+```gitignore
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+Icon?
+```
+
+**Project-specific**:
+```gitignore
+# Checkpoints and outputs (large, regeneratable)
+data/checkpoints/
+data/outputs/
+
+# Local secrets
+.secrets/
+```
+
+The existing Python `.gitignore` template already covers: `__pycache__`, `.venv`, `.env`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, `htmlcov/`, `*.egg-info`, etc.
+
+### 3.6 CI Workflow
 
 **Triggers**: push to main/dev, PR to main
 
@@ -215,6 +244,7 @@ def sample_file_id() -> str:
 - [ ] `make ci` runs full local CI successfully
 - [ ] Pre-commit hooks block commits with lint/type errors
 - [ ] GitHub Actions CI workflow is syntactically valid (act or manual check)
+- [ ] `.gitignore` includes macOS artifacts and project-specific exclusions
 
 ---
 

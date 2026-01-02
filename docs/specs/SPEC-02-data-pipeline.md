@@ -23,6 +23,17 @@ Build a complete data pipeline that can:
 - **Foundation for everything**: Can't score dialogues we can't load
 - **Proves the data is trustworthy**: The spec warns splits may be broken
 
+### Critical Data Finding (Verified 2026-01-02)
+
+The `dataset_info.json` in `data/sqpsychconv/qwq/train/` confirms the master spec's warning:
+
+```json
+"train": { "num_examples": 2090 },
+"test": { "num_examples": 2090 }
+```
+
+**Both splits have EXACTLY 2,090 examples** - they are duplicates! This is why SPEC-vibe-check.md Section 3.4 mandates "Trust No Split" and our deterministic `compute_split()` function is **non-negotiable**.
+
 ### Success Criteria
 
 ```python

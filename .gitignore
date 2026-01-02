@@ -1,4 +1,22 @@
+# ─────────────────────────────────────────────────────────────
+# macOS System Files
+# ─────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# macOS Finder
+.Spotlight-V100
+.Trashes
+.fseventsd
+
+# macOS Thumbnails
+Icon?
+
+# ─────────────────────────────────────────────────────────────
 # Byte-compiled / optimized / DLL files
+# ─────────────────────────────────────────────────────────────
 __pycache__/
 *.py[codz]
 *$py.class
@@ -182,9 +200,9 @@ cython_debug/
 .abstra/
 
 # Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
+#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore
 #  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
+#  and can be added to the global gitignore or merged into this file. However, if you prefer,
 #  you could uncomment the following to ignore the entire vscode folder
 # .vscode/
 
@@ -205,3 +223,13 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ─────────────────────────────────────────────────────────────
+# Project-specific
+# ─────────────────────────────────────────────────────────────
+# Checkpoints and outputs (large files, regeneratable)
+data/checkpoints/
+data/outputs/
+
+# Local secrets
+.secrets/
