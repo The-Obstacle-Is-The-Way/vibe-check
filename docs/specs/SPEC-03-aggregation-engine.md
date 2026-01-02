@@ -1,6 +1,6 @@
 # SPEC-03: Aggregation Engine (Scoring Math)
 
-**Status**: DRAFT - Awaiting Senior Review
+**Status**: IMPLEMENTED (2026-01-02)
 **Slice Type**: Vertical (Pure Computation)
 **Dependencies**: SPEC-01 (DevEx), SPEC-02 (Schemas only)
 **Estimated Scope**: ~300 lines of code, ~250 lines of tests
@@ -27,7 +27,10 @@ Build the mathematical engine that aggregates multiple PHQ-8 scores into a conse
 ### Success Criteria
 
 ```python
-from vibe_check.aggregation import aggregate_scores, should_arbitrate
+import numpy as np
+import pytest
+
+from vibe_check.aggregation import aggregate_votes, should_arbitrate_item
 
 # Given 6 votes per item (3 models × 2 runs)
 votes = {
@@ -36,18 +39,22 @@ votes = {
     # ... 6 more items
 }
 
-result = aggregate_scores(votes)
+items, total_posterior, arbitration_items, arbitration_reasons = aggregate_votes(votes)
 
 # Should compute posterior for each item
-assert result.items["anhedonia"].posterior[2] > 0.5  # Mode is 2
-assert result.items["anhedonia"].entropy < 1.5  # Reasonable agreement
+assert items["anhedonia"].posterior["2"] > 0.5  # Mode is 2
+assert items["anhedonia"].entropy < 1.5  # Reasonable agreement
 
 # Should compute total score distribution
-assert len(result.total_posterior) == 25  # Scores 0-24
-assert sum(result.total_posterior.values()) == pytest.approx(1.0)
+assert len(total_posterior) == 25  # Scores 0-24
+assert float(total_posterior.sum()) == pytest.approx(1.0)
 
 # Should detect disagreement
-assert should_arbitrate(result.items["anhedonia"]) is False  # Good agreement
+needs_arb, _reason = should_arbitrate_item(
+    posterior=np.array([items["anhedonia"].posterior[str(k)] for k in range(4)]),
+    votes=votes["anhedonia"],
+)
+assert needs_arb is False  # Good agreement
 ```
 
 ---
@@ -829,15 +836,15 @@ CLINICAL_BORDERLINE_VOTES = {
 
 ## 7. Definition of Done
 
-- [ ] All schemas (`scoring.py`, `output.py`) pass type checking
-- [ ] `compute_item_posterior()` produces valid distributions
-- [ ] `convolve_posteriors()` produces 25-element total distribution
-- [ ] `shannon_entropy()` matches manual calculations
-- [ ] `should_arbitrate_item()` triggers on all documented conditions
-- [ ] `aggregate_reports()` produces complete `AggregatedPHQ8`
-- [ ] Unit test coverage >= 95% for aggregation module
-- [ ] All tests use synthetic data (no mocks, no LLM calls)
-- [ ] `make ci` passes
+- [x] All schemas (`scoring.py`, `output.py`) pass type checking
+- [x] `compute_item_posterior()` produces valid distributions
+- [x] `convolve_posteriors()` produces 25-element total distribution
+- [x] `shannon_entropy()` matches manual calculations
+- [x] `should_arbitrate_item()` triggers on all documented conditions
+- [x] `aggregate_reports()` produces complete `AggregatedPHQ8`
+- [x] Unit test coverage >= 95% for aggregation module
+- [x] All tests use synthetic data (no mocks, no LLM calls)
+- [x] `make ci` passes
 
 ---
 

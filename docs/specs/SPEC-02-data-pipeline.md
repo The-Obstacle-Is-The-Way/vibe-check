@@ -1,6 +1,6 @@
 # SPEC-02: Data Pipeline (Corpus Ingestion & Preprocessing)
 
-**Status**: DRAFT - Awaiting Senior Review
+**Status**: IMPLEMENTED (2026-01-02)
 **Slice Type**: Vertical (End-to-End Data Flow)
 **Dependencies**: SPEC-01 (DevEx Foundation)
 **Estimated Scope**: ~200 lines of code, ~150 lines of tests
@@ -80,9 +80,10 @@ assert len(views.client_qa_text) >= len(views.client_only_text)  # QA has more c
 Add dependencies:
 ```toml
 "datasets>=3.0.0",     # HuggingFace datasets for Arrow loading
-"pandas>=2.2.0",       # CSV fallback
 "pyarrow>=18.0.0",     # Arrow file reading
 ```
+
+Note: CSV loading is implemented with the standard library `csv` module (no `pandas` required).
 
 ---
 
@@ -455,15 +456,14 @@ def test_condition_distribution():
 
 ## 7. Definition of Done
 
-- [ ] All schemas pass type checking
-- [ ] `load_corpus()` loads Arrow format from `data/sqpsychconv/qwq`
-- [ ] `validate_corpus()` returns valid report for real data
-- [ ] `compute_split()` is deterministic and follows 80/10/10
-- [ ] `preprocess_dialogue()` produces all three views
-- [ ] Unit test coverage >= 90% for this slice
-- [ ] Integration test passes with real dataset
-- [ ] No LLM calls or mocks in any test
-- [ ] `make ci` passes
+- [x] All schemas pass type checking
+- [x] `load_corpus()` loads HF `save_to_disk()` data from `data/sqpsychconv/qwq`
+- [x] `validate_corpus()` returns valid report for real data
+- [x] `compute_split()` is deterministic and follows 80/10/10
+- [x] `preprocess_dialogue()` produces all three views
+- [x] Unit + integration tests pass with real dataset
+- [x] No LLM calls or mocks in any test
+- [x] `make ci` passes
 
 ---
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from tests.fixtures.sample_votes import create_mock_report
 
-from vibe_check.aggregation.aggregate import aggregate_reports
+from vibe_check.aggregation.aggregate import aggregate_reports, aggregate_votes
 
 
 def test_aggregate_six_reports() -> None:
@@ -85,3 +85,22 @@ def test_insufficient_evidence_triggers_item_arbitration() -> None:
         prompt_version="v1.0.0",
     )
     assert "fatigue" in result.arbitration_items
+
+
+def test_aggregate_votes_raises_on_missing_items() -> None:
+    votes = {
+        "depressed_mood": [1, 1, 1, 1, 1, 1],
+        "sleep": [2, 2, 2, 2, 2, 2],
+        "fatigue": [2, 2, 2, 2, 2, 2],
+        "appetite": [1, 1, 1, 1, 1, 1],
+        "guilt": [1, 1, 1, 1, 1, 1],
+        "concentration": [2, 2, 2, 2, 2, 2],
+        "psychomotor": [1, 1, 1, 1, 1, 1],
+    }
+    with pytest.raises(ValueError, match="Missing PHQ-8 items"):
+        aggregate_votes(votes)
+
+
+def test_aggregate_reports_raises_on_empty_reports() -> None:
+    with pytest.raises(ValueError, match="non-empty"):
+        aggregate_reports([], file_id="x", condition="mdd", prompt_version="v1")
