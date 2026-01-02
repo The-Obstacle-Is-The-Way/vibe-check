@@ -67,6 +67,9 @@ jobs:
       - name: Smoke import
         run: uv run python -c "import vibe_check; print(vibe_check.__version__)"
 
+      - name: Build sdist + wheel
+        run: uv build --sdist --wheel --out-dir dist --clear --no-create-gitignore
+
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest

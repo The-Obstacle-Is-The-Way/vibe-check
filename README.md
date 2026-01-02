@@ -1,2 +1,9 @@
 # vibe-check
-Multi-agent depression severity scoring for synthetic therapeutic dialogues. Transforms SQPsychConv conversations into PHQ-8 labeled datasets via frontier LLM consensus, enabling open retrieval corpora for clinical NLP research.
+Multi-agent depression severity scoring for synthetic therapeutic dialogues.
+
+## Development
+
+Prereqs: Python 3.11+ and `uv`.
+
+- Setup: `make dev`
+- Run all local gates: `make ci`

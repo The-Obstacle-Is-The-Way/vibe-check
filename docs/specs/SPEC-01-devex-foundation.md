@@ -121,8 +121,8 @@ dev = [
 
 ### 3.3 Pre-commit Hooks
 
-1. **pre-commit-hooks**: trailing-whitespace, end-of-file-fixer, check-yaml, check-toml, detect-private-key
-2. **ruff-pre-commit**: lint with --fix, format check
+1. **pre-commit-hooks**: trailing-whitespace, end-of-file-fixer, check-yaml, check-json, check-toml, check-added-large-files, check-merge-conflict, detect-private-key, check-case-conflict, check-executables-have-shebangs, mixed-line-ending
+2. **ruff-pre-commit**: lint with `--fix --show-fixes --exit-non-zero-on-fix`, plus format check
 3. **local mypy**: via `uv run mypy`
 
 ### 3.4 Makefile Targets
@@ -181,6 +181,7 @@ The existing Python `.gitignore` template already covers: `__pycache__`, `.venv`
 - Uses `actions/setup-python@v5` to pin the interpreter
 - Uses `astral-sh/setup-uv@v7` for fast uv installs
 - Caches dependencies via `uv.lock`
+- Builds sdist + wheel to validate packaging
 - Uploads coverage to Codecov
 - Concurrency: cancel-in-progress for same ref
 - Sets `PYTHONHASHSEED=0` for deterministic hashing

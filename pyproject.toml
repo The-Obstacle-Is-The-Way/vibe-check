@@ -155,4 +155,5 @@ directory = "htmlcov"
 # Hatch Build Configuration (src layout)
 # ─────────────────────────────────────────────────────────────
 [tool.hatch.build.targets.wheel]
+# Hatchling expects package directories (not import names) for src layout.
 packages = ["src/vibe_check"]
