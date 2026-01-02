@@ -1,6 +1,6 @@
 # SPEC-01: DevEx Foundation
 
-**Status**: DRAFT - Awaiting Senior Review
+**Status**: IMPLEMENTED (2026-01-02)
 **Slice Type**: Infrastructure (Prerequisite for all other slices)
 **Dependencies**: None
 **Estimated Scope**: ~50 lines of config, ~20 lines of test code
@@ -129,7 +129,7 @@ dev = [
 
 | Target | Command | Description |
 |--------|---------|-------------|
-| `dev` | `uv sync --locked --all-extras --dev && uv run pre-commit install` | Full dev setup |
+| `dev` | `uv sync --locked --all-extras && uv run pre-commit install` | Full dev setup |
 | `install` | `uv sync --locked` | Production install |
 | `test` | `uv run pytest tests/ --cov=src/vibe_check --cov-report=term-missing --cov-fail-under=80` | Run tests with coverage |
 | `test-unit` | `uv run pytest tests/unit/ -v` | Unit tests only |
@@ -234,17 +234,17 @@ def sample_file_id() -> str:
 
 ## 5. Definition of Done
 
-- [ ] `uv init` creates project with hatchling backend
-- [ ] `uv sync --dev` installs all dependencies
-- [ ] `uv run pre-commit install` installs hooks
-- [ ] `make lint` passes with zero errors
-- [ ] `make typecheck` passes with zero errors
-- [ ] `make test` passes with canary test
-- [ ] Coverage threshold (80%) is enforced
-- [ ] `make ci` runs full local CI successfully
-- [ ] Pre-commit hooks block commits with lint/type errors
-- [ ] GitHub Actions CI workflow is syntactically valid (act or manual check)
-- [ ] `.gitignore` includes macOS artifacts and project-specific exclusions
+- [x] `uv init` creates project with hatchling backend
+- [x] `uv sync --locked --all-extras` installs all dependencies
+- [x] `uv run pre-commit install` installs hooks
+- [x] `make lint` passes with zero errors
+- [x] `make typecheck` passes with zero errors
+- [x] `make test` passes with canary test
+- [x] Coverage threshold (80%) is enforced
+- [x] `make ci` runs full local CI successfully
+- [x] Pre-commit hooks block commits with lint/type errors
+- [x] GitHub Actions CI workflow is syntactically valid (manual check)
+- [x] `.gitignore` includes macOS artifacts and project-specific exclusions
 
 ---
 
@@ -271,6 +271,11 @@ No mocks. No stubs. Just "does the infrastructure function?"
 ---
 
 ## 8. Implementation Notes
+
+### Implementation Deviations (SSOT)
+
+- Hatchling src-layout requires an explicit wheel target: `[tool.hatch.build.targets.wheel] packages = ["src/vibe_check"]`.
+- `make dev` uses `uv sync --locked --all-extras` (the `dev` extra is installed via extras; no separate `--dev` flag needed).
 
 ### Order of Operations
 

@@ -1,5 +1,5 @@
 # Makefile - Developer convenience commands
-.PHONY: help install dev test test-unit test-parallel lint lint-fix format format-check typecheck ci clean
+.PHONY: help install dev test test-unit lint lint-fix format format-check typecheck ci clean
 
 # Default target
 help:

@@ -34,6 +34,8 @@ The `dataset_info.json` in `data/sqpsychconv/qwq/train/` confirms the master spe
 
 **Both splits have EXACTLY 2,090 examples** - they are duplicates! This is why SPEC-vibe-check.md Section 3.4 mandates "Trust No Split" and our deterministic `compute_split()` function is **non-negotiable**.
 
+This is not theoretical: in this repo, `data/sqpsychconv/train_sample.csv` and `data/sqpsychconv/test_sample.csv` are byte-for-byte identical in row order (2,090/2,090 overlapping `file_id`s and identical dialogue hashes).
+
 ### Success Criteria
 
 ```python
@@ -45,10 +47,9 @@ report = validate_corpus(corpus)
 assert report.duplicate_count == 0
 assert report.split_leakage == 0
 
-dialogue = corpus[0]
+dialogue = next(d for d in corpus if d.dialogue.strip())
 views = preprocess_dialogue(dialogue)
-assert views.client_only_text  # Non-empty
-assert views.client_qa_text    # Non-empty
+assert views.client_qa_text  # Non-empty (contexted)
 assert len(views.client_qa_text) >= len(views.client_only_text)  # QA has more context
 ```
 
@@ -205,10 +206,12 @@ def load_corpus(
 ```
 
 **Implementation Notes**:
-- Arrow format: Use `datasets.load_from_disk()`
+- Arrow format: Use `datasets.load_from_disk()` (supports `Dataset` and `DatasetDict`)
 - CSV format: Use `pandas.read_csv()` with proper quoting
-- Auto-detect: Check for `.arrow` files, fall back to CSV
-- Always compute deterministic split after loading
+- Auto-detect: Prefer HuggingFace `save_to_disk()` layouts (`dataset_dict.json` / `dataset_info.json`), then `.arrow`, then `.csv`
+- If multiple HF splits are present: concatenate all splits, then **dedupe by `file_id`** (conflicting content for the same `file_id` is a hard error)
+- Always compute deterministic split after loading (ignore HF train/test labels)
+- Sort the returned list by `file_id` for deterministic tests
 
 ### 4.2 Splitter (`data/splitter.py`)
 
@@ -245,7 +248,7 @@ def validate_corpus(dialogues: list[SQPsychConvDialogue]) -> CorpusIntegrityRepo
 
     Checks:
     1. file_id uniqueness (0 duplicates allowed)
-    2. Content deduplication via SHA256 of dialogue
+    2. Content deduplication via SHA256 of `dialogue_clean` (avoid false negatives from whitespace)
     3. Split leakage check (train ∩ dev ∩ test = ∅)
     4. Empty dialogue detection
     5. Unknown speaker detection
@@ -312,7 +315,9 @@ def test_dialogue_invalid_condition():
         SQPsychConvDialogue(
             file_id="test",
             condition="unknown",  # Must be mdd or control
-            ...
+            client_model="qwq_qwen",
+            therapist_model="qwq_qwen",
+            dialogue="Therapist: Hello\nClient: Hi",
         )
 ```
 
@@ -430,6 +435,7 @@ def test_condition_distribution():
 |-------|-------------------|
 | Empty dialogue | Flag `has_empty_client_text`, don't crash |
 | No "Client:" prefix | Flag `has_unknown_speaker`, attempt recovery |
+| Unlabeled preamble/meta text | Exclude from views, flag `has_unknown_speaker` |
 | Therapist-only dialogue | `client_only_text` is empty, flagged |
 | Multiple colons in text | Only split on first colon after speaker |
 | Unicode/emoji in text | Preserve as-is |
@@ -443,6 +449,7 @@ def test_condition_distribution():
 | Duplicate content (diff file_id) | SHA256 hash check | Warn in report |
 | Empty string dialogue | Length check | Flag, don't process |
 | Missing required fields | Pydantic validation | Raise ValidationError |
+| Conflicting duplicate file_id content | Content hash mismatch | Hard fail (data corruption) |
 
 ---
 

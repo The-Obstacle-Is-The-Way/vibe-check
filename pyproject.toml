@@ -22,6 +22,10 @@ classifiers = [
 dependencies = [
     "pydantic>=2.10.0",
     "pydantic-settings>=2.7.0",
+    "datasets>=3.0.0",
+    "pyarrow>=18.0.0",
+    "numpy>=2.0.0",
+    "scipy>=1.14.0",
 ]
 
 [project.optional-dependencies]
@@ -87,7 +91,15 @@ pretty = true
 
 [[tool.mypy.overrides]]
 module = [
+    "datasets",
     "datasets.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "scipy",
+    "scipy.*",
 ]
 ignore_missing_imports = true
 

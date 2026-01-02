@@ -354,6 +354,8 @@ def should_arbitrate_item(
     entropy_threshold: float = 1.2,
     clinical_ambiguity_band: tuple[float, float] = (0.4, 0.6),
     range_threshold: int = 2,
+    insufficient_evidence_count: int = 0,
+    insufficient_evidence_threshold: int = 2,
 ) -> tuple[bool, str | None]:
     """Determine if an item needs judge arbitration.
 
@@ -362,6 +364,7 @@ def should_arbitrate_item(
     2. High entropy: H(posterior) > 1.2
     3. Clinical ambiguity: P(score >= 2) in [0.4, 0.6]
     4. Range safety net: max(votes) - min(votes) >= 2
+    5. Insufficient evidence: >=2 jurors flagged insufficient_evidence=True
 
     Args:
         posterior: Item posterior distribution, shape (4,)
@@ -395,6 +398,10 @@ def should_arbitrate_item(
     vote_range = max(votes) - min(votes)
     if vote_range >= range_threshold:
         reasons.append(f"vote_range={vote_range}")
+
+    # 5. Insufficient evidence
+    if insufficient_evidence_count >= insufficient_evidence_threshold:
+        reasons.append(f"insufficient_evidence={insufficient_evidence_count}")
 
     if reasons:
         return True, "; ".join(reasons)
@@ -463,7 +470,15 @@ def aggregate_reports(
         entropy = shannon_entropy(posterior)
         clinical_prob = float(posterior[2] + posterior[3])
 
-        needs_arb, reason = should_arbitrate_item(posterior, votes)
+        # Count jurors who explicitly flagged "insufficient evidence" for this item
+        insufficient_count = sum(
+            1 for r in reports if getattr(r, item).insufficient_evidence
+        )
+        needs_arb, reason = should_arbitrate_item(
+            posterior,
+            votes,
+            insufficient_evidence_count=insufficient_count,
+        )
         if needs_arb:
             arbitration_items.append(item)
             arbitration_reasons[item] = reason
@@ -502,6 +517,16 @@ def aggregate_reports(
     # Self-harm: flag if any model flagged it
     any_self_harm = any(r.mentions_self_harm for r in reports)
     all_evidence = [e for r in reports for e in r.self_harm_evidence]
+
+    # Global arbitration safety net: high disagreement on total juror scores.
+    # (Distinct from total posterior std, which is distribution-derived.)
+    juror_totals = [r.total_score for r in reports]
+    juror_total_std = float(np.std(juror_totals))
+    global_arb_reason = None
+    if juror_total_std >= 2.0:
+        global_arb_reason = f"total_score_std={juror_total_std:.2f}"
+        arbitration_items.append("__total__")
+        arbitration_reasons["__total__"] = global_arb_reason
 
     return AggregatedPHQ8(
         file_id=file_id,
@@ -645,17 +670,18 @@ def test_arbitration_for_low_max_prob():
 
 def test_clinical_ambiguity_triggers():
     """Borderline P(clinical) triggers arbitration."""
-    # Craft votes so P(>=2) is around 0.5
+    # With alpha=0.5 and votes [1,1,1,2,2,2], P(>=2) is exactly 0.50.
     votes = [1, 1, 1, 2, 2, 2]
     posterior = compute_item_posterior(votes)
     clinical_prob = posterior[2] + posterior[3]
 
     # Should be in ambiguous range
-    assert 0.3 < clinical_prob < 0.7
+    assert clinical_prob == pytest.approx(0.50)
 
     needs_arb, reason = should_arbitrate_item(posterior, votes)
-    # May or may not trigger depending on exact posterior
-    # The test is that the function runs without error
+    assert needs_arb is True
+    assert reason is not None
+    assert "clinical_ambiguity" in reason
 ```
 
 ### 5.4 Aggregation Integration Tests (`test_aggregate.py`)
