@@ -77,13 +77,13 @@ vibe-check is **COMPLETE** when:
 
 ---
 
-## Specs Under Review
+## Optional Spec
 
 | Spec | Purpose | Verdict | Rationale |
 |------|---------|---------|-----------|
 | **SPEC-09** | Human-in-the-Loop Calibration | ⚠️ CONDITIONAL | Only needed if internal diagnostics fail. If Krippendorff α ≥ 0.70, we don't need human calibration for a one-shot labeling job. |
-| **SPEC-10** | Adversarial Stress Testing | ❌ DEFER | Nice engineering, but we're running ONE batch of 2,090 dialogues. If it fails, we fix it. Chaos testing is for production systems. |
-| **SPEC-11** | Interactive Inspector (TUI) | ❌ DEFER | We have `scored.jsonl`. We can grep/jq/python it. A TUI is polish, not function. |
+
+SPEC-10 (Chaos Testing) and SPEC-11 (TUI) were deleted as unnecessary scope creep.
 
 ---
 
@@ -138,9 +138,6 @@ This happens in ai-psychiatrist, NOT vibe-check. See [Issue #38](https://github.
 
 | Feature | Why Not |
 |---------|---------|
-| Production-grade chaos testing | This is a one-shot labeling job, not a production service |
-| Interactive TUI | We can inspect JSONL with standard tools |
-| Human calibration infrastructure | Only needed if internal diagnostics fail |
 | Continuous deployment | There's nothing to deploy continuously |
 | Multi-tenant support | One user, one run |
 | Real-time scoring API | Batch job only |
@@ -164,9 +161,9 @@ Before implementing anything new, ask:
 
 ## Recommended Action
 
-1. **Archive SPEC-10 and SPEC-11** as "deferred/nice-to-have"
-2. **Keep SPEC-09 conditional** - only implement if diagnostics fail
-3. **Run the production batch** with existing SPEC-01-08 implementation
+1. **Run the production batch** with existing SPEC-01-08 implementation
+2. **Check diagnostics** - if they pass, ship labels
+3. **If diagnostics fail** - consider SPEC-09 (human calibration)
 4. **Ship labels to ai-psychiatrist**
 5. **Close the vibe-check project**
 

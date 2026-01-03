@@ -33,29 +33,25 @@ The comprehensive system design lives in the research directory:
 
 ---
 
-## Conditional/Deferred Specs
+## Optional Spec
 
 | ID | Title | Status | Rationale |
 |----|-------|--------|-----------|
 | SPEC-09 | [Human Alignment](SPEC-09-human-alignment.md) | CONDITIONAL | Only implement if SPEC-07 diagnostics fail quality gates |
-| SPEC-10 | [Adversarial Robustness](SPEC-10-adversarial-robustness.md) | DEFERRED | Nice-to-have for production systems; vibe-check is a one-shot labeling job |
-| SPEC-11 | [Interactive Inspector](SPEC-11-interactive-inspector.md) | DEFERRED | Nice-to-have; can inspect JSONL with standard tools |
 
 ---
 
 ## Status Legend
 
 - **IMPLEMENTED**: Spec has been fully implemented and tested
-- **IN PROGRESS**: Spec is currently being implemented
 - **CONDITIONAL**: Implement only if specific conditions are met
-- **DEFERRED**: Not needed for Definition of Done; may implement later
 
 ---
 
 ## Statistics
 
 - **Core specs**: 8 (all IMPLEMENTED)
-- **Conditional/Deferred**: 3
+- **Optional**: 1 (CONDITIONAL)
 - **Ready for production run**: ✅ YES
 
 ---
