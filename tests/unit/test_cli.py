@@ -20,3 +20,4 @@ def test_cli_parses_score_corpus_args() -> None:
     )
     assert args.command == "score-corpus"
     assert args.limit == 5
+    assert args.live is False

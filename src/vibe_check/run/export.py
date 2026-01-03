@@ -52,3 +52,20 @@ def write_run_manifest(output_dir: Path, manifest: dict[str, Any]) -> None:
         output_dir / "run_manifest.json",
         json.dumps(manifest, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
     )
+
+
+def compute_arbitration_rate_from_rows(output_dir: Path) -> tuple[int, int]:
+    """Compute (arbitrated_count, total_rows) from persisted row JSON files."""
+    rows_dir = output_dir / ROWS_DIR
+    if not rows_dir.exists():
+        return 0, 0
+
+    arbitrated = 0
+    total = 0
+    for path in sorted(rows_dir.glob("*.json"), key=lambda p: p.stem):
+        row = json.loads(path.read_text(encoding="utf-8"))
+        total += 1
+        if row.get("triggered_arbitration") is True:
+            arbitrated += 1
+
+    return arbitrated, total

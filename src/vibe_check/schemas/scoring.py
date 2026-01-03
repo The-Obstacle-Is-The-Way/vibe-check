@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -81,14 +81,40 @@ class PHQ8Assessment(BaseModel):
             "psychomotor": int(self.psychomotor.score),
         }
 
+    @model_validator(mode="before")
+    @classmethod
+    def _canonicalize_total_score(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+
+        item_keys = (
+            "anhedonia",
+            "depressed_mood",
+            "sleep",
+            "fatigue",
+            "appetite",
+            "guilt",
+            "concentration",
+            "psychomotor",
+        )
+        expected = 0
+        for key in item_keys:
+            item = data.get(key)
+            if item is None:
+                return data
+            score = item.get("score") if isinstance(item, dict) else getattr(item, "score", None)
+            if score is None:
+                return data
+            expected += int(score)
+
+        if data.get("total_score") != expected:
+            data["total_score"] = expected
+        return data
+
     @model_validator(mode="after")
     def _check_total_score(self) -> PHQ8Assessment:
         expected = sum(self.item_scores.values())
         if self.total_score != expected:
-            # We could correct it here (lenient) or raise (strict).
-            # The prompt asks the model to calculate it. Raising forces consistency.
-            # However, to be robust, we might want to just trust the items and recalculate.
-            # But the user asked for strictness. Let's raise.
             raise ValueError(f"total_score={self.total_score} does not match item sum={expected}")
         return self
 

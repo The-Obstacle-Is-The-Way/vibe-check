@@ -29,7 +29,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--output", required=True, help="Output directory (writes ledger + rows + JSONL)."
     )
     score.add_argument("--limit", type=int, default=None, help="Limit number of dialogues (debug).")
-    score.add_argument("--dry-run", action="store_true", help="Use deterministic fakes (no cost).")
+    score.add_argument(
+        "--live",
+        action="store_true",
+        help="Use real provider-backed jurors/judge (requires API keys; may cost money).",
+    )
     score.add_argument(
         "--prompt-version", default="v1.0.0", help="Prompt version label to embed in outputs."
     )
@@ -52,25 +56,24 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "score-corpus":
         settings = Settings()
 
-        # Export API keys to environment for PydanticAI providers
-        # (They read env vars directly, not our Settings object)
-        if settings.openai_api_key:
-            os.environ.setdefault("OPENAI_API_KEY", settings.openai_api_key)
-        if settings.anthropic_api_key:
-            os.environ.setdefault("ANTHROPIC_API_KEY", settings.anthropic_api_key)
-        if settings.google_api_key:
-            os.environ.setdefault("GOOGLE_API_KEY", settings.google_api_key)
+        if args.live:
+            # Export API keys to environment for PydanticAI providers
+            # (They read env vars directly, not our Settings object)
+            if settings.openai_api_key:
+                os.environ.setdefault("OPENAI_API_KEY", settings.openai_api_key)
+            if settings.anthropic_api_key:
+                os.environ.setdefault("ANTHROPIC_API_KEY", settings.anthropic_api_key)
+            if settings.google_api_key:
+                os.environ.setdefault("GOOGLE_API_KEY", settings.google_api_key)
 
-        # Override prompt version from CLI if provided, though settings has it too.
-        # CLI wins.
-        settings.prompt_version = args.prompt_version
-
-        if args.dry_run:
-            jurors = build_fake_jury()
-            judge_item = build_fake_judge_item()
-        else:
+            # Override prompt version from CLI if provided, though settings has it too.
+            # CLI wins.
+            settings.prompt_version = args.prompt_version
             jurors = build_real_jury(settings)
             judge_item = build_real_judge_item(settings)
+        else:
+            jurors = build_fake_jury()
+            judge_item = build_fake_judge_item()
 
         score_corpus(
             input_path=args.input,

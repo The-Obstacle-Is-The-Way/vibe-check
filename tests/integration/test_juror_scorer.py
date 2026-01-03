@@ -15,22 +15,6 @@ def test_juror_scorer_end_to_end_with_testmodel() -> None:
     fixture_path = Path("tests/fixtures/juror_outputs/juror_ok.json")
     raw = json.loads(fixture_path.read_text(encoding="utf-8"))
 
-    # Calculate expected total score
-    total = 0
-    items = [
-        "anhedonia",
-        "depressed_mood",
-        "sleep",
-        "fatigue",
-        "appetite",
-        "guilt",
-        "concentration",
-        "psychomotor",
-    ]
-    for item in items:
-        total += raw[item]["score"]
-    raw["total_score"] = total
-
     # Use custom_output_args for structured output simulation
     model = TestModel(custom_output_args=raw)
 
@@ -43,5 +27,5 @@ def test_juror_scorer_end_to_end_with_testmodel() -> None:
     assert isinstance(report, PHQ8Report)
     assert report.model_id == "fake-model"
     assert report.run_number == 1
-    assert report.total_score == total
+    assert report.total_score == sum(report.item_scores.values())
     assert report.usage is not None

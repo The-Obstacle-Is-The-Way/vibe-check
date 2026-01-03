@@ -10,7 +10,12 @@ from vibe_check.graph.single_dialogue import (
     build_single_dialogue_graph,
     invoke_with_checkpoint_resume,
 )
-from vibe_check.run.export import write_row, write_run_manifest, write_scored_jsonl
+from vibe_check.run.export import (
+    compute_arbitration_rate_from_rows,
+    write_row,
+    write_run_manifest,
+    write_scored_jsonl,
+)
 from vibe_check.run.ledger import JobLedger
 from vibe_check.schemas.scoring import TokenUsage
 from vibe_check.sqlite import sqlite_path_from_conn_string
@@ -60,7 +65,6 @@ def score_corpus(
 
     condition_counts: dict[str, int] = {"mdd": 0, "control": 0}
     split_counts: dict[str, int] = {"train": 0, "dev": 0, "test": 0}
-    arbitration_count = 0
 
     # Use Ledger context manager for persistent connection
     with (
@@ -84,13 +88,6 @@ def score_corpus(
             split_counts[split] = split_counts.get(split, 0) + 1
 
             if ledger.get_status(dialogue.file_id) == "done":
-                # Skip, but we might want to count arbitration/conditions?
-                # Actually, condition_counts/split_counts are recalculated for the whole corpus
-                # in this loop regardless of 'done' status, which is correct for the final manifest.
-                # However, arbitration_count is only incremented if we RUN the dialogue.
-                # This means arbitration_rate in manifest will be wrong on resume.
-                # TODO: To fix arbitration_rate on resume, we'd need to store that in ledger too.
-                # For now, we accept arbitration_rate reflects only the *current* session's runs.
                 continue
 
             ledger.mark_running(dialogue.file_id)
@@ -120,8 +117,6 @@ def score_corpus(
                 result = final_state["final_output"]
                 if result is None:
                     raise RuntimeError("graph completed without final_output")
-
-                arbitration_count += 1 if result.triggered_arbitration else 0
 
                 # Aggregate tokens for this specific job
                 t_input = 0
@@ -162,12 +157,17 @@ def score_corpus(
         write_scored_jsonl(output_dir)
 
         aggregated_tokens = ledger.get_aggregated_tokens()
+        arbitrated_count, row_count = compute_arbitration_rate_from_rows(output_dir)
+
+        completed = sum(1 for fid in ledger.list_all() if ledger.get_status(fid) == "done")
 
         manifest: dict[str, Any] = {
             "dialogues_total": len(corpus),
-            "completed": sum(1 for fid in ledger.list_all() if ledger.get_status(fid) == "done"),
+            "completed": completed,
             "failed": sum(1 for fid in ledger.list_all() if ledger.get_status(fid) == "failed"),
-            "arbitration_rate": (arbitration_count / len(corpus)) if corpus else 0.0,
+            "arbitration_rate": (arbitrated_count / completed) if completed else 0.0,
+            "rows_written": row_count,
+            "arbitrated_dialogues": arbitrated_count,
             "counts_by_condition": condition_counts,
             "counts_by_split": split_counts,
             "token_usage_totals": aggregated_tokens,
