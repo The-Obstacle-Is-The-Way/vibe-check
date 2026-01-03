@@ -134,8 +134,7 @@ The `_is_transient_error()` function identifies retryable errors:
 - HTTPStatusError with status 429, 500, 502, 503, 504
 - NetworkError, TimeoutException
 - ConnectionError, OSError
-- SDK errors containing: "ratelimit", "timeout", "connection", "overload"
-- SDK errors containing: "server"
+- SDK errors containing: "ratelimit", "timeout", "connection", "overload", "server"
 ```
 
 ---
