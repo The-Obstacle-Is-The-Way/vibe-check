@@ -68,6 +68,12 @@ def score_corpus(
         SqliteSaver.from_conn_string(str(checkpoint_path)) as saver,
     ):
         ledger.initialize([d.file_id for d in corpus])
+        reset_count = ledger.reset_running_items()
+        if reset_count > 0:
+            # We don't have a logger here yet, but it's fine.
+            # Could print or just rely on the fact it's handled.
+            pass
+
         app = graph.compile(checkpointer=saver)
 
         for dialogue in corpus:

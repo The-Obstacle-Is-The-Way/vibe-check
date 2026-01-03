@@ -102,6 +102,20 @@ class JobLedger:
                 [(fid, now) for fid in file_ids],
             )
 
+    def reset_running_items(self) -> int:
+        """Reset any 'running' items to 'pending' (crash recovery)."""
+        with self.conn:
+            cursor = self.conn.execute(
+                """
+                UPDATE jobs
+                SET status = 'pending',
+                    updated_at = ?
+                WHERE status = 'running'
+                """,
+                (_utc_now_iso(),),
+            )
+            return cursor.rowcount
+
     def list_all(self) -> list[str]:
         rows = self.conn.execute("SELECT file_id FROM jobs ORDER BY file_id").fetchall()
         return [r[0] for r in rows]
