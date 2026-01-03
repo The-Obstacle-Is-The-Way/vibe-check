@@ -1,7 +1,7 @@
 # BUG-011: Running Status Never Recovers After Crash
 
 **Status**: OPEN
-**Severity**: LOW
+**Severity**: P3 (Low - Cosmetic/Metrics)
 **Discovered**: 2026-01-02
 **Component**: `src/vibe_check/run/runner.py`, `src/vibe_check/run/ledger.py`
 

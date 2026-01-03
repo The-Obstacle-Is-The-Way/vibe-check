@@ -1,7 +1,7 @@
 # BUG-012: write_scored_jsonl Crashes When No Rows Exist
 
 **Status**: OPEN
-**Severity**: MEDIUM
+**Severity**: P2 (Medium - Crash on Edge Case)
 **Discovered**: 2026-01-02
 **Component**: `src/vibe_check/run/export.py`
 
