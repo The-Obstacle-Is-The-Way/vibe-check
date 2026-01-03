@@ -1,6 +1,6 @@
 # SPEC-05: Consensus Orchestration (Jury + Judge + Checkpointing)
 
-**Status**: DRAFT (2026-01-02)
+**Status**: IMPLEMENTED (2026-01-03)
 **Slice Type**: Vertical (Single Dialogue → Final Consensus Output)
 **Dependencies**: SPEC-02 (Views), SPEC-03 (Aggregation), SPEC-04 (Juror Scorer)
 **Estimated Scope**: ~500 lines of code, ~350 lines of tests
@@ -87,7 +87,7 @@ All network calls must remain optional in tests (fake clients).
 - Run 6 juror calls (3 models × 2 runs)
 - Each juror node uses `state['scoring_text']` (passed in state)
 - Each call returns `PHQ8Report` (SPEC-04)
-- Collect into state as `juror_reports: list[PHQ8Report]`
+- Collect into state as `jury_results: list[PHQ8Report]` (internal state key)
 
 **2) Aggregate**
 - Call `aggregate_reports(...)` (SPEC-03)
@@ -111,6 +111,7 @@ Use LangGraph checkpointing (SQLite) so that:
 - A crash after the jury step does not repeat completed calls
 - Retries are bounded and error-coded
 - The checkpointed state contains full context (including dialogue text) for debugging
+  - Note: The exported output uses `juror_reports` (schema field) even though the internal state key is `jury_results`.
 
 Implementation note: accept either a raw SQLite file path (e.g., `data/checkpoints/dev.db`) or SQLAlchemy-style `sqlite:///data/checkpoints/dev.db` and normalize internally.
 

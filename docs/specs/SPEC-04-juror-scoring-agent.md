@@ -1,6 +1,6 @@
 # SPEC-04: Juror Scoring Agent (Structured PHQ-8 Output)
 
-**Status**: DRAFT (2026-01-02)
+**Status**: IMPLEMENTED (2026-01-03)
 **Slice Type**: Vertical (Single Dialogue → `PHQ8Report`)
 **Dependencies**: SPEC-01 (DevEx), SPEC-02 (Dialogue Views), SPEC-03 (PHQ-8 Schemas)
 **Estimated Scope**: ~300 lines of code, ~250 lines of tests
@@ -59,8 +59,8 @@ assert report.total_score == sum(report.item_scores.values())
 | `src/vibe_check/scoring/__init__.py` | Public API exports |
 | `src/vibe_check/scoring/juror.py` | `JurorScorer` wrapper (Agent → `PHQ8Report`) |
 | `src/vibe_check/scoring/prompting.py` | Prompt builder + prompt versioning |
-| `src/vibe_check/scoring/parsing.py` | Robust parsing + canonicalization into `PHQ8Report` |
 | `src/vibe_check/scoring/agent.py` | PydanticAI agent builder (providers + `TestModel`) |
+| `src/vibe_check/scoring/fakes.py` | Deterministic fake jurors/judge for offline runs |
 | `src/vibe_check/settings.py` | Pydantic-settings for API keys/model IDs (no secrets committed) |
 
 ### 2.2 New Test Files
@@ -109,16 +109,12 @@ The prompt must:
 
 ### 3.3 Parsing + Canonicalization
 
-Parsing must be resilient to common LLM failures:
+We rely on **PydanticAI structured outputs** (`output_type=PHQ8Assessment`) to avoid an ad-hoc JSON parsing layer.
 
-- Non-JSON wrappers (leading/trailing text)
-- Missing `total_score` or incorrect `total_score`
+Canonicalization rule (implemented in `PHQ8Assessment` validators):
+- `total_score` is computed from the 8 item scores if missing/incorrect.
 
-Canonicalization rule:
-
-- Compute `total_score` as the sum of the 8 item scores and construct `PHQ8Report` from canonical fields.
-
-Failures must be typed and machine-actionable (e.g., `ParseError`, `SchemaError`).
+Validation failures remain strict and machine-actionable via Pydantic/PydanticAI error types.
 
 ---
 

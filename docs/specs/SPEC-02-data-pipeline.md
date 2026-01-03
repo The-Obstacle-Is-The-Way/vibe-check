@@ -19,7 +19,8 @@ Build a complete data pipeline that can:
 ### Why This Slice First?
 
 - **Zero LLM dependencies**: Everything is pure data transformation
-- **Testable with real data**: No mocks needed - we have the actual dataset
+- **Testable without downloads**: CI uses a tiny `datasets.DatasetDict().save_to_disk()` fixture so tests pass from a clean checkout
+- **Optionally verifiable on real data**: If `data/sqpsychconv/qwen-2.5` exists locally, an additional integration test validates the full corpus
 - **Foundation for everything**: Can't score dialogues we can't load
 - **Proves the data is trustworthy**: The spec warns splits may be broken
 
@@ -72,6 +73,7 @@ assert len(views.client_qa_text) >= len(views.client_only_text)  # QA has more c
 | `tests/unit/test_extractor.py` | Extractor tests |
 | `tests/integration/test_data_pipeline.py` | End-to-end pipeline test |
 | `tests/fixtures/sample_dialogues.py` | Real sample data for tests |
+| `tests/fixtures/hf_disk_dataset.py` | Tiny HF `save_to_disk()` dataset builder (CI-safe) |
 
 ### 2.2 Updated pyproject.toml
 

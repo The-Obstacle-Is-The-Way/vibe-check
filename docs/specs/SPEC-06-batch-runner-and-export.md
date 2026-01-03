@@ -1,6 +1,6 @@
 # SPEC-06: Batch Runner & Export (Corpus-Scale Labeling)
 
-**Status**: DRAFT (2026-01-02)
+**Status**: IMPLEMENTED (2026-01-03)
 **Slice Type**: Vertical (Full Corpus → Outputs on Disk)
 **Dependencies**: SPEC-02 (Data Pipeline), SPEC-05 (Consensus Orchestration)
 **Estimated Scope**: ~600 lines of code, ~400 lines of tests
@@ -33,7 +33,7 @@ test -f data/outputs/dev_run/scored.jsonl
 test -f data/outputs/dev_run/run_manifest.json
 ```
 
-Note: The reference implementation defaults to a deterministic fake jury/judge (offline) so CI and local dry-runs never require API keys. Real-provider wiring is deferred to e2e tests/specs.
+Note: The reference implementation defaults to a deterministic fake jury/judge (offline) so CI and local runs never require API keys. Use `--live` to opt into real providers.
 
 Checkpoint note: accept either a raw SQLite file path or SQLAlchemy-style `sqlite:///...` and normalize internally.
 
