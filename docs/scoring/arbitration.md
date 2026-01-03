@@ -91,11 +91,11 @@ The judge is more expensive and slower than jurors:
 |--------|--------|-------|
 | Model | Mixed (GPT, Claude, Gemini) | Claude Opus (most capable) |
 | Cost | ~$0.05/dialogue | ~$0.50/item |
-| Purpose | Fast parallel scoring | Careful deliberation |
+| Purpose | Fast multi-juror scoring | Careful deliberation |
 
 Using the judge for every item would be:
 - 10x more expensive
-- Much slower (sequential vs. parallel)
+- Much slower (judge calls are per-item and synchronous)
 - Unnecessary when jurors agree
 
 The arbitration threshold (~30% of items) balances quality and cost.

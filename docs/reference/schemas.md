@@ -310,7 +310,7 @@ Public export format.
 | `severity_bucket` | `str` | Severity classification |
 | `client_qa_text` | `str` | Scoring text |
 | `juror_votes` | `dict[str, list[int]]` | All votes per item |
-| `arbitration_triggered` | `bool` | Judge invoked |
+| `arbitration_triggered` | `dict[str, bool]` | Per-item arbitration flags |
 | `run_id` | `str` | Run identifier |
 | `prompt_version` | `str` | Prompt version |
 

@@ -195,7 +195,8 @@ class DiagnosticReport(BaseModel):
 ```bash
 vibe-check diagnostics \
     --scored data/outputs/scored.jsonl \
-    --output data/outputs/diagnostics.json \
+    --output data/outputs/diagnostics.md \
+    --format markdown \
     --strict  # Exit non-zero if any gate fails
 ```
 
