@@ -25,16 +25,14 @@ Build a complete data pipeline that can:
 
 ### Critical Data Finding (Verified 2026-01-02)
 
-The `dataset_info.json` in `data/sqpsychconv/qwq/train/` confirms the master spec's warning:
+The qwen-2.5 variant has proper train/test splits:
 
 ```json
-"train": { "num_examples": 2090 },
-"test": { "num_examples": 2090 }
+"train": { "num_examples": 1837 },
+"test": { "num_examples": 253 }
 ```
 
-**Both splits have EXACTLY 2,090 examples** - they are duplicates! This is why SPEC-vibe-check.md Section 3.4 mandates "Trust No Split" and our deterministic `compute_split()` function is **non-negotiable**.
-
-This is not theoretical: in this repo, `data/sqpsychconv/train_sample.csv` and `data/sqpsychconv/test_sample.csv` are byte-for-byte identical in row order (2,090/2,090 overlapping `file_id`s and identical dialogue hashes).
+**Note**: The bugged `qwq` variant (now deleted) had 2090/2090 identical splits. We use `qwen-2.5` which has the proper 88/12 split. However, we still apply deterministic `compute_split()` for cross-validation purposes and to maintain a dev set (SPEC-vibe-check.md Section 3.4).
 
 ### Success Criteria
 
@@ -100,7 +98,7 @@ class SQPsychConvDialogue(BaseModel):
 
     file_id: str = Field(description="Unique identifier, e.g., 'active436'")
     condition: Literal["mdd", "control"] = Field(description="MDD or control group")
-    client_model: str = Field(description="Model used for client, e.g., 'qwq_qwen'")
+    client_model: str = Field(description="Model used for client, e.g., 'qwen25'")
     therapist_model: str = Field(description="Model used for therapist")
     dialogue: str = Field(description="Raw dialogue text with speaker labels")
 
@@ -311,8 +309,8 @@ def test_dialogue_valid():
     d = SQPsychConvDialogue(
         file_id="test123",
         condition="mdd",
-        client_model="qwq_qwen",
-        therapist_model="qwq_qwen",
+        client_model="qwen25",
+        therapist_model="qwen25",
         dialogue="Therapist: Hello\nClient: Hi"
     )
     assert d.file_id == "test123"
@@ -324,8 +322,8 @@ def test_dialogue_invalid_condition():
         SQPsychConvDialogue(
             file_id="test",
             condition="unknown",  # Must be mdd or control
-            client_model="qwq_qwen",
-            therapist_model="qwq_qwen",
+            client_model="qwen25",
+            therapist_model="qwen25",
             dialogue="Therapist: Hello\nClient: Hi",
         )
 ```

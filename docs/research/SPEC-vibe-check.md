@@ -193,6 +193,28 @@ def compute_split(file_id: str) -> str:
 
 **Output**: `corpus_integrity_manifest.json` with counts + warnings (no transcript text).
 
+### 3.5 Model Variant Selection
+
+SQPsychConv exists in 7 model variants (same 2,090 questionnaires, different LLM generators). Use `SQPsychConv_qwen-2.5` as the **primary corpus**:
+
+| Variant | Expert Score | Status |
+|---------|--------------|--------|
+| **qwen-2.5** | **16.29** | **PRIMARY** (highest quality) |
+| gemma | 16.14 | Backup (second highest) |
+| qwq | 15.71 | **AVOID** (train/test duplication bug) |
+| llama3, mistral, etc. | 12.57-14.86 | Deleted (lower quality) |
+
+**Rationale** (per 2025 synthetic data research):
+- Model capability matters more than model diversity
+- Multi-model mixing provides only marginal gains
+- Quality filtering on one good source beats unfiltered multi-source
+
+**Local Path**: `data/sqpsychconv/qwen-2.5/`
+
+**The qwq Bug**: Train and test splits are 100% identical (MD5: `e3ff92d039b8ee12fa2023fc4d3abfb3`). This was verified on 2026-01-02.
+
+See: `docs/data/DATASET-sqpsychconv-all-variants.md` for full variant documentation.
+
 ---
 
 ## 4. Definitive Architectural Decisions
@@ -1515,7 +1537,7 @@ Example:
 
 ```bash
 uv run python scripts/score_corpus.py \
-    --input AIMH/SQPsychConv_qwq \
+    --input data/sqpsychconv/qwen-2.5 \
     --limit 50 \
     --output data/outputs/scored_sqpsychconv_smoke.jsonl
 ```
@@ -1540,7 +1562,7 @@ If tuning is required, prefer one of:
 
 ```bash
 uv run python scripts/score_corpus.py \
-    --input AIMH/SQPsychConv_qwq \
+    --input data/sqpsychconv/qwen-2.5 \
     --output data/outputs/scored_sqpsychconv.jsonl
 ```
 

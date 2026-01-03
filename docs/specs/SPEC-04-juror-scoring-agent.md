@@ -33,8 +33,8 @@ from vibe_check.scoring import JurorScorer
 dialogue = SQPsychConvDialogue(
     file_id="active82",
     condition="mdd",
-    client_model="qwq_qwen",
-    therapist_model="qwq_qwen",
+    client_model="qwen25",
+    therapist_model="qwen25",
     dialogue="Therapist: ...\nClient: ...",
     computed_split="train",
 )
