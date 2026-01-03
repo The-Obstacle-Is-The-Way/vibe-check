@@ -139,6 +139,6 @@ Using fake jurors/judge:
 ## 6. Non-Goals
 
 - Transfer evaluation (happens in `ai-psychiatrist`, NOT vibe-check)
-- Producing or publishing embeddings until SQPsychConv license is confirmed
+- Embedding generation (happens in `ai-psychiatrist`, NOT vibe-check)
 
 > **CRITICAL: vibe-check NEVER touches real clinical data.** See SPEC-08 for export contract.

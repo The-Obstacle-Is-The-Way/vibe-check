@@ -9,7 +9,7 @@
 
 ## 1. Objective
 
-Implement a diagnostic pipeline that validates the scored SQPsychConv corpus **before** using it for downstream tasks (embeddings, transfer learning). This is the "Phase 0 Sanity Check" from the SSOT (Section 12.1).
+Implement a diagnostic pipeline that validates the scored SQPsychConv corpus **before** export. This is the "Phase 0 Sanity Check" from the SSOT (Section 12.1).
 
 Goals:
 1. **Inter-rater reliability**: Compute agreement metrics across 6 juror passes (3 models × 2 runs)
@@ -361,5 +361,6 @@ uv run python -m vibe_check.cli diagnostics \
 > **CRITICAL: vibe-check NEVER touches real clinical data.**
 >
 > - DAIC-WOZ evaluation happens in `ai-psychiatrist`, NOT vibe-check
-> - vibe-check's job ends at producing embeddings + labels from SQPsychConv
+> - vibe-check's job ends at producing labels from SQPsychConv
+> - Embedding generation happens in `ai-psychiatrist`
 > - See `_reference/ai-psychiatrist/` for the transfer evaluation pipeline
