@@ -100,7 +100,7 @@ def compute_krippendorff_alpha(
         level_of_measurement: "ordinal" for 0-3 scale
 
     Returns:
-        Alpha coefficient (0-1, higher = better agreement)
+        Alpha coefficient (-1 to 1, higher = better agreement; negative = worse than chance)
     """
     # Reshape to (n_units, n_raters) where n_units = dialogues × items
     n_dialogues, n_items, n_jurors = item_votes.shape
@@ -244,14 +244,16 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 class ReliabilityMetrics(BaseModel):
-    krippendorff_alpha: float = Field(ge=0.0, le=1.0)
+    # Krippendorff's alpha can be negative when agreement is worse than chance
+    krippendorff_alpha: float = Field(ge=-1.0, le=1.0)
     krippendorff_alpha_per_item: dict[str, float]
     icc_consistency: float
     icc_agreement: float
     icc_ci_95: tuple[float, float]
 
 class ConsistencyMetrics(BaseModel):
-    cronbach_alpha: float = Field(ge=0.0, le=1.0)
+    # Cronbach's alpha can be negative when items are negatively correlated
+    cronbach_alpha: float = Field(ge=-1.0, le=1.0)
     item_total_correlations: dict[str, float]
 
 class SeparationMetrics(BaseModel):
