@@ -274,6 +274,14 @@ def preprocess_dialogue(dialogue: SQPsychConvDialogue) -> DialogueViews:
     - For each contiguous block of client utterances
     - Include the single most recent therapist line once
     - Do NOT repeat therapist line before every client line
+
+    Deterministic hygiene (SQPsychConv-specific):
+    - Drop obvious generation artifacts even when they are speaker-labeled
+      (e.g., "Therapist:, no markdown..." or "Client: ... under 64 words ...").
+    - Trim/strip common meta-instruction suffixes and long bracketed guideline blobs.
+    - Drop absurdly long utterances (>4000 chars or >200 words) as likely artifacts.
+    - Any discarded/unknown-speaker content sets `has_unknown_speaker=True` so downstream
+      validation can quantify how often hygiene was needed (without storing text).
     """
 
 def parse_utterances(dialogue_text: str) -> list[tuple[str, str]]:
@@ -435,12 +443,13 @@ def test_condition_distribution():
 | Input | Expected Behavior |
 |-------|-------------------|
 | Empty dialogue | Flag `has_empty_client_text`, don't crash |
-| No "Client:" prefix | Flag `has_unknown_speaker`, attempt recovery |
+| No "Client:" prefix | Flag `has_unknown_speaker`, extract empty client views |
 | Unlabeled preamble/meta text | Exclude from views, flag `has_unknown_speaker` |
+| Speaker-labeled meta artifacts | Drop from views, flag `has_unknown_speaker` |
 | Therapist-only dialogue | `client_only_text` is empty, flagged |
 | Multiple colons in text | Only split on first colon after speaker |
 | Unicode/emoji in text | Preserve as-is |
-| Very long dialogue | No truncation (let LLM layer handle context limits) |
+| Absurdly long utterance | Drop as artifact (>4000 chars or >200 words), flag `has_unknown_speaker` |
 
 ### 6.2 Data Quality Edge Cases
 

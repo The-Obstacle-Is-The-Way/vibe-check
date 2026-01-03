@@ -12,6 +12,11 @@ if TYPE_CHECKING:
 
 _SPEAKER_RE = re.compile(r"^(?P<speaker>Therapist|Client)\s*:\s*(?P<text>.*)$", re.IGNORECASE)
 _OTHER_PREFIX_RE = re.compile(r"^\s*[^:]{1,32}\s*:\s+")
+_META_DOUBLEQUOTE_SUFFIX_RE = re.compile(
+    r'""\s+(?=(this|that|check|finalizing|putting|example|alright|ok|okay|need)\b)',
+    re.IGNORECASE,
+)
+_BRACKETED_RE = re.compile(r"\[(?P<inner>[^\[\]]+)\]")
 
 Speaker = Literal["therapist", "client"]
 
@@ -28,14 +33,75 @@ def parse_utterances_with_diagnostics(dialogue_text: str) -> tuple[list[tuple[Sp
     current_lines: list[str] = []
     had_unknown = False
 
+    def _strip_bracketed_meta(text: str) -> tuple[str, bool]:
+        """Remove long bracketed meta instructions while preserving short stage directions."""
+
+        def replace(match: re.Match[str]) -> str:
+            inner = match.group("inner")
+            lowered = inner.lower()
+            if len(inner) >= 200:
+                return ""
+            if any(
+                token in lowered
+                for token in ("guideline", "instructions", "the user", "format", "word limit")
+            ):
+                return ""
+            return match.group(0)
+
+        cleaned = _BRACKETED_RE.sub(replace, text)
+        return cleaned, cleaned != text
+
+    def _truncate_doublequote_suffix(text: str) -> tuple[str, bool]:
+        match = _META_DOUBLEQUOTE_SUFFIX_RE.search(text)
+        if match is None:
+            return text, False
+        return text[: match.start()].rstrip(), True
+
+    def _looks_like_meta(text: str) -> bool:
+        lowered = text.strip().lower()
+        if lowered.startswith(","):
+            return True
+        if "no markdown" in lowered:
+            return True
+        if "under 64 words" in lowered or "word limit" in lowered:
+            return True
+        if "check the guidelines" in lowered or "checks guidelines" in lowered:
+            return True
+        if "avoid repetition" in lowered:
+            return True
+        if "draft a response" in lowered:
+            return True
+        return "conversation history" in lowered or "the user" in lowered
+
+    def _sanitize_utterance_text(text: str) -> tuple[str, bool]:
+        """Strip obvious generation artifacts from speaker-labeled utterances."""
+        cleaned, had_meta = _strip_bracketed_meta(text.strip())
+        cleaned, truncated = _truncate_doublequote_suffix(cleaned)
+        had_meta = had_meta or truncated
+        cleaned = cleaned.strip()
+        if not cleaned:
+            return "", had_meta
+
+        if _looks_like_meta(cleaned):
+            return "", True
+
+        if len(cleaned) > 4000 or _word_count(cleaned) > 200:
+            return "", True
+
+        return cleaned, had_meta
+
     def flush() -> None:
-        nonlocal current_speaker, current_lines
+        nonlocal current_speaker, current_lines, had_unknown
         if current_speaker is None:
             current_lines = []
             return
         text = "\n".join(current_lines).strip()
         if text:
-            utterances.append((current_speaker, text))
+            cleaned, had_meta = _sanitize_utterance_text(text)
+            if had_meta:
+                had_unknown = True
+            if cleaned:
+                utterances.append((current_speaker, cleaned))
         current_speaker = None
         current_lines = []
 

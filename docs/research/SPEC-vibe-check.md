@@ -178,9 +178,10 @@ def compute_split(file_id: str) -> str:
 
 **Corpus Integrity Checks** (run before scoring):
 - `file_id` uniqueness: 0 duplicates allowed
-- Dialogue deduplication: SHA256 hash of `dialogue_clean`
+- Dialogue deduplication: SHA256 hash of `dialogue_clean` (after deterministic view extraction / artifact stripping)
 - Split leakage check: train ∩ test = ∅
-- Near-duplicate detection: MinHash/LSH for high-similarity pairs
+- Generation-artifact stripping: drop obvious instruction/meta blobs even when they are speaker-labeled; record counts-only flags (e.g., unknown-speaker/cleanup needed)
+- (Optional, deferred) Near-duplicate detection: MinHash/LSH for high-similarity pairs
 
 **Output**: `corpus_integrity_manifest.json` with counts + warnings (no transcript text).
 
