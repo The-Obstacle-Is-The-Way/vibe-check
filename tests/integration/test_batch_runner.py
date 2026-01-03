@@ -21,6 +21,7 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
         limit=5,
         prompt_version="v1",
         dialogue_view="client_qa",
+        dry_run=True,  # Use deterministic fakes for CI
     )
 
     scored_path = output_dir / "scored.jsonl"
@@ -45,6 +46,7 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
         limit=5,
         prompt_version="v1",
         dialogue_view="client_qa",
+        dry_run=True,  # Use deterministic fakes for CI
     )
 
     attempts_after = {file_id: ledger.get_attempts(file_id) for file_id in ledger.list_all()}

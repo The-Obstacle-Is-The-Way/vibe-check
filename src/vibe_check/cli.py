@@ -33,6 +33,11 @@ def build_parser() -> argparse.ArgumentParser:
     score.add_argument(
         "--max-concurrency", type=int, default=1, help="Max concurrency for graph execution."
     )
+    score.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Use deterministic fake jurors (no API calls). For testing/CI.",
+    )
     return parser
 
 
@@ -49,6 +54,7 @@ def main(argv: list[str] | None = None) -> int:
             prompt_version=args.prompt_version,
             dialogue_view=args.dialogue_view,
             max_concurrency=args.max_concurrency,
+            dry_run=args.dry_run,
         )
         return 0
 

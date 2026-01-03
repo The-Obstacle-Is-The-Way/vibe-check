@@ -107,8 +107,25 @@ def score_corpus(
     dialogue_view: DialogueViewName = "client_qa",
     max_concurrency: int = 1,
     fail_fast: bool = False,
+    dry_run: bool = False,
+    jurors: list[Any] | None = None,
+    judge_item: Any | None = None,
 ) -> None:
-    """Score a corpus and write outputs to disk, safe to resume."""
+    """Score a corpus and write outputs to disk, safe to resume.
+
+    Args:
+        input_path: Path to HF dataset dir or CSV.
+        output_dir: Output directory for ledger, rows, JSONL.
+        checkpoint_db: SQLite checkpoint DB (path or sqlite:///...).
+        limit: Limit number of dialogues (debug).
+        prompt_version: Prompt version label to embed in outputs.
+        dialogue_view: Which deterministic view to score.
+        max_concurrency: Max concurrency for graph execution.
+        fail_fast: Raise on first failure instead of continuing.
+        dry_run: Use deterministic fake jurors (no API calls). Default False.
+        jurors: Optional pre-built jurors. If None and not dry_run, builds from Settings.
+        judge_item: Optional pre-built judge function. If None and not dry_run, builds from Settings.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
 
     corpus = load_corpus(input_path)
@@ -118,8 +135,27 @@ def score_corpus(
     ledger = JobLedger(output_dir / "ledger.sqlite")
     ledger.initialize([d.file_id for d in corpus])
 
-    jurors = _default_fake_jury()
-    graph = build_single_dialogue_graph(jurors=jurors, judge_item=deterministic_fake_judge_item)
+    # Resolve jurors and judge_item via dependency injection or factory
+    if jurors is None or judge_item is None:
+        from vibe_check.run.factory import (
+            build_fake_judge_item,
+            build_fake_jury,
+            build_real_judge_item,
+            build_real_jury,
+        )
+        from vibe_check.settings import Settings
+
+        if dry_run:
+            jurors = jurors or build_fake_jury()
+            judge_item = judge_item or build_fake_judge_item()
+        else:
+            settings = Settings()
+            jurors = jurors or build_real_jury(settings, prompt_version=prompt_version)
+            judge_item = judge_item or build_real_judge_item(
+                settings, prompt_version=prompt_version
+            )
+
+    graph = build_single_dialogue_graph(jurors=jurors, judge_item=judge_item)
 
     from langgraph.checkpoint.sqlite import SqliteSaver
 
