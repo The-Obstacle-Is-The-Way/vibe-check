@@ -170,6 +170,28 @@ def arbitrate_node(state: ScoringState) -> dict:
             state["prompt_version"],
         )
 
+    # Aggregate judge token usage across all contested items
+    t_input = 0
+    t_output = 0
+    t_reasoning = 0
+    t_total = 0
+    for resolution in resolutions.values():
+        if resolution.usage:
+            t_input += resolution.usage.input_tokens or 0
+            t_output += resolution.usage.output_tokens or 0
+            t_reasoning += resolution.usage.reasoning_tokens or 0
+            t_total += resolution.usage.total_tokens or 0
+    judge_usage = (
+        TokenUsage(
+            input_tokens=t_input,
+            output_tokens=t_output,
+            reasoning_tokens=t_reasoning,
+            total_tokens=t_total,
+        )
+        if (t_input or t_output or t_reasoning or t_total)
+        else None
+    )
+
     # Update final scores with judge decisions
     final_item_scores = dict(agg.final_item_scores)
     for item, resolution in resolutions.items():
@@ -183,6 +205,7 @@ def arbitrate_node(state: ScoringState) -> dict:
             "final_severity_bucket": get_severity_bucket(final_total_score),
             "final_source": "judge_override",
             "judge_resolution": {k: v.model_dump() for k, v in resolutions.items()},
+            "judge_usage": judge_usage,
         }
     )
     return {"final_output": updated, "needs_arbitration": False}
@@ -226,7 +249,7 @@ async with open_async_sqlite_saver(checkpoint_path) as saver:
 Each dialogue uses its `file_id` as the thread ID:
 
 ```python
-config = {"configurable": {"thread_id": file_id}}
+config = {"configurable": {"thread_id": file_id}, "max_concurrency": max_concurrency}
 ```
 
 This ensures:

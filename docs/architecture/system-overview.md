@@ -76,7 +76,7 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 │         │     │  For each contested item:                 │     │
 │         │     │    1. Collect all juror evidence          │     │
 │         │     │    2. Send to Judge (Claude Opus)         │     │
-│         │     │    3. Receive JudgeItemResolution         │     │
+│         │     │    3. Receive JudgeItemReport             │     │
 │         │     │    4. Override final_item_scores[item]    │     │
 │         │     └───────────────────────────────────────────┘     │
 │         │           │                                           │
@@ -116,7 +116,7 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 | **Preprocessing** | Raw dialogue | DialogueViews | `preprocessing/extractor.py` |
 | **Jury** | scoring_text | 6 × PHQ8Report | `scoring/juror.py` |
 | **Aggregation** | PHQ8Reports | AggregatedPHQ8 | `aggregation/aggregate.py` |
-| **Judge** | Contested items | JudgeItemResolution | `judge/agent.py` |
+| **Judge** | Contested items | JudgeItemReport | `judge/agent.py` |
 | **Diagnostics** | scored.jsonl | DiagnosticReport | `diagnostics/runner.py` |
 | **Export** | scored.jsonl | vibe_check_labels.jsonl | `export/writer.py` |
 
@@ -138,6 +138,8 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 |------|---------|-----------|
 | `scored.jsonl` | Full scoring records | Internal |
 | `run_manifest.json` | Run metadata | Internal |
+| `ledger.sqlite` | Job status + token ledger | Internal |
+| `rows/` | Per-dialogue JSON rows | Internal |
 | `data/checkpoints/vibe_check.db` | LangGraph checkpoints | Temporary |
 | `vibe_check_labels.jsonl` | Public export | Permanent |
 | `vibe_check_labels.csv` | Alternative format | Permanent |

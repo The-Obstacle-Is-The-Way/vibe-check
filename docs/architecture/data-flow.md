@@ -187,6 +187,7 @@ class AggregatedPHQ8(BaseModel):
     # Provenance
     juror_reports: list[PHQ8Report]        # All 6 juror outputs
     judge_resolution: dict[str, Any] | None  # Judge decisions if arbitrated
+    judge_usage: TokenUsage | None          # Aggregated judge token usage (if arbitrated)
 
     prompt_version: str
     scored_at: datetime
@@ -213,7 +214,7 @@ class ItemAggregation(BaseModel):
 
 **Input**: Contested item + evidence
 
-**Output**: `JudgeItemResolution`
+**Output**: `JudgeItemReport`
 
 ```
 AggregatedPHQ8 (with arbitration_items)
@@ -230,13 +231,13 @@ For each contested item:
   Judge LLM
       │
       ▼
-JudgeItemResolution
+JudgeItemReport
       │
       ▼
 Update final_item_scores
 ```
 
-### Schema: JudgeItemResolution
+### Schema: JudgeItemReport
 
 ```python
 class JudgeItemResolution(BaseModel):
@@ -244,6 +245,10 @@ class JudgeItemResolution(BaseModel):
     final_score: Literal[0, 1, 2, 3]  # PHQ-8 score
     confidence: float               # 0.0-1.0
     rationale: str                  # Explanation
+
+
+class JudgeItemReport(JudgeItemResolution):
+    usage: TokenUsage | None = None  # Token usage metadata (if available)
 ```
 
 ---
