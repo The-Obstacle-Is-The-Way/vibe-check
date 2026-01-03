@@ -9,7 +9,7 @@ description = "Multi-agent PHQ-8 scoring for synthetic therapy dialogues"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
-authors = [{ name = "CLARITY-DIGITAL-TWIN" }]
+authors = [{ name = "The-Obstacle-Is-The-Way" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
