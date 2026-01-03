@@ -33,7 +33,7 @@ The qwen-2.5 variant has proper train/test splits:
 "test": { "num_examples": 253 }
 ```
 
-**Note**: The bugged `qwq` variant (now deleted) had 2090/2090 identical splits. We use `qwen-2.5` which has the proper 88/12 split. However, we still apply deterministic `compute_split()` for cross-validation purposes and to maintain a dev set (SPEC-vibe-check.md Section 3.4).
+**Note**: The bugged `qwq` variant (now deleted) had 2090/2090 identical splits. We use `qwen-2.5` which has the proper 88/12 split. However, we still apply deterministic `compute_split()` for cross-validation purposes and to maintain a dev set (spec-vibe-check.md Section 3.4).
 
 ### Success Criteria
 

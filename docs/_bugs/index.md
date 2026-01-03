@@ -8,7 +8,7 @@ No open bugs.
 
 ## Archived Bugs
 
-All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/INDEX.md).
+All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 
 | Range | Count | Description |
 |-------|-------|-------------|

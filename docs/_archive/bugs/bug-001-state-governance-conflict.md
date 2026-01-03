@@ -11,9 +11,9 @@ The SSOT previously defined LangGraph `ScoringState` with raw `dialogue` / `scor
 
 ## Evidence
 
-- Governance rule: `docs/research/SPEC-vibe-check.md:145` (checkpoint DB must not contain raw transcript text)
-- Conflicting state definition (historical): `docs/research/SPEC-vibe-check.md:263` (previously included `dialogue` and `scoring_text`)
-- Batch map-reduce example (historical): `docs/research/SPEC-vibe-check.md:403` (previously fanned out `{file_id, dialogue}`)
+- Governance rule: `docs/research/spec-vibe-check.md:145` (checkpoint DB must not contain raw transcript text)
+- Conflicting state definition (historical): `docs/research/spec-vibe-check.md:263` (previously included `dialogue` and `scoring_text`)
+- Batch map-reduce example (historical): `docs/research/spec-vibe-check.md:403` (previously fanned out `{file_id, dialogue}`)
 
 ## Impact
 
@@ -27,6 +27,6 @@ The SSOT previously defined LangGraph `ScoringState` with raw `dialogue` / `scor
 
 ## Resolution
 
-**REVERTED** by `docs/research/SPEC-REVISION-synthetic-data-simplification.md`.
+**REVERTED** by `docs/research/spec-revision-synthetic-data-simplification.md`.
 
 SQPsychConv is synthetic data with no PHI. The original constraint was unnecessary "privacy theater". We have restored `dialogue` and `scoring_text` to the `ScoringState` to simplify the architecture (operational hygiene). Checkpointing synthetic text is acceptable.

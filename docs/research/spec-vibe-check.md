@@ -213,7 +213,7 @@ SQPsychConv exists in 7 model variants (same 2,090 questionnaires, different LLM
 
 **The qwq Bug**: Train and test splits are 100% identical (MD5: `e3ff92d039b8ee12fa2023fc4d3abfb3`). This was verified on 2026-01-02.
 
-See: `docs/data/DATASET-sqpsychconv-all-variants.md` for full variant documentation.
+See: `docs/data/dataset-sqpsychconv-all-variants.md` for full variant documentation.
 
 ---
 

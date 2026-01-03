@@ -12,7 +12,7 @@ status: fixed
 ## Evidence
 
 - Evidence fields exist in schemas: `src/vibe_check/schemas/scoring.py:14`
-- Operational hygiene recommends bounded snippets (not full transcript/views): `docs/research/SPEC-vibe-check.md:145`
+- Operational hygiene recommends bounded snippets (not full transcript/views): `docs/research/spec-vibe-check.md:145`
 
 ## Impact
 

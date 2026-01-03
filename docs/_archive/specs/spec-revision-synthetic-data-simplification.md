@@ -37,7 +37,7 @@ This document simplifies the project to reduce complexity, improve developer exp
 
 ## 3. Current Over-Engineering (The "Privacy Theater")
 
-### 3.1 In the SSOT (`docs/research/SPEC-vibe-check.md`)
+### 3.1 In the SSOT (`docs/research/spec-vibe-check.md`)
 
 | Section | Current Requirement | Problem |
 |---------|---------------------|---------|
@@ -47,14 +47,14 @@ This document simplifies the project to reduce complexity, improve developer exp
 | 4.3 ScoringState | Removed `dialogue` from state to avoid checkpoint leakage | No leakage concern; makes state management harder. |
 | 4.4 BatchState | Fan-out by `file_id` only, reload text ephemerally | Unnecessary I/O indirection. |
 
-### 3.2 In SPEC-04 (`docs/specs/SPEC-04-juror-scoring-agent.md`)
+### 3.2 In SPEC-04 (`docs/specs/spec-04-juror-scoring-agent.md`)
 
 | Section | Current Requirement | Problem |
 |---------|---------------------|---------|
 | 2.4 Security | `SensitiveString` + safe logging helpers | **Not implemented yet**, and should not be. |
 | Goal #5 | "Never logs raw transcript text (data governance)" | Over-scoped. Debug logging is fine and useful. |
 
-### 3.3 In SPEC-05 (`docs/specs/SPEC-05-consensus-orchestration.md`)
+### 3.3 In SPEC-05 (`docs/specs/spec-05-consensus-orchestration.md`)
 
 | Section | Current Requirement | Problem |
 |---------|---------------------|---------|
@@ -97,7 +97,7 @@ This document simplifies the project to reduce complexity, improve developer exp
 
 ## 5. Approved Changes
 
-### 5.1 SSOT Revisions (`docs/research/SPEC-vibe-check.md`)
+### 5.1 SSOT Revisions (`docs/research/spec-vibe-check.md`)
 
 **Section 3.3 - Rename and Reframe**
 
@@ -164,10 +164,10 @@ These are NOT changing:
 
 ### Phase 1: Documentation Cleanup
 
-- [ ] Update `docs/research/SPEC-vibe-check.md` Section 3.3 (reframe as operational hygiene).
-- [ ] Update `docs/research/SPEC-vibe-check.md` Section 4.3 (restore dialogue to state).
-- [ ] Update `docs/specs/SPEC-04-juror-scoring-agent.md` (remove SensitiveString).
-- [ ] Update `docs/specs/SPEC-05-consensus-orchestration.md` (restore dialogue to state).
+- [ ] Update `docs/research/spec-vibe-check.md` Section 3.3 (reframe as operational hygiene).
+- [ ] Update `docs/research/spec-vibe-check.md` Section 4.3 (restore dialogue to state).
+- [ ] Update `docs/specs/spec-04-juror-scoring-agent.md` (remove SensitiveString).
+- [ ] Update `docs/specs/spec-05-consensus-orchestration.md` (restore dialogue to state).
 
 ### Phase 2: Code Implementation
 

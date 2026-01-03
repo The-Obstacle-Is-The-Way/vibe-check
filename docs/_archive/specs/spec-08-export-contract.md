@@ -162,7 +162,7 @@ Note: the reference implementation enforces `dialogue_view="client_qa"` for expo
 
 > **DO NOT add embedding code to vibe-check.**
 >
-> The original SPEC-vibe-check.md included embedding generation as "Phase 2".
+> The original spec-vibe-check.md included embedding generation as "Phase 2".
 > This was SCOPE CREEP. Embeddings belong in ai-psychiatrist where:
 > - The retrieval infrastructure already exists
 > - DAIC-WOZ evaluation happens (locally)

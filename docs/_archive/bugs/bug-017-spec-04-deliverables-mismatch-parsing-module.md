@@ -8,7 +8,7 @@
 
 ## Summary
 
-`docs/specs/SPEC-04-juror-scoring-agent.md` lists `src/vibe_check/scoring/parsing.py` as a required deliverable for robust parsing + canonicalization.
+`docs/specs/spec-04-juror-scoring-agent.md` lists `src/vibe_check/scoring/parsing.py` as a required deliverable for robust parsing + canonicalization.
 
 Current implementation uses PydanticAI structured outputs (`output_type=PHQ8Assessment`) and does not include a dedicated parsing module.
 

@@ -2,7 +2,7 @@
 
 **Date**: 2026-01-02
 **Status**: RESOLVED (Cleanup Executed)
-**Affects**: SPEC-vibe-check.md, SPEC-02-data-pipeline.md
+**Affects**: spec-vibe-check.md, spec-02-data-pipeline.md
 **Priority**: HIGH - Discovered during dataset analysis
 **Research Basis**: 2025/2026 synthetic data best practices (see Section 9)
 
@@ -102,7 +102,7 @@ Likely a dataset upload error by AIMH. All other variants have proper splits.
 | Unique dialogues | 2,090 | 2,090 |
 | file_ids | Same | Same |
 
-**Action**: Update `SPEC-02-data-pipeline.md` to specify `qwen-2.5` as the **sole** corpus.
+**Action**: Update `spec-02-data-pipeline.md` to specify `qwen-2.5` as the **sole** corpus.
 
 ### 4.2 Why NOT Multi-Variant Ensemble?
 
@@ -150,7 +150,7 @@ For vibe-check's use case (scoring conversations → exporting labels), **single
 
 ## 5. Spec Updates Required
 
-### 5.1 SPEC-vibe-check.md (Master Spec)
+### 5.1 spec-vibe-check.md (Master Spec)
 
 **Section 3.4 (Corpus Integrity)**: Add model variant selection guidance.
 
@@ -167,7 +167,7 @@ Avoid `SQPsychConv_qwq` despite similar naming:
 - Lower quality score (15.71)
 ```
 
-### 5.2 SPEC-02-data-pipeline.md
+### 5.2 spec-02-data-pipeline.md
 
 **Update HuggingFace source**:
 
@@ -224,7 +224,7 @@ We caught this before production scoring. The fix is a path change, not an archi
 
 **Action Item**: Contact AIMH authors about the qwq duplication bug.
 
-Draft email included in `docs/data/DATASET-sqpsychconv-qwq.md`.
+Draft email included in `docs/data/dataset-sqpsychconv-qwq.md`.
 
 ---
 
