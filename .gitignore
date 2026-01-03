@@ -231,5 +231,9 @@ __marimo__/
 data/checkpoints/
 data/outputs/
 
+# Test artifacts (SQLite checkpoint DBs)
+test_checkpoint.sqlite
+*.checkpoint.sqlite
+
 # Local secrets
 .secrets/
