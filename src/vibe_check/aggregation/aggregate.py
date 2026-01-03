@@ -14,33 +14,13 @@ from vibe_check.aggregation.posterior import (
     compute_item_posterior,
     convolve_posteriors,
 )
+from vibe_check.constants import PHQ8_ITEMS, SEVERITY_BUCKETS, SeverityBucket
 from vibe_check.schemas.output import AggregatedPHQ8, ItemAggregation
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from vibe_check.schemas.scoring import PHQ8Report
-
-PHQ8_ITEMS: list[str] = [
-    "anhedonia",
-    "depressed_mood",
-    "sleep",
-    "fatigue",
-    "appetite",
-    "guilt",
-    "concentration",
-    "psychomotor",
-]
-
-SeverityBucket = Literal["0-4", "5-9", "10-14", "15-19", "20-24"]
-
-SEVERITY_BUCKETS: dict[SeverityBucket, tuple[int, int]] = {
-    "0-4": (0, 4),
-    "5-9": (5, 9),
-    "10-14": (10, 14),
-    "15-19": (15, 19),
-    "20-24": (20, 24),
-}
 
 
 def aggregate_votes(
@@ -111,7 +91,8 @@ def _select_bucket(severity_probs: dict[str, float]) -> SeverityBucket:
     return cast("SeverityBucket", bucket)
 
 
-def _bucket_for_total(total_score: int) -> SeverityBucket:
+def get_severity_bucket(total_score: int) -> SeverityBucket:
+    """Get the severity bucket for a given total score."""
     for bucket, (lo, hi) in SEVERITY_BUCKETS.items():
         if lo <= total_score <= hi:
             return bucket
@@ -179,7 +160,7 @@ def aggregate_reports(
         severity_bucket_probs=severity_probs,
         final_item_scores=final_item_scores,
         final_total_score=final_total_score,
-        final_severity_bucket=_bucket_for_total(final_total_score),
+        final_severity_bucket=get_severity_bucket(final_total_score),
         final_source="jury_mode",
         triggered_arbitration=bool(arbitration_items),
         arbitration_items=arbitration_items,

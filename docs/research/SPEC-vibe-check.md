@@ -59,7 +59,7 @@ The system literally checks the "vibe" of therapy conversations to assess mental
 |------|-------|----------|----------|----------------------|
 | **Juror A** | GPT-5.2 Thinking | `gpt-5.2` | OpenAI | $1.25 / $10.00† |
 | **Juror B** | Claude Sonnet 4.5 | `claude-sonnet-4-5-20250929` | Anthropic | $3.00 / $15.00 |
-| **Juror C** | Gemini 3 Flash | `gemini-3-flash-preview` | Google | $0.50 / $3.00 |
+| **Juror C** | Gemini 3 Pro | `gemini-3-pro-preview` | Google | $1.25 / $5.00 |
 | **Judge** | Claude Opus 4.5 | `claude-opus-4-5-20251101` | Anthropic | $5.00 / $25.00 |
 
 **†Hidden Reasoning Tokens Warning**: GPT-5.2 Thinking uses adaptive reasoning that generates hidden chain-of-thought tokens. These tokens are **billed as output tokens but not visible via the API**. Clinical assessments may consume 2,000+ hidden tokens per call. Budget accordingly (see Section 2.3).
@@ -81,13 +81,13 @@ The system literally checks the "vibe" of therapy conversations to assess mental
 - 0% error rate on internal code editing benchmarks (down from 9%)
 - Knowledge cutoff: July 2025
 
-**Gemini 3 Flash** (Dec 2025):
+**Gemini 3 Pro** (Dec 2025):
 
+- Google's most advanced reasoning model
 - 90.4% on GPQA Diamond (PhD-level reasoning)
-- 78% on SWE-bench Verified (outperforms even Gemini 3 Pro for coding)
 - Thinking level parameter (minimal/low/medium/high) for cost control
 - 1M token context window
-- **Cheapest frontier model** - $0.50/$3 per M tokens
+- Superior clinical reasoning capabilities vs Flash
 - Knowledge cutoff: January 2025
 
 **Claude Opus 4.5** (Judge):
@@ -104,10 +104,10 @@ The system literally checks the "vibe" of therapy conversations to assess mental
 |-----------|-------------|----------------|-------------------|------|
 | GPT-5.2 (2 runs × 2,090) | 4,180 calls | 2.5K in / 1K out | +2K hidden out | ~$105† |
 | Sonnet 4.5 (2 runs × 2,090) | 4,180 calls | 2.5K in / 1K out | N/A | ~$38 |
-| Gemini 3 Flash (2 runs × 2,090) | 4,180 calls | 2.5K in / 1K out | N/A | ~$6 |
+| Gemini 3 Pro (2 runs × 2,090) | 4,180 calls | 2.5K in / 1K out | N/A | ~$26 |
 | Opus 4.5 Judge (~20% arbitration) | ~830 calls | 3K in / 1.5K out | N/A | ~$15 |
-| **Total (one pass)** | | | | **~$165** |
-| **With batch discounts (~50%)** | | | | **~$85** |
+| **Total (one pass)** | | | | **~$185** |
+| **With batch discounts (~50%)** | | | | **~$95** |
 
 †GPT-5.2 hidden token estimate: 2,000 reasoning tokens × $10/1M × 4,180 calls = ~$84 additional. Actual costs vary by task complexity—clinical assessments are reasoning-heavy.
 
@@ -261,7 +261,7 @@ claude_agent = Agent(
 )
 
 gemini_agent = Agent(
-    "google:gemini-3-flash-preview",
+    "google:gemini-3-pro-preview",
     output_type=PHQ8Report,
     system_prompt="You are scoring PHQ-8...",
 )
@@ -630,13 +630,13 @@ If you embed just "Terrible", the vector has no semantic connection to "Sleep" o
 
 #### 5.3.1.1 Contextualized Rewriting (Optional, Best Quality)
 
-For highest embedding quality, use a cheap model (Gemini Flash) to rewrite client responses with context:
+For highest embedding quality, use a model (Gemini Pro) to rewrite client responses with context:
 
 ```python
 async def contextualize_utterance(
     therapist_question: str,
     client_response: str,
-    model: str = "gemini-3-flash-preview"
+    model: str = "gemini-3-pro-preview"
 ) -> str:
     """Rewrite client response with embedded context.
 
@@ -655,7 +655,7 @@ async def contextualize_utterance(
     return await call_model(prompt, model)
 ```
 
-**Cost**: ~$5 for 2,090 dialogues at ~1K tokens each with Gemini Flash ($0.50/1M in).
+**Cost**: ~$13 for 2,090 dialogues at ~1K tokens each with Gemini Pro ($1.25/1M in, $5/1M out).
 
 Deterministic rule for `client_qa_text`:
 
@@ -922,7 +922,7 @@ You are a senior clinical psychologist arbitrating a disagreement between three 
 ## Scorer Outputs:
 - GPT-5.2: Score {gpt_score}, Evidence: "{gpt_evidence}"
 - Claude Sonnet 4.5: Score {claude_score}, Evidence: "{claude_evidence}"
-- Gemini 3 Flash: Score {gemini_score}, Evidence: "{gemini_evidence}"
+- Gemini 3 Pro: Score {gemini_score}, Evidence: "{gemini_evidence}"
 
 ## Client Transcript (relevant excerpt):
 {transcript_excerpt}
@@ -1396,7 +1396,7 @@ GOOGLE_API_KEY=AI...
 # ─────────────────────────────────────────────────────────────
 JUROR_GPT_MODEL=gpt-5.2
 JUROR_CLAUDE_MODEL=claude-sonnet-4-5-20250929
-JUROR_GEMINI_MODEL=gemini-3-flash-preview
+JUROR_GEMINI_MODEL=gemini-3-pro-preview
 JUDGE_MODEL=claude-opus-4-5-20251101
 
 # ─────────────────────────────────────────────────────────────
@@ -1462,7 +1462,7 @@ class Settings(BaseSettings):
     # Models
     juror_gpt_model: str = "gpt-5.2"
     juror_claude_model: str = "claude-sonnet-4-5-20250929"
-    juror_gemini_model: str = "gemini-3-flash-preview"
+    juror_gemini_model: str = "gemini-3-pro-preview"
     judge_model: str = "claude-opus-4-5-20251101"
 
     # Scoring
@@ -1760,7 +1760,7 @@ uv run python scripts/score_corpus.py --retry-failed --error-code rate_limit
 | **Prompt leakage (therapist protocol bias)** | Use bias-aware dialogue views (`client_qa` for embeddings; `client_qa` for scoring); run required ablations |
 | **Semantic void (embeddings)** | Use `client_qa` or `client_contextualized` for embeddings (Section 5.3.1) |
 | **Synthetic circularity** | Cross-vendor scorers; validate on DAIC-WOZ |
-| **Cost overrun** | Hidden token budget (Section 2.3); Gemini 3 Flash is cheapest; batch API discounts |
+| **Cost overrun** | Hidden token budget (Section 2.3); batch API discounts |
 | **Redistribution/license risk** | Data Governance section (Section 3); SQPsychConv license UNKNOWN until author confirmation |
 | **File descriptor exhaustion** | Global semaphore (Section 4.4); MAX_CONCURRENT_DIALOGUES=50 |
 | **Hidden thinking tokens** | 3x budget multiplier for GPT-5.2 (Section 2.3) |
@@ -1834,7 +1834,7 @@ uv run python scripts/score_corpus.py --retry-failed --error-code rate_limit
 
 - [GPT-5.2 Introduction (OpenAI, Dec 2025)](https://openai.com/index/introducing-gpt-5-2/)
 - [Claude Sonnet 4.5 (Anthropic, Sep 2025)](https://www.anthropic.com/news/claude-sonnet-4-5)
-- [Gemini 3 Flash (Google, Dec 2025)](https://blog.google/products/gemini/gemini-3-flash/)
+- [Gemini 3 Pro (Google, Dec 2025)](https://deepmind.google/models/gemini/pro/)
 
 ### Technical Documentation
 

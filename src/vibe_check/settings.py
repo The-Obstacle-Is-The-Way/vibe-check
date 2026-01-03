@@ -1,4 +1,4 @@
-"""Runtime settings (API keys, model IDs) loaded from environment."""
+"""Runtime settings (API keys, model IDs, thresholds) loaded from environment."""
 
 from __future__ import annotations
 
@@ -8,27 +8,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Environment-based configuration.
-
-    This project keeps provider SDKs optional and expects API keys to be supplied
-    via environment variables or a local `.env` file (never committed).
-
-    All fields with defaults are optional; only API keys are required for real scoring.
-    """
+    """Environment-based configuration (SSOT Section 11.2)."""
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    # API Keys (required for real scoring, optional for dry-run)
+    # API Keys
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
     google_api_key: str | None = None
 
-    # Juror Models (January 2026 frontier models per SSOT)
+    # Model Selection (January 2026 Frontier)
     juror_gpt_model: str = "gpt-5.2"
     juror_claude_model: str = "claude-sonnet-4-5-20250929"
-    juror_gemini_model: str = "gemini-3-flash-preview"
-
-    # Judge Model
+    juror_gemini_model: str = "gemini-3-pro-preview"
     judge_model: str = "claude-opus-4-5-20251101"
 
     # Scoring Configuration
@@ -39,9 +31,14 @@ class Settings(BaseSettings):
 
     # Preprocessing
     scoring_dialogue_view: Literal["client_qa", "client_only"] = "client_qa"
+    embedding_dialogue_view: Literal["client_qa", "client_contextualized", "client_only"] = (
+        "client_qa"
+    )
 
-    # Concurrency and Rate Limiting
+    # Concurrency
     max_concurrent_dialogues: int = 50
+
+    # Rate Limiting (RPM)
     openai_rpm: int = 100
     anthropic_rpm: int = 60
     google_rpm: int = 100
@@ -51,4 +48,4 @@ class Settings(BaseSettings):
 
     # Output
     output_dir: str = "./data/outputs"
-    prompt_version: str = "v1"
+    prompt_version: str = "v1.0.0"

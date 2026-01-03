@@ -786,7 +786,7 @@ def create_mock_report(
 
     No LLM calls - just structured test data.
     """
-    model_ids = ["gpt-5.2", "gpt-5.2", "claude-sonnet", "claude-sonnet", "gemini-flash", "gemini-flash"]
+    model_ids = ["gpt-5.2", "gpt-5.2", "claude-sonnet", "claude-sonnet", "gemini-pro", "gemini-pro"]
     run_numbers = [1, 2, 1, 2, 1, 2]
 
     # Default scores (moderate consensus)

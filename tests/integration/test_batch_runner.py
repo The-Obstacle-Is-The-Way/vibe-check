@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING
 
+from vibe_check.run.factory import build_fake_judge_item, build_fake_jury
 from vibe_check.run.ledger import JobLedger
 from vibe_check.run.runner import score_corpus
 
@@ -21,7 +22,8 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
         limit=5,
         prompt_version="v1",
         dialogue_view="client_qa",
-        dry_run=True,  # Use deterministic fakes for CI
+        jurors=build_fake_jury(),
+        judge_item=build_fake_judge_item(),
     )
 
     scored_path = output_dir / "scored.jsonl"
@@ -46,7 +48,8 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
         limit=5,
         prompt_version="v1",
         dialogue_view="client_qa",
-        dry_run=True,  # Use deterministic fakes for CI
+        jurors=build_fake_jury(),
+        judge_item=build_fake_judge_item(),
     )
 
     attempts_after = {file_id: ledger.get_attempts(file_id) for file_id in ledger.list_all()}

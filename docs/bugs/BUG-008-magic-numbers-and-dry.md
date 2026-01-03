@@ -1,7 +1,8 @@
 ---
 severity: P3
-status: partially_fixed
+status: fixed
 acknowledged_date: 2026-01-02
+resolution_date: 2026-01-02
 ---
 
 # BUG-008: Magic numbers, hardcoded defaults, and DRY violations
@@ -30,12 +31,12 @@ Multiple files contain "magic numbers" (thresholds, defaults) and repeated const
 2. Move all scoring thresholds (alpha, std dev limit) to `Settings` (BUG-007).
 3. Update consumers to import from the single source of truth.
 
-## Partial Resolution (2026-01-02)
+## Resolution (2026-01-02)
 
 **Fixed**:
-- Added `dirichlet_alpha`, `disagreement_range_threshold`, `arbitration_total_std_threshold` to `Settings` (BUG-007 fix).
-
-**Remaining**:
-- `PHQ8_ITEMS` defined in both `scoring/parsing.py` and `aggregation/aggregate.py`
-- `SEVERITY_BUCKETS` logic duplicated in `graph/single_dialogue.py`
-- These are P3 and can be addressed in a future cleanup pass.
+- **Thresholds**: Added `dirichlet_alpha`, `disagreement_range_threshold`, `arbitration_total_std_threshold` to `Settings` (BUG-007 fix).
+- **Constants**: `PHQ8_ITEMS` and `SEVERITY_BUCKETS` are now centralized in `src/vibe_check/constants.py`.
+- **DRY Cleanup**:
+    - Deleted `src/vibe_check/scoring/parsing.py` (which contained duplicates).
+    - Updated `src/vibe_check/aggregation/aggregate.py` to import constants and export `get_severity_bucket`.
+    - Updated `src/vibe_check/graph/single_dialogue.py` to use `get_severity_bucket` and imported constants, removing local duplication.

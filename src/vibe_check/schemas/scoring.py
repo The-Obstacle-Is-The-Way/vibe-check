@@ -7,9 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-# Limits to prevent token bloat and context window exhaustion (Operational Hygiene)
-MAX_EVIDENCE_SNIPPET_WORDS = 50
-MAX_EVIDENCE_SNIPPET_CHARS = 400
+from vibe_check.constants import MAX_EVIDENCE_SNIPPET_CHARS, MAX_EVIDENCE_SNIPPET_WORDS
 
 
 class TokenUsage(BaseModel):
@@ -51,13 +49,10 @@ class PHQ8ItemScore(BaseModel):
         return value
 
 
-class PHQ8Report(BaseModel):
-    """Complete PHQ-8 assessment from one model run."""
+class PHQ8Assessment(BaseModel):
+    """The raw output from the LLM (items + total + safety)."""
 
     model_config = ConfigDict(extra="forbid")
-
-    model_id: str = Field(min_length=1, description="e.g., 'gpt-5.2'")
-    run_number: int = Field(ge=1, le=2, description="Run 1 or 2")
 
     anhedonia: PHQ8ItemScore
     depressed_mood: PHQ8ItemScore
@@ -73,10 +68,6 @@ class PHQ8Report(BaseModel):
     mentions_self_harm: bool = False
     self_harm_evidence: list[str] = Field(default_factory=list, max_length=3)
 
-    usage: TokenUsage | None = None
-
-    scored_at: datetime = Field(default_factory=datetime.utcnow)
-
     @property
     def item_scores(self) -> dict[str, int]:
         return {
@@ -91,9 +82,13 @@ class PHQ8Report(BaseModel):
         }
 
     @model_validator(mode="after")
-    def _check_total_score(self) -> PHQ8Report:
+    def _check_total_score(self) -> PHQ8Assessment:
         expected = sum(self.item_scores.values())
         if self.total_score != expected:
+            # We could correct it here (lenient) or raise (strict).
+            # The prompt asks the model to calculate it. Raising forces consistency.
+            # However, to be robust, we might want to just trust the items and recalculate.
+            # But the user asked for strictness. Let's raise.
             raise ValueError(f"total_score={self.total_score} does not match item sum={expected}")
         return self
 
@@ -113,3 +108,12 @@ class PHQ8Report(BaseModel):
                     f"self_harm_evidence snippet exceeds {MAX_EVIDENCE_SNIPPET_WORDS} words"
                 )
         return value
+
+
+class PHQ8Report(PHQ8Assessment):
+    """Complete PHQ-8 assessment with metadata (provenance)."""
+
+    model_id: str = Field(min_length=1, description="e.g., 'gpt-5.2'")
+    run_number: int = Field(ge=1, le=2, description="Run 1 or 2")
+    usage: TokenUsage | None = None
+    scored_at: datetime = Field(default_factory=datetime.utcnow)

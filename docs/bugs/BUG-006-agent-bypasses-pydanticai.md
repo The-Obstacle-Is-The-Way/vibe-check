@@ -1,7 +1,8 @@
 ---
 severity: P2
-status: acknowledged
+status: fixed
 acknowledged_date: 2026-01-02
+resolution_date: 2026-01-02
 ---
 
 # BUG-006: Juror agents bypass PydanticAI schema validation
@@ -24,19 +25,10 @@ acknowledged_date: 2026-01-02
 3. Let PydanticAI handle the JSON parsing and retries.
 4. Keep `_truncate_snippet` (Operational Hygiene) but implement it as a Pydantic validator on the model.
 
-## Acknowledgement (2026-01-02)
+## Resolution (2026-01-02)
 
-This is a valid architectural concern but is P2 (resilience) not P0 (blocking).
-
-**Why we kept manual parsing for jurors**:
-- LLMs often wrap JSON in markdown code fences (`parsing.py:_extract_first_json_object`)
-- LLMs compute incorrect totals (we recalculate in `parsing.py:174`)
-- LLMs use variant field names (`insuff_evidence` vs `insufficient_evidence`)
-- Evidence snippets need truncation for operational hygiene
-
-**What we fixed for judges**:
-- Judge uses `output_type=JudgeItemResolution` (strict Pydantic validation)
-- Judge outputs are simpler (1 item vs 8), so PydanticAI retries work well
-- See `src/vibe_check/judge/agent.py`
-
-**Deferred**: Creating a `RawPHQ8Report` Pydantic model with looser validation that PydanticAI can retry on. This would give us the best of both worlds but requires careful design of the canonicalization pipeline.
+**Fixed**:
+- Removed `src/vibe_check/scoring/parsing.py` and its manual JSON extraction logic.
+- Updated `build_juror_agent` in `src/vibe_check/scoring/agent.py` to use `output_type=PHQ8Assessment`.
+- `PHQ8Assessment` (in `src/vibe_check/schemas/scoring.py`) now enforces strict schema validation (Literal scores, matching totals).
+- PydanticAI now handles the parsing and retries automatically.

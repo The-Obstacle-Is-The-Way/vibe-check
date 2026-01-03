@@ -1,116 +1,119 @@
-"""Factory functions to build real jurors and judges from Settings (SPEC-06)."""
+"""Factory for creating scoring actors (real or fake)."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
-from vibe_check.run.runner import DeterministicFakeJuror, deterministic_fake_judge_item
 from vibe_check.scoring.agent import build_juror_agent
+from vibe_check.scoring.fakes import DeterministicFakeJuror, deterministic_fake_judge_item
 from vibe_check.scoring.juror import JurorScorer
 
 if TYPE_CHECKING:
-    from vibe_check.graph.single_dialogue import JudgeItemFn, Juror
+    from collections.abc import Sequence
+
     from vibe_check.judge.schema import JudgeItemResolution
     from vibe_check.schemas.scoring import PHQ8Report
     from vibe_check.settings import Settings
 
 
-def build_real_jury(settings: Settings, *, prompt_version: str) -> list[Juror]:
-    """Build a heterogeneous jury of real JurorScorer instances from Settings.
+class Juror(Protocol):
+    def score(self, scoring_text: str) -> PHQ8Report: ...
 
-    Creates 3 models x 2 runs = 6 jurors per SSOT spec.
 
-    Raises:
-        ValueError: If required API keys are missing for any configured model.
-    """
+class JudgeItemFn(Protocol):
+    def __call__(
+        self,
+        scoring_text: str,
+        item: str,
+        juror_reports: list[PHQ8Report],
+        prompt_version: str,
+    ) -> JudgeItemResolution: ...
+
+
+def build_fake_jury(
+    models: list[str] | None = None,
+    runs_per_model: int = 2,
+) -> Sequence[Juror]:
+    """Build a list of deterministic fake jurors."""
+    if models is None:
+        models = ["gpt-5.2", "claude-sonnet", "gemini-pro"]
     jurors: list[Juror] = []
+    for model_id in models:
+        for run_no in range(1, runs_per_model + 1):
+            jurors.append(DeterministicFakeJuror(model_id, run_no))
+    return jurors
 
-    model_configs = [
-        (f"openai:{settings.juror_gpt_model}", settings.openai_api_key, "openai"),
-        (f"anthropic:{settings.juror_claude_model}", settings.anthropic_api_key, "anthropic"),
-        (f"google-gla:{settings.juror_gemini_model}", settings.google_api_key, "google"),
+
+def build_fake_judge_item() -> JudgeItemFn:
+    """Return the deterministic fake judge function."""
+    return deterministic_fake_judge_item
+
+
+def build_real_jury(settings: Settings) -> Sequence[Juror]:
+    """Build a list of real PydanticAI-backed jurors using settings."""
+    configs = [
+        ("openai", settings.juror_gpt_model),
+        ("anthropic", settings.juror_claude_model),
+        ("google", settings.juror_gemini_model),
     ]
 
-    for model_name, api_key, provider in model_configs:
-        if api_key is None:
-            raise ValueError(
-                f"Missing {provider.upper()}_API_KEY for model {model_name}. "
-                "Set it in .env or use --dry-run for deterministic fakes."
-            )
+    jurors: list[Juror] = []
 
-        for run_number in range(1, settings.runs_per_model + 1):
+    for provider, model_id in configs:
+        # PydanticAI model identifier e.g. "openai:gpt-5.2"
+        full_model_name = f"{provider}:{model_id}"
+
+        for run_no in range(1, settings.runs_per_model + 1):
             agent = build_juror_agent(
-                model=model_name,
-                prompt_version=prompt_version,
+                model=full_model_name,
+                prompt_version=settings.prompt_version,
+                view_name=settings.scoring_dialogue_view,
             )
             scorer = JurorScorer(
                 agent=agent,
-                model_id=model_name,
-                run_number=run_number,
-                prompt_version=prompt_version,
+                model_id=model_id,
+                run_number=run_no,
+                prompt_version=settings.prompt_version,
             )
             jurors.append(scorer)
 
     return jurors
 
 
-def build_real_judge_item(settings: Settings, *, prompt_version: str) -> JudgeItemFn:
-    """Build a real judge function that calls the judge model.
+def build_real_judge_item(settings: Settings) -> JudgeItemFn:
+    """Build a real judge function backed by an Agent."""
+    from typing import cast
 
-    Raises:
-        ValueError: If ANTHROPIC_API_KEY is missing (judge uses Claude Opus).
-    """
     from vibe_check.judge.agent import build_judge_agent
     from vibe_check.judge.prompting import build_judge_item_prompt
 
-    if settings.anthropic_api_key is None:
-        raise ValueError(
-            "Missing ANTHROPIC_API_KEY for judge model. "
-            "Set it in .env or use --dry-run for deterministic fakes."
-        )
+    full_model_name = f"anthropic:{settings.judge_model}"
+    agent = build_judge_agent(model=full_model_name, prompt_version=settings.prompt_version)
 
-    agent = build_judge_agent(
-        model=f"anthropic:{settings.judge_model}",
-        prompt_version=prompt_version,
-    )
-
-    def real_judge_item(
+    def judge_fn(
         scoring_text: str,
         item: str,
         juror_reports: list[PHQ8Report],
-        _prompt_version: str,
+        prompt_version: str,
     ) -> JudgeItemResolution:
-        juror_votes = [int(getattr(r, item).score) for r in juror_reports]
-        juror_evidence = []
+        _ = prompt_version
+        evidence_pool: list[str] = []
+        votes: list[int] = []
         for r in juror_reports:
-            item_data = getattr(r, item)
-            juror_evidence.extend(item_data.evidence)
+            item_score = getattr(r, item)
+            votes.append(int(item_score.score))
+            evidence_pool.extend(item_score.evidence)
 
         prompt = build_judge_item_prompt(
             scoring_text=scoring_text,
             item=item,
-            juror_votes=juror_votes,
-            juror_evidence=juror_evidence,
+            juror_votes=votes,
+            juror_evidence=evidence_pool,
         )
 
         result = agent.run_sync(prompt)
-        return result.output
+        # PydanticAI v1+ puts structured output in .data
+        output = getattr(result, "data", getattr(result, "output", None))
+        return cast("JudgeItemResolution", output)
 
-    return real_judge_item
-
-
-def build_fake_jury() -> list[Juror]:
-    """Build the default deterministic fake jury for dry-run testing."""
-    return [
-        DeterministicFakeJuror("gpt-5.2", 1),
-        DeterministicFakeJuror("gpt-5.2", 2),
-        DeterministicFakeJuror("claude-sonnet", 1),
-        DeterministicFakeJuror("claude-sonnet", 2),
-        DeterministicFakeJuror("gemini-flash", 1),
-        DeterministicFakeJuror("gemini-flash", 2),
-    ]
-
-
-def build_fake_judge_item() -> JudgeItemFn:
-    """Build the deterministic fake judge for dry-run testing."""
-    return deterministic_fake_judge_item
+    return judge_fn

@@ -1,8 +1,12 @@
-"""Prompt builders for judge arbitration."""
+"""Prompt builders for the Judge agent."""
 
 from __future__ import annotations
 
-from vibe_check.aggregation.aggregate import PHQ8_ITEMS
+from vibe_check.constants import PHQ8_ITEMS
+
+JUDGE_SYSTEM_PROMPT_V1 = """\nYou are an expert clinical psychologist acting as an arbitration judge for PHQ-8 assessments.
+Your goal is to resolve disagreements between independent juror models scoring a clinical interview.
+"""
 
 
 def build_judge_system_prompt(prompt_version: str) -> str:

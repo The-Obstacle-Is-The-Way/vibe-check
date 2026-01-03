@@ -23,8 +23,8 @@ def create_mock_report(
         "gpt-5.2",
         "claude-sonnet",
         "claude-sonnet",
-        "gemini-flash",
-        "gemini-flash",
+        "gemini-pro",
+        "gemini-pro",
     ]
     run_numbers = [1, 2, 1, 2, 1, 2]
 

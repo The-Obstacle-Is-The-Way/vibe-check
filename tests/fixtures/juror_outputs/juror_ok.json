@@ -12,7 +12,7 @@
   "sleep": {
     "score": 2,
     "confidence": 0.7,
-    "evidence": ["Client reports trouble sleeping most nights.", "Extra evidence 1", "Extra evidence 2", "Extra evidence 3"]
+    "evidence": ["Client reports trouble sleeping most nights.", "Extra evidence 1", "Extra evidence 2"]
   },
   "fatigue": {
     "score": 1,

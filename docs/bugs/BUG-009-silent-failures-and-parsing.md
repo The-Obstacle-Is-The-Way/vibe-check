@@ -1,8 +1,9 @@
 ---
 severity: P2
-status: duplicate
+status: fixed
 duplicate_of: BUG-006
 acknowledged_date: 2026-01-02
+resolution_date: 2026-01-02
 ---
 
 # BUG-009: Brittle manual JSON parsing (Anti-Pattern)
@@ -23,3 +24,9 @@ acknowledged_date: 2026-01-02
 1. Delete `_extract_first_json_object` and `parsing.py` entirely.
 2. Rely on `pydantic-ai`'s built-in structured output parsing (which handles JSON extraction).
 3. If "fuzzy" repair is absolutely needed, use a battle-tested library like `json_repair`, not custom string hacking.
+
+## Resolution (2026-01-02)
+
+**Fixed**:
+- `src/vibe_check/scoring/parsing.py` has been deleted.
+- Juror agents (`src/vibe_check/scoring/agent.py`) now use PydanticAI's `output_type=PHQ8Assessment` for robust, schema-driven parsing and validation.

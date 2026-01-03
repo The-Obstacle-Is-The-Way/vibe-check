@@ -6,8 +6,7 @@ import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from vibe_check.schemas.scoring import PHQ8Report, TokenUsage
-from vibe_check.scoring.parsing import parse_phq8_report
+from vibe_check.schemas.scoring import PHQ8Assessment, PHQ8Report, TokenUsage
 
 if TYPE_CHECKING:
     from pydantic_ai import Agent
@@ -39,7 +38,7 @@ class JurorScorer:
     def __init__(
         self,
         *,
-        agent: Agent[Any, Any],
+        agent: Agent[Any, PHQ8Assessment],
         model_id: str,
         run_number: int,
         prompt_version: str,
@@ -61,25 +60,38 @@ class JurorScorer:
     def prompt_version(self) -> str:
         return self._prompt_version
 
+    def _to_report(self, assessment: PHQ8Assessment, usage: TokenUsage | None) -> PHQ8Report:
+        """Convert raw assessment to full report with provenance."""
+        # Convert PHQ8Assessment fields to dict
+        data = assessment.model_dump()
+
+        # Add metadata
+        data.update(
+            {
+                "model_id": self._model_id,
+                "run_number": self._run_number,
+                "usage": usage,
+                "scored_at": datetime.utcnow(),
+            }
+        )
+
+        return PHQ8Report(**data)
+
     def score(self, scoring_text: str) -> PHQ8Report:
         """Run the juror model synchronously and return a validated `PHQ8Report`."""
         logger.debug(
-            "Juror scoring start model_id=%s run=%s text_len=%s preview=%r",
+            "Juror scoring start model_id=%s run=%s text_len=%s",
             self._model_id,
             self._run_number,
             len(scoring_text),
-            scoring_text[:500],
         )
         result = self._agent.run_sync(scoring_text)
-        usage = _token_usage_from_run_usage(result.usage())
 
-        report = parse_phq8_report(
-            result.output,
-            model_id=self._model_id,
-            run_number=self._run_number,
-            usage=usage,
-            scored_at=datetime.utcnow(),
-        )
+        output_data = result.data if hasattr(result, "data") else result.output
+
+        usage = _token_usage_from_run_usage(result.usage())
+        report = self._to_report(output_data, usage)
+
         logger.debug(
             "Juror scoring done model_id=%s run=%s total=%s",
             self._model_id,
@@ -91,21 +103,18 @@ class JurorScorer:
     async def ascore(self, scoring_text: str) -> PHQ8Report:
         """Run the juror model asynchronously and return a validated `PHQ8Report`."""
         logger.debug(
-            "Juror scoring start (async) model_id=%s run=%s text_len=%s preview=%r",
+            "Juror scoring start (async) model_id=%s run=%s text_len=%s",
             self._model_id,
             self._run_number,
             len(scoring_text),
-            scoring_text[:500],
         )
         result = await self._agent.run(scoring_text)
+
+        output_data = result.data if hasattr(result, "data") else result.output
+
         usage = _token_usage_from_run_usage(result.usage())
-        report = parse_phq8_report(
-            result.output,
-            model_id=self._model_id,
-            run_number=self._run_number,
-            usage=usage,
-            scored_at=datetime.utcnow(),
-        )
+        report = self._to_report(output_data, usage)
+
         logger.debug(
             "Juror scoring done (async) model_id=%s run=%s total=%s",
             self._model_id,

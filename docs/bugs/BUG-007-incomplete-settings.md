@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     # Juror Models (January 2026 frontier models)
     juror_gpt_model: str = "gpt-5.2"
     juror_claude_model: str = "claude-sonnet-4-5-20250929"
-    juror_gemini_model: str = "gemini-3-flash-preview"
+    juror_gemini_model: str = "gemini-3-pro-preview"
 
     # Judge Model
     judge_model: str = "claude-opus-4-5-20251101"

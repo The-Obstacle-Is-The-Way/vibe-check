@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from pydantic_ai import Agent
 
+from vibe_check.schemas.scoring import PHQ8Assessment
 from vibe_check.scoring.prompting import build_juror_system_prompt
 
 if TYPE_CHECKING:
@@ -18,19 +19,17 @@ def build_juror_agent(
     prompt_version: str,
     view_name: str = "client_qa",
     instructions: str | None = None,
-) -> Agent[None, dict[str, Any]]:
+) -> Agent[None, PHQ8Assessment]:
     """Build a PydanticAI agent configured for PHQ-8 juror scoring.
 
     Notes:
-    - `model` may be a provider model name (e.g., "openai:gpt-5.2") or a PydanticAI model
-      instance (e.g., `TestModel`) depending on the PydanticAI adapter in use.
-    - The agent output type is `dict` so we can canonicalize totals and enforce bounds
-      before constructing `PHQ8Report`.
+    - We use `output_type=PHQ8Assessment` to leverage PydanticAI's built-in schema validation
+      and retry logic (fixing BUG-006/009). The `JurorScorer` then upgrades this to `PHQ8Report`.
     """
 
     return Agent(
         model=model,
-        output_type=dict[str, Any],
+        output_type=PHQ8Assessment,
         system_prompt=build_juror_system_prompt(
             prompt_version=prompt_version,
             view_name=view_name,

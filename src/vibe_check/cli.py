@@ -5,7 +5,14 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from vibe_check.run.factory import (
+    build_fake_judge_item,
+    build_fake_jury,
+    build_real_judge_item,
+    build_real_jury,
+)
 from vibe_check.run.runner import score_corpus
+from vibe_check.settings import Settings
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -21,8 +28,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--output", required=True, help="Output directory (writes ledger + rows + JSONL)."
     )
     score.add_argument("--limit", type=int, default=None, help="Limit number of dialogues (debug).")
+    score.add_argument("--dry-run", action="store_true", help="Use deterministic fakes (no cost).")
     score.add_argument(
-        "--prompt-version", default="v1", help="Prompt version label to embed in outputs."
+        "--prompt-version", default="v1.0.0", help="Prompt version label to embed in outputs."
     )
     score.add_argument(
         "--dialogue-view",
@@ -33,11 +41,6 @@ def build_parser() -> argparse.ArgumentParser:
     score.add_argument(
         "--max-concurrency", type=int, default=1, help="Max concurrency for graph execution."
     )
-    score.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Use deterministic fake jurors (no API calls). For testing/CI.",
-    )
     return parser
 
 
@@ -46,15 +49,29 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "score-corpus":
+        settings = Settings()
+
+        # Override prompt version from CLI if provided, though settings has it too.
+        # CLI wins.
+        settings.prompt_version = args.prompt_version
+
+        if args.dry_run:
+            jurors = build_fake_jury()
+            judge_item = build_fake_judge_item()
+        else:
+            jurors = build_real_jury(settings)
+            judge_item = build_real_judge_item(settings)
+
         score_corpus(
             input_path=args.input,
             output_dir=Path(args.output),
             checkpoint_db=args.checkpoint,
+            jurors=jurors,
+            judge_item=judge_item,
             limit=args.limit,
             prompt_version=args.prompt_version,
             dialogue_view=args.dialogue_view,
             max_concurrency=args.max_concurrency,
-            dry_run=args.dry_run,
         )
         return 0
 

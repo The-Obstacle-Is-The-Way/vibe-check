@@ -2,99 +2,23 @@
 
 from __future__ import annotations
 
-import hashlib
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from vibe_check.aggregation.aggregate import PHQ8_ITEMS
 from vibe_check.data import load_corpus, preprocess_dialogue
 from vibe_check.graph.single_dialogue import (
     build_single_dialogue_graph,
     invoke_with_checkpoint_resume,
 )
-from vibe_check.judge.schema import JudgeItemResolution
 from vibe_check.run.export import write_row, write_run_manifest, write_scored_jsonl
 from vibe_check.run.ledger import JobLedger
-from vibe_check.schemas.scoring import PHQ8ItemScore, PHQ8Report
 from vibe_check.sqlite import sqlite_path_from_conn_string
 
 if TYPE_CHECKING:
-    from vibe_check.graph.single_dialogue import DialogueViewName
+    from collections.abc import Sequence
+
+    from vibe_check.graph.single_dialogue import DialogueViewName, JudgeItemFn, Juror
     from vibe_check.graph.state import ScoringState
-
-
-def _stable_int(text: str) -> int:
-    return int(hashlib.sha256(text.encode("utf-8")).hexdigest(), 16)
-
-
-@dataclass(frozen=True)
-class DeterministicFakeJuror:
-    model_id: str
-    run_number: int
-
-    def score(self, scoring_text: str) -> PHQ8Report:
-        def make_item(item: str) -> PHQ8ItemScore:
-            seed = f"{self.model_id}|{self.run_number}|{item}|{scoring_text}"
-            score = _stable_int(seed) % 4
-            snippet = " ".join(scoring_text.strip().split()[:20]).strip()
-            evidence = [snippet] if snippet else []
-            return PHQ8ItemScore(
-                score=score,  # type: ignore[arg-type]
-                confidence=0.7,
-                evidence=evidence,
-                insufficient_evidence=False,
-            )
-
-        items = {item: make_item(item) for item in PHQ8_ITEMS}
-        total = sum(int(items[item].score) for item in PHQ8_ITEMS)
-
-        return PHQ8Report(
-            model_id=self.model_id,
-            run_number=self.run_number,
-            anhedonia=items["anhedonia"],
-            depressed_mood=items["depressed_mood"],
-            sleep=items["sleep"],
-            fatigue=items["fatigue"],
-            appetite=items["appetite"],
-            guilt=items["guilt"],
-            concentration=items["concentration"],
-            psychomotor=items["psychomotor"],
-            total_score=total,
-            mentions_self_harm=False,
-            self_harm_evidence=[],
-            usage=None,
-        )
-
-
-def deterministic_fake_judge_item(
-    scoring_text: str,
-    item: str,
-    juror_reports: list[PHQ8Report],
-    prompt_version: str,
-) -> JudgeItemResolution:
-    del scoring_text, prompt_version
-    votes = [int(getattr(r, item).score) for r in juror_reports]
-    avg = sum(votes) / float(len(votes))
-    final = round(avg)
-    final = max(0, min(3, final))
-    return JudgeItemResolution(
-        item=item,
-        final_score=final,  # type: ignore[arg-type]
-        confidence=0.7,
-        rationale="Deterministic fake judge (mean of juror votes).",
-    )
-
-
-def _default_fake_jury() -> list[DeterministicFakeJuror]:
-    return [
-        DeterministicFakeJuror("gpt-5.2", 1),
-        DeterministicFakeJuror("gpt-5.2", 2),
-        DeterministicFakeJuror("claude-sonnet", 1),
-        DeterministicFakeJuror("claude-sonnet", 2),
-        DeterministicFakeJuror("gemini-flash", 1),
-        DeterministicFakeJuror("gemini-flash", 2),
-    ]
 
 
 def score_corpus(
@@ -102,30 +26,15 @@ def score_corpus(
     input_path: str | Path,
     output_dir: Path,
     checkpoint_db: str,
+    jurors: Sequence[Juror],
+    judge_item: JudgeItemFn,
     limit: int | None = None,
     prompt_version: str,
     dialogue_view: DialogueViewName = "client_qa",
     max_concurrency: int = 1,
     fail_fast: bool = False,
-    dry_run: bool = False,
-    jurors: list[Any] | None = None,
-    judge_item: Any | None = None,
 ) -> None:
-    """Score a corpus and write outputs to disk, safe to resume.
-
-    Args:
-        input_path: Path to HF dataset dir or CSV.
-        output_dir: Output directory for ledger, rows, JSONL.
-        checkpoint_db: SQLite checkpoint DB (path or sqlite:///...).
-        limit: Limit number of dialogues (debug).
-        prompt_version: Prompt version label to embed in outputs.
-        dialogue_view: Which deterministic view to score.
-        max_concurrency: Max concurrency for graph execution.
-        fail_fast: Raise on first failure instead of continuing.
-        dry_run: Use deterministic fake jurors (no API calls). Default False.
-        jurors: Optional pre-built jurors. If None and not dry_run, builds from Settings.
-        judge_item: Optional pre-built judge function. If None and not dry_run, builds from Settings.
-    """
+    """Score a corpus and write outputs to disk, safe to resume."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
     corpus = load_corpus(input_path)
@@ -134,26 +43,6 @@ def score_corpus(
 
     ledger = JobLedger(output_dir / "ledger.sqlite")
     ledger.initialize([d.file_id for d in corpus])
-
-    # Resolve jurors and judge_item via dependency injection or factory
-    if jurors is None or judge_item is None:
-        from vibe_check.run.factory import (
-            build_fake_judge_item,
-            build_fake_jury,
-            build_real_judge_item,
-            build_real_jury,
-        )
-        from vibe_check.settings import Settings
-
-        if dry_run:
-            jurors = jurors or build_fake_jury()
-            judge_item = judge_item or build_fake_judge_item()
-        else:
-            settings = Settings()
-            jurors = jurors or build_real_jury(settings, prompt_version=prompt_version)
-            judge_item = judge_item or build_real_judge_item(
-                settings, prompt_version=prompt_version
-            )
 
     graph = build_single_dialogue_graph(jurors=jurors, judge_item=judge_item)
 

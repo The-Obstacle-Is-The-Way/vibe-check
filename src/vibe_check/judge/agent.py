@@ -1,4 +1,4 @@
-"""PydanticAI agent builders for judge arbitration."""
+"""PydanticAI agent for the Judge (Arbitrator)."""
 
 from __future__ import annotations
 
@@ -18,15 +18,9 @@ def build_judge_agent(
     model: Model | KnownModelName | str | None,
     prompt_version: str,
 ) -> Agent[None, JudgeItemResolution]:
-    """Build a PydanticAI agent configured for judge arbitration.
-
-    Unlike juror agents, the judge uses strict Pydantic validation because:
-    - Judge outputs are simpler (one item, not 8)
-    - We want PydanticAI retries for malformed responses
-    - Arbitration is rare, so we can afford retries
-    """
+    """Build a PydanticAI agent for resolving contested items."""
     return Agent(
         model=model,
         output_type=JudgeItemResolution,
-        system_prompt=build_judge_system_prompt(prompt_version=prompt_version),
+        system_prompt=build_judge_system_prompt(prompt_version),
     )

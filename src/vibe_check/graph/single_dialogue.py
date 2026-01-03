@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
 from langgraph.graph import END, START, StateGraph
 
-from vibe_check.aggregation.aggregate import PHQ8_ITEMS, SEVERITY_BUCKETS, aggregate_reports
+from vibe_check.aggregation.aggregate import aggregate_reports, get_severity_bucket
+from vibe_check.constants import PHQ8_ITEMS
 from vibe_check.data import load_corpus, preprocess_dialogue
 from vibe_check.graph.state import ScoringState
 from vibe_check.judge.schema import JudgeItemResolution
@@ -26,13 +27,6 @@ class Juror(Protocol):
 JudgeItemFn = Callable[[str, str, list[PHQ8Report], str], JudgeItemResolution]
 
 DialogueViewName = Literal["client_qa", "client_only"]
-
-
-def _bucket_for_total(total_score: int) -> str:
-    for bucket, (lo, hi) in SEVERITY_BUCKETS.items():
-        if lo <= total_score <= hi:
-            return bucket
-    raise ValueError(f"Invalid total_score: {total_score}")
 
 
 def build_single_dialogue_graph(
@@ -102,7 +96,7 @@ def build_single_dialogue_graph(
             update={
                 "final_item_scores": final_item_scores,
                 "final_total_score": final_total_score,
-                "final_severity_bucket": _bucket_for_total(final_total_score),
+                "final_severity_bucket": get_severity_bucket(final_total_score),
                 "final_source": "judge_override",
                 "judge_resolution": {k: v.model_dump() for k, v in resolutions.items()},
             }
