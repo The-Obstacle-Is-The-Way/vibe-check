@@ -7,7 +7,7 @@
 
 > **Scope Check**: This spec is CONDITIONAL. Only implement if SPEC-07 quality gates fail
 > (Krippendorff α < 0.70, arbitration rate > 30%, or other diagnostic failures).
-> See [SCOPE-CLARITY.md](../research/SCOPE-CLARITY.md).
+> See [scope-clarity.md](../research/scope-clarity.md).
 
 ---
 

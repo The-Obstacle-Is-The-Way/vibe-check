@@ -21,7 +21,7 @@ SPEC-06 states the reference implementation should default to deterministic fake
 ## Affected Areas
 
 - `src/vibe_check/cli.py`
-- `docs/specs/SPEC-06-batch-runner-and-export.md` (examples imply offline defaults)
+- `docs/specs/spec-06-batch-runner-and-export.md` (examples imply offline defaults)
 
 ---
 

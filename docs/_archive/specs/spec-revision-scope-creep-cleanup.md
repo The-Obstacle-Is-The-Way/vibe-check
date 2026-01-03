@@ -2,13 +2,13 @@
 
 **Status**: DRAFT — Awaiting Senior Review
 **Date**: 2026-01-02
-**Issue**: Original SPEC-vibe-check.md conflated vibe-check and ai-psychiatrist responsibilities
+**Issue**: Original spec-vibe-check.md conflated vibe-check and ai-psychiatrist responsibilities
 
 ---
 
 ## 1. Summary of Scope Creep
 
-The original `SPEC-vibe-check.md` included responsibilities that belong in **ai-psychiatrist**, not vibe-check:
+The original `spec-vibe-check.md` included responsibilities that belong in **ai-psychiatrist**, not vibe-check:
 
 | Responsibility | Originally In | Should Be In | Status |
 |----------------|---------------|--------------|--------|
@@ -59,11 +59,11 @@ The embedding and retrieval infrastructure already exists in `ai-psychiatrist`.
 
 | Document | Issue | Status |
 |----------|-------|--------|
-| `docs/research/SPEC-vibe-check.md` | Phase 2/3 include embeddings + transfer eval | Added SCOPE BOUNDARY warning |
+| `docs/research/spec-vibe-check.md` | Phase 2/3 include embeddings + transfer eval | Added SCOPE BOUNDARY warning |
 | `docs/specs/SPEC-08-embedding-corpus.md` | Entire spec was about embeddings | **DELETED** |
 | `docs/specs/SPEC-09-transfer-evaluation.md` | Entire spec was about clinical data transfer | **DELETED, replaced with label export spec** |
-| `docs/specs/SPEC-06-batch-runner-and-export.md` | Minor references to clinical data | Fixed |
-| `docs/specs/SPEC-07-run-diagnostics.md` | Minor references | Fixed |
+| `docs/specs/spec-06-batch-runner-and-export.md` | Minor references to clinical data | Fixed |
+| `docs/specs/spec-07-run-diagnostics.md` | Minor references | Fixed |
 
 ### 3.2 Codebase Check
 
@@ -84,28 +84,28 @@ The embedding and retrieval infrastructure already exists in `ai-psychiatrist`.
 
 ### 4.2 Created Files
 
-1. `docs/specs/SPEC-08-export-contract.md` — Defines label export format only (no embeddings)
+1. `docs/specs/spec-08-export-contract.md` — Defines label export format only (no embeddings)
    - Originally created as SPEC-09, renamed to SPEC-08 to fill the gap
 
 ### 4.3 Edited Files
 
-1. `docs/research/SPEC-vibe-check.md`:
+1. `docs/research/spec-vibe-check.md`:
    - Added SCOPE BOUNDARY warning at top
    - Clarified executive summary
    - Removed clinical data references from "Known Sharp Edges"
    - Replaced Section 3.2 (clinical data policy) with separation note
 
-2. `docs/specs/SPEC-06-batch-runner-and-export.md`:
+2. `docs/specs/spec-06-batch-runner-and-export.md`:
    - Removed clinical data references from Non-Goals
 
-3. `docs/specs/SPEC-07-run-diagnostics.md`:
+3. `docs/specs/spec-07-run-diagnostics.md`:
    - Added Anti-Patterns section clarifying scope
 
 ---
 
 ## 5. Remaining Work (Pending Senior Review)
 
-### 5.1 SPEC-vibe-check.md Deep Cleanup
+### 5.1 spec-vibe-check.md Deep Cleanup
 
 The master spec still contains ~20 legacy references to embeddings/transfer eval in:
 - Section 5.3 (Embedding View discussions)
@@ -122,7 +122,7 @@ Awaiting senior review before proceeding.
 ### 5.2 Other Documents
 
 The following may need review:
-- `docs/research/SPEC-REVISION-synthetic-data-simplification.md` — 2 references
+- `docs/research/spec-revision-synthetic-data-simplification.md` — 2 references
 - Any other research docs
 
 ---
@@ -146,7 +146,7 @@ Before proceeding with further development:
 - [x] SPEC-08 deleted (was embedding corpus)
 - [x] SPEC-09 rewritten (now label export only)
 - [x] SCOPE BOUNDARY warning added to master spec
-- [ ] Senior review of remaining legacy content in SPEC-vibe-check.md
+- [ ] Senior review of remaining legacy content in spec-vibe-check.md
 - [ ] Confirm approach for handling Section 12.3/12.4 (Phase 2/3)
 
 ---
@@ -162,7 +162,7 @@ Before proceeding with further development:
 ## 9. Approval Required
 
 **This revision requires senior review before:**
-1. Removing/rewriting Phase 2/3 sections from SPEC-vibe-check.md
+1. Removing/rewriting Phase 2/3 sections from spec-vibe-check.md
 2. Making further changes to core documentation
 
 **Rationale**: The original spec was the foundation document. Major structural changes should be approved to ensure alignment with project goals.

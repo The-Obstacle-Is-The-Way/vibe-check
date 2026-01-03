@@ -38,7 +38,7 @@ Implemented ADR-001's three-layer resilience strategy:
 ## Files Changed
 
 - **NEW**: `src/vibe_check/resilience.py` - Rate limiters + retry decorators
-- **NEW**: `docs/architecture/ADR-001-rate-limiting-retries.md` - Architectural decision
+- **NEW**: `docs/architecture/adr-001-rate-limiting-retries.md` - Architectural decision
 - `src/vibe_check/settings.py` - Added retry configuration
 - `src/vibe_check/scoring/agent.py` - Added `retries` parameter
 - `src/vibe_check/scoring/juror.py` - Integrated rate limiting + retry in `ascore()`

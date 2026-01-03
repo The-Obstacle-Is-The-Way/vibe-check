@@ -36,7 +36,7 @@ SQPsychConv is a synthetic psychotherapy conversation dataset. The same 2,090 qu
 | nemotron | N/A | Lower quality |
 | command | 12.57 | Lowest quality |
 
-See `docs/_archive/DATASET-sqpsychconv-qwq.md` for qwq bug documentation.
+See `docs/_archive/dataset-sqpsychconv-qwq.md` for qwq bug documentation.
 
 ---
 

@@ -11,8 +11,8 @@ The SSOT selects **LangGraph + PydanticAI** for structured outputs. The initial 
 
 ## Evidence
 
-- SSOT framework decision: `docs/research/SPEC-vibe-check.md:195`
-- SPEC-04 (historical): `docs/specs/SPEC-04-juror-scoring-agent.md:79` (previously suggested provider SDKs / fake client instead of PydanticAI)
+- SSOT framework decision: `docs/research/spec-vibe-check.md:195`
+- SPEC-04 (historical): `docs/specs/spec-04-juror-scoring-agent.md:79` (previously suggested provider SDKs / fake client instead of PydanticAI)
 
 ## Impact
 
@@ -26,4 +26,4 @@ The SSOT selects **LangGraph + PydanticAI** for structured outputs. The initial 
 
 ## Resolution
 
-Fixed by updating `docs/specs/SPEC-04-juror-scoring-agent.md` to make PydanticAI the required interface and removing `FakeLLMClient`/`LLMClient` as the primary abstraction.
+Fixed by updating `docs/specs/spec-04-juror-scoring-agent.md` to make PydanticAI the required interface and removing `FakeLLMClient`/`LLMClient` as the primary abstraction.

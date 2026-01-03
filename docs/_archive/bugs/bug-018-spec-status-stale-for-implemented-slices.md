@@ -17,9 +17,9 @@ This confuses reviewers and future contributors about what is already shipped.
 ## Fix Plan
 
 - Update:
-  - `docs/specs/SPEC-04-juror-scoring-agent.md`
-  - `docs/specs/SPEC-05-consensus-orchestration.md`
-  - `docs/specs/SPEC-06-batch-runner-and-export.md`
+  - `docs/specs/spec-04-juror-scoring-agent.md`
+  - `docs/specs/spec-05-consensus-orchestration.md`
+  - `docs/specs/spec-06-batch-runner-and-export.md`
 
 to:
 

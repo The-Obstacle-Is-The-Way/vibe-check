@@ -307,4 +307,4 @@ No mocks. No stubs. Just "does the infrastructure function?"
 
 ## Appendix A: Full pyproject.toml Template
 
-See SPEC-vibe-check.md Section 10.1 for the complete template. This spec uses a **minimal subset** - only the infrastructure deps, not the full application deps.
+See spec-vibe-check.md Section 10.1 for the complete template. This spec uses a **minimal subset** - only the infrastructure deps, not the full application deps.

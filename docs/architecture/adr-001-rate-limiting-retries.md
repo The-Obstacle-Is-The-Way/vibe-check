@@ -210,7 +210,7 @@ validation_retries: int = 2
 - [OpenAI Rate Limits Cookbook](https://cookbook.openai.com/examples/how_to_handle_rate_limits)
 - [PydanticAI Retry Strategies](https://ai.pydantic.dev/evals/how-to/retry-strategies/)
 - [Tenacity 8.3+ Documentation](https://tenacity.readthedocs.io/)
-- [SPEC-vibe-check Section 4.5, 12, 16](../research/SPEC-vibe-check.md)
+- [SPEC-vibe-check Section 4.5, 12, 16](../research/spec-vibe-check.md)
 
 ---
 

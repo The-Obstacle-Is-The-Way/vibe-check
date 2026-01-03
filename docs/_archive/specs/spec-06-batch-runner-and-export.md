@@ -98,7 +98,7 @@ Aggregate diagnostics (metrics only), e.g.:
 
 ## 4. Concurrency, Retries, and Determinism
 
-See also: **ADR-001** (`docs/architecture/ADR-001-rate-limiting-retries.md`) for full design rationale.
+See also: **ADR-001** (`docs/architecture/adr-001-rate-limiting-retries.md`) for full design rationale.
 
 ### 4.1 Concurrency
 

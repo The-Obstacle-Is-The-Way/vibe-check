@@ -11,7 +11,7 @@ The SSOT cost model explicitly warns that some models (e.g., GPT-5.2 Thinking) c
 
 ## Evidence
 
-- Hidden-token warning and cost assumptions: `docs/research/SPEC-vibe-check.md:60`
+- Hidden-token warning and cost assumptions: `docs/research/spec-vibe-check.md:60`
 - SPEC-04/06 now require usage tracking (spec-level), but code schemas do not yet include it.
 
 ## Impact
