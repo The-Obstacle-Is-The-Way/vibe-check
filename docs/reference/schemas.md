@@ -335,7 +335,7 @@ Public export format.
     "anhedonia": [1, 2, 2, 2, 1, 2],
     "depressed_mood": [3, 3, 3, 2, 3, 3]
   },
-  "arbitration_triggered": true,
+  "arbitration_triggered": {"anhedonia": false, "depressed_mood": true},
   "run_id": "2026-01-03_production",
   "prompt_version": "v1.0.0"
 }
