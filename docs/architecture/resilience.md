@@ -8,7 +8,7 @@ vibe-check implements a three-layer resilience strategy for live LLM API calls:
 | **Layer 2** | Tenacity (via `with_retry`) | 429s, 5xx, network/timeouts |
 | **Layer 3** | Aiolimiter (`AsyncLimiter`) | Proactive throttling per provider (RPM) |
 
-This document describes the **actual wiring in code**. For the decision rationale, see [ADR-001](adr-001-rate-limiting-retries.md).
+This document describes the **actual wiring in code**.
 
 ---
 

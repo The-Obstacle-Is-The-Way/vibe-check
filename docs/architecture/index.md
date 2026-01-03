@@ -21,8 +21,7 @@ vibe-check is a multi-agent PHQ-8 scoring system built on:
 | [System Overview](system-overview.md) | High-level pipeline diagram |
 | [Data Flow](data-flow.md) | Input → Processing → Output journey |
 | [LangGraph Workflow](langgraph-workflow.md) | Single-dialogue graph and checkpointing |
-| [Resilience](resilience.md) | Three-layer retry and rate limiting wiring |
-| [ADR-001: Rate Limiting](adr-001-rate-limiting-retries.md) | Three-layer resilience strategy |
+| [Resilience](resilience.md) | Three-layer retry and rate-limiting strategy |
 
 ---
 
