@@ -1,50 +1,46 @@
-# Dataset Card: SQPsychConv (All Variants)
+# Dataset Card: SQPsychConv
 
 **Source**: HuggingFace `AIMH/SQPsychConv_*`
 **Local Path**: `data/sqpsychconv/`
+**Primary Variant**: `qwen-2.5` (highest quality, 16.29/18 expert score)
 **Verified**: 2026-01-02
-**Recommended Variant**: `qwen-2.5`
 
 ---
 
 ## Summary
 
-SQPsychConv is a synthetic psychotherapy conversation dataset. The same 2,090 questionnaires (from Kircher et al. 2019) are used to generate conversations with 7 different LLMs, producing 7 dataset variants.
+SQPsychConv is a synthetic psychotherapy conversation dataset. The same 2,090 questionnaires (from Kircher et al. 2019) are used to generate conversations with 7 different LLMs, producing 7 dataset variants on HuggingFace.
+
+**Our selection**: We use only `qwen-2.5` (primary) and `gemma` (backup). Lower-quality variants were deleted per research best practices: "model capability matters more than model diversity."
 
 ---
 
-## Variant Overview
+## Local Variants (Kept)
 
-| Variant | Expert Score | Train | Test | Status | Recommendation |
-|---------|--------------|-------|------|--------|----------------|
-| **qwen-2.5** | **16.29** | 1837 | 253 | OK | **USE THIS** |
-| gemma | 16.14 | 1837 | 253 | OK | Good alternative |
-| qwq | 15.71 | 2090 | 2090 | **BUGGED** | Avoid |
-| llama3 | 14.86 | 1837 | 253 | OK | - |
-| mistral | 14.71 | 1837 | 253 | OK | - |
-| nemotron | N/A | 1837 | 253 | OK | - |
-| command | 12.57 | 1837 | 253 | OK | Lowest quality |
+| Variant | Expert Score | Train | Test | Status |
+|---------|--------------|-------|------|--------|
+| **qwen-2.5** | **16.29** | 1837 | 253 | **PRIMARY** |
+| gemma | 16.14 | 1837 | 253 | Backup |
 
 **Expert scores from paper Table 5** (max 18 points, human evaluation of therapist skills)
 
 ---
 
-## The qwq Bug
+## Deleted Variants (Not Local)
 
-`SQPsychConv_qwq` has a HuggingFace upload bug where train and test splits are identical:
+| Variant | Expert Score | Reason Deleted |
+|---------|--------------|----------------|
+| qwq | 15.71 | **BUGGED** (train=test duplication) |
+| llama3 | 14.86 | Lower quality |
+| mistral | 14.71 | Lower quality |
+| nemotron | N/A | Lower quality |
+| command | 12.57 | Lowest quality |
 
-```
-Arrow MD5 (both splits): e3ff92d039b8ee12fa2023fc4d3abfb3
-file_id overlap: 100%
-Claimed total: 4,180 (incorrect)
-Actual unique: 2,090
-```
-
-All other variants have proper 88/12 train/test splits with 0% overlap.
+See `docs/_archive/DATASET-sqpsychconv-qwq.md` for qwq bug documentation.
 
 ---
 
-## Schema (All Variants)
+## Schema
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -87,18 +83,19 @@ This enables:
 
 ```
 data/sqpsychconv/
-├── qwen-2.5/          # RECOMMENDED (highest quality)
+├── qwen-2.5/              # PRIMARY (highest quality)
 │   ├── train/
 │   │   └── data-00000-of-00001.arrow  (1,837 rows)
 │   ├── test/
 │   │   └── data-00000-of-00001.arrow  (253 rows)
 │   └── dataset_dict.json
-├── gemma/             # Second best
-├── qwq/               # BUGGED - train=test
-├── llama3/
-├── mistral/
-├── nemotron/
-└── command/           # Lowest quality
+├── gemma/                 # BACKUP (second best)
+│   ├── train/
+│   ├── test/
+│   └── dataset_dict.json
+└── exports/               # CSV exports for analysis
+    ├── qwen25_train.csv   (1,837 rows)
+    └── qwen25_test.csv    (253 rows)
 ```
 
 ---
@@ -116,24 +113,31 @@ print(f"Train: {len(ds['train'])}, Test: {len(ds['test'])}")
 # Train: 1837, Test: 253
 ```
 
-### Load All Variants
+### Load CSV Exports
 
 ```python
-variants = ["qwen-2.5", "gemma", "llama3", "mistral", "nemotron", "command"]
-# Note: Excluding qwq due to bug
+import pandas as pd
 
-for variant in variants:
-    ds = load_from_disk(f"data/sqpsychconv/{variant}")
-    print(f"{variant}: {len(ds['train']) + len(ds['test'])} total")
+train = pd.read_csv("data/sqpsychconv/exports/qwen25_train.csv")
+test = pd.read_csv("data/sqpsychconv/exports/qwen25_test.csv")
+
+print(f"Train: {len(train)} dialogues")
+print(f"Test: {len(test)} dialogues")
+print(train.head())
 ```
 
 ---
 
 ## Licensing
 
-**Status**: UNKNOWN - Same as parent dataset
+**Status**: UNKNOWN - Requires author confirmation before redistribution
 
-See `DATASET-sqpsychconv-qwq.md` for licensing concerns.
+| Artifact | Known License |
+|----------|---------------|
+| arXiv paper | CC BY 4.0 |
+| Project website | CC BY-SA 4.0 |
+| HuggingFace dataset card | **No license displayed** |
+| Dataset itself | **UNCONFIRMED** |
 
 ---
 
