@@ -82,7 +82,11 @@ Each record in the export:
     "depressed_mood": [2, 3, 2, 2, 2, 3],
     ...
   },
-  "arbitration_triggered": true,
+  "arbitration_triggered": {
+    "anhedonia": false,
+    "depressed_mood": true,
+    ...
+  },
   "run_id": "2026-01-03_production",
   "prompt_version": "v1.0.0"
 }
@@ -99,7 +103,7 @@ Each record in the export:
 | `severity_bucket` | `final_severity_bucket` | Severity classification |
 | `client_qa_text` | Preprocessing | Scoring text for embeddings |
 | `juror_votes` | `juror_reports` | All 6 juror votes per item |
-| `arbitration_triggered` | `triggered_arbitration` | Was judge invoked? |
+| `arbitration_triggered` | `triggered_arbitration` + items | Per-item arbitration flags (dict) |
 | `run_id` | Manifest | Run identifier |
 | `prompt_version` | `prompt_version` | Prompt version label |
 

@@ -51,6 +51,7 @@ A typical vibe-check workflow:
 ```bash
 uv run vibe-check score-corpus \
     --input data/sqpsychconv/qwen-2.5 \
+    --checkpoint sqlite:///data/outputs/checkpoint.db \
     --output data/outputs \
     --limit 10
 ```
@@ -60,6 +61,7 @@ uv run vibe-check score-corpus \
 ```bash
 uv run vibe-check score-corpus \
     --input data/sqpsychconv/qwen-2.5 \
+    --checkpoint sqlite:///data/outputs/checkpoint.db \
     --output data/outputs \
     --live
 ```
