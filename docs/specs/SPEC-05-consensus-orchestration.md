@@ -45,9 +45,9 @@ assert result.triggered_arbitration in {True, False}
 
 | File | Purpose |
 |------|---------|
-| `src/vibe_check/graphs/__init__.py` | Graph package |
-| `src/vibe_check/graphs/state.py` | Typed state definitions (single-dialogue) |
-| `src/vibe_check/graphs/single_dialogue.py` | LangGraph workflow for one dialogue |
+| `src/vibe_check/graph/__init__.py` | Graph package (already exists) |
+| `src/vibe_check/graph/state.py` | Typed state definitions (already exists) |
+| `src/vibe_check/graph/single_dialogue.py` | LangGraph workflow for one dialogue |
 | `src/vibe_check/judge/schema.py` | Judge output schema (per contested item) |
 | `src/vibe_check/judge/prompting.py` | Judge prompt builder (excerpt + juror evidence) |
 
