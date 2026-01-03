@@ -12,7 +12,7 @@ Diagnostics compute quality metrics and check if the run passes all gates:
 |------|--------|-----------|
 | Reliability | Krippendorff's α | ≥ 0.67 |
 | Consistency | Cronbach's α | ≥ 0.70 |
-| Separation | MDD mean > Control mean | True |
+| Separation | Separation validity | MDD > control, p < 0.01, d ≥ 0.5 |
 | Arbitration | Rate | < 30% |
 
 ---
@@ -140,10 +140,11 @@ uv run vibe-check diagnostics \
 
 ### Separation
 
-The MDD group should score higher than Control:
+The MDD group should score higher than Control and show clear separation:
 - `mdd_mean` typically 10-15
 - `control_mean` typically 3-7
 - `cohens_d` > 0.8 indicates large effect
+- Gate requires: `mdd_mean > control_mean`, `p_value < 0.01`, `cohens_d >= 0.5`
 
 If `is_valid: false`, check:
 - Are condition labels correct?
@@ -190,8 +191,8 @@ Low correlations indicate items scored inconsistently.
 ### Separation Failure
 
 ```bash
-# Check means
-cat diagnostics.json | jq '{mdd: .separation.mdd_mean, control: .separation.control_mean}'
+# Check separation metrics
+cat diagnostics.json | jq '{mdd: .separation.mdd_mean, control: .separation.control_mean, d: .separation.cohens_d, p: .separation.p_value, is_valid: .separation.is_valid}'
 ```
 
 If means are reversed:

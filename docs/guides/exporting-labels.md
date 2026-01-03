@@ -104,7 +104,7 @@ Each record in the export:
 | `client_qa_text` | Preprocessing | Scoring text for embeddings |
 | `juror_votes` | `juror_reports` | All 6 juror votes per item |
 | `arbitration_triggered` | `triggered_arbitration` + items | Per-item arbitration flags (dict) |
-| `run_id` | Manifest | Run identifier |
+| `run_id` | `scored.jsonl` parent directory name | Run identifier |
 | `prompt_version` | `prompt_version` | Prompt version label |
 
 ---

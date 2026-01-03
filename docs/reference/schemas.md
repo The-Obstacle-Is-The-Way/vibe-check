@@ -15,11 +15,11 @@ Input corpus record from SQPsychConv dataset.
 | Field | Type | Description |
 |-------|------|-------------|
 | `file_id` | `str` | Unique identifier (e.g., "active436") |
-| `condition` | `str` | "mdd" or "control" |
+| `condition` | `Literal["mdd", "control"]` | "mdd" or "control" |
 | `client_model` | `str` | LLM used for synthetic client |
 | `therapist_model` | `str` | LLM used for synthetic therapist |
 | `dialogue` | `str` | Raw dialogue text |
-| `computed_split` | `str` | "train", "dev", or "test" |
+| `computed_split` | `Literal["train", "dev", "test"] \| None` | Deterministic split (may be null) |
 
 **Example**:
 
@@ -233,19 +233,19 @@ Final aggregated output.
 | Field | Type | Description |
 |-------|------|-------------|
 | `file_id` | `str` | Dialogue identifier |
-| `condition` | `str` | "mdd" or "control" |
+| `condition` | `Literal["mdd", "control"]` | "mdd" or "control" |
 | `items` | `dict[str, ItemAggregation]` | Per-item stats |
 | `total_mode` | `int` | Mode of total distribution |
 | `total_expected` | `float` | Expected total |
 | `total_std` | `float` | Standard deviation |
 | `total_posterior` | `dict[int, float]` | Total score distribution |
 | `total_ci_90` | `tuple[int, int]` | 90% credible interval |
-| `severity_bucket` | `str` | Severity classification |
+| `severity_bucket` | `Literal["0-4", "5-9", "10-14", "15-19", "20-24"]` | Severity classification |
 | `severity_bucket_probs` | `dict[str, float]` | Bucket probabilities |
 | `final_item_scores` | `dict[str, int]` | Final scores per item |
 | `final_total_score` | `int` | Final total (0-24) |
-| `final_severity_bucket` | `str` | Final severity |
-| `final_source` | `str` | "jury_mode" or "judge_override" |
+| `final_severity_bucket` | `Literal["0-4", "5-9", "10-14", "15-19", "20-24"]` | Final severity |
+| `final_source` | `Literal["jury_mode", "jury_expected", "judge_override"]` | Source of final scores |
 | `triggered_arbitration` | `bool` | Judge invoked |
 | `arbitration_items` | `list[str]` | Items arbitrated |
 | `arbitration_reasons` | `dict[str, str]` | Why each item |
@@ -297,7 +297,7 @@ Public export format.
 | Field | Type | Description |
 |-------|------|-------------|
 | `dialogue_id` | `str` | Identifier |
-| `condition` | `str` | "mdd" or "control" |
+| `condition` | `Literal["mdd", "control"]` | "mdd" or "control" |
 | `phq8_item_1` | `int` | Anhedonia score |
 | `phq8_item_2` | `int` | Depressed mood score |
 | `phq8_item_3` | `int` | Sleep score |
@@ -307,7 +307,7 @@ Public export format.
 | `phq8_item_7` | `int` | Concentration score |
 | `phq8_item_8` | `int` | Psychomotor score |
 | `phq8_total` | `int` | Total (0-24) |
-| `severity_bucket` | `str` | Severity classification |
+| `severity_bucket` | `Literal["0-4", "5-9", "10-14", "15-19", "20-24"]` | Severity classification |
 | `client_qa_text` | `str` | Scoring text |
 | `juror_votes` | `dict[str, list[int]]` | All votes per item |
 | `arbitration_triggered` | `dict[str, bool]` | Per-item arbitration flags |
@@ -354,6 +354,7 @@ Quality metrics report.
 | Field | Type | Description |
 |-------|------|-------------|
 | `run_id` | `str` | Run identifier |
+| `computed_at` | `datetime` | When diagnostics were computed |
 | `n_dialogues` | `int` | Total dialogues |
 | `n_mdd` | `int` | MDD count |
 | `n_control` | `int` | Control count |
@@ -363,5 +364,5 @@ Quality metrics report.
 | `arbitration` | `ArbitrationMetrics` | Arbitration stats |
 | `passes_reliability_gate` | `bool` | α ≥ 0.67 |
 | `passes_consistency_gate` | `bool` | α ≥ 0.70 |
-| `passes_separation_gate` | `bool` | MDD > Control |
+| `passes_separation_gate` | `bool` | MDD > Control, p < 0.01, d ≥ 0.5 |
 | `passes_arbitration_gate` | `bool` | Rate < 30% |

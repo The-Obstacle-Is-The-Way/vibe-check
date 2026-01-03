@@ -2,7 +2,9 @@
 
 ## Active Bugs
 
-No open bugs.
+| ID | Severity | Status | Title |
+|----|----------|--------|-------|
+| BUG-027 | P1 | open | [CLI `--prompt-version` / `--dialogue-view` can desync from live agent prompts](bug-027-cli-prompt-version-view-mismatch.md) |
 
 ---
 

@@ -25,7 +25,7 @@ After scoring completes, diagnostics validate:
 |------|--------|-----------|
 | Reliability | Krippendorff α | ≥ 0.67 |
 | Consistency | Cronbach α | ≥ 0.70 |
-| Separation | MDD > Control | True |
+| Separation | Separation validity | MDD > control, p < 0.01, d ≥ 0.5 |
 | Arbitration | Rate | < 30% |
 
 All gates must pass before labels are exported.

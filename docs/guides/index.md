@@ -71,6 +71,7 @@ uv run vibe-check score-corpus \
 ```bash
 uv run vibe-check diagnostics \
     --scored data/outputs/scored.jsonl \
+    --output data/outputs/diagnostics.json \
     --strict
 ```
 

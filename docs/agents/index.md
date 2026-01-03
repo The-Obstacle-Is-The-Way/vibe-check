@@ -211,7 +211,7 @@ class ScoringState(TypedDict):
     dialogue: str
     scoring_text: str  # The specific view (e.g., client_qa)
 
-    # Accumulated results (operator.add allows parallel append)
+    # Accumulated results (operator.add concatenates lists)
     jury_results: Annotated[list[PHQ8Report], operator.add]
 
     # Control flow
@@ -324,7 +324,7 @@ app = graph.compile(checkpointer=saver)
 
 ## Related Documentation
 
-- [Concepts: Jury Consensus](../concepts/jury-consensus.md) - How jurors work together
-- [Concepts: Arbitration](../concepts/arbitration.md) - When judge intervenes
-- [Concepts: Resilience](../concepts/resilience.md) - Error handling strategy
+- [Scoring: Jury Consensus](../scoring/jury-consensus.md) - How jurors work together
+- [Scoring: Arbitration](../scoring/arbitration.md) - When judge intervenes
+- [Reliability: Resilience](../reliability/resilience.md) - Error handling strategy
 - [Architecture: LangGraph Workflow](../architecture/langgraph-workflow.md) - Full workflow details

@@ -17,7 +17,7 @@ The judge:
 
 ## When Is the Judge Invoked?
 
-The judge is called only when arbitration is triggered. See [Arbitration](../concepts/arbitration.md) for trigger conditions:
+The judge is called only when arbitration is triggered. See [Arbitration](../scoring/arbitration.md) for trigger conditions:
 
 - Low max probability (< 0.60)
 - High entropy (> 1.2)
@@ -403,7 +403,7 @@ def arbitrate_node(state: ScoringState) -> dict[str, Any]:
 
 ## Related Documentation
 
-- [Concepts: Arbitration](../concepts/arbitration.md) - When judge is invoked
-- [Concepts: Resilience](../concepts/resilience.md) - Error handling
+- [Scoring: Arbitration](../scoring/arbitration.md) - When judge is invoked
+- [Reliability: Resilience](../reliability/resilience.md) - Error handling
 - [Juror](juror.md) - Independent scoring agent
 - [Agents Overview](index.md) - Agent protocols and constants

@@ -148,5 +148,5 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 
 - [Data Flow](data-flow.md) - Detailed transformation stages
 - [LangGraph Workflow](langgraph-workflow.md) - Single-dialogue graph
-- [Concepts: Jury Consensus](../concepts/jury-consensus.md) - How jurors work
-- [Concepts: Bayesian Aggregation](../concepts/bayesian-aggregation.md) - Math details
+- [Scoring: Jury Consensus](../scoring/jury-consensus.md) - How jurors work
+- [Scoring: Bayesian Aggregation](../scoring/bayesian-aggregation.md) - Math details

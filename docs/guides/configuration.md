@@ -133,15 +133,15 @@ print(settings.openai_api_key)      # "sk-..."
 
 ## CLI Overrides
 
-Some settings can be overridden via CLI flags:
+Some runtime behavior can be configured via CLI flags:
 
 | Flag | Setting | CLI Command |
 |------|---------|-------------|
 | `--limit` | N/A (debug only) | `score-corpus` |
 | `--live` | Use real APIs | `score-corpus` |
 | `--max-concurrency` | `max_concurrent_dialogues` | `score-corpus` |
-| `--dialogue-view` | `scoring_dialogue_view` | `score-corpus` |
-| `--prompt-version` | `prompt_version` | `score-corpus` |
+| `--dialogue-view` | `dialogue_view` (scoring text selection) | `score-corpus` |
+| `--prompt-version` | `prompt_version` label (output/state) | `score-corpus` |
 | `--strict` | N/A (exit code) | `diagnostics` |
 
 ---

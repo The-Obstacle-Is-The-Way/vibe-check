@@ -47,20 +47,20 @@ Maximum Shannon entropy before arbitration is triggered. Higher entropy = more u
 
 | Value | Behavior |
 |-------|----------|
-| `1.2` | Default - triggers if entropy > 1.2 bits |
+| `1.2` | Default - triggers if entropy > 1.2 nats |
 | `1.5` | More lenient - tolerates more uncertainty |
 | `1.0` | More strict - requires more certainty |
 
 **Entropy Reference**:
 ```
-Uniform [0.25, 0.25, 0.25, 0.25] → H = 2.0 bits (maximum)
-Certain [0.00, 0.00, 1.00, 0.00] → H = 0.0 bits (minimum)
-Typical  [0.10, 0.30, 0.50, 0.10] → H ≈ 1.5 bits
+Uniform [0.25, 0.25, 0.25, 0.25] → H = ln(4) ≈ 1.39 nats (maximum)
+Certain [0.00, 0.00, 1.00, 0.00] → H = 0.0 nats (minimum)
+Typical  [0.10, 0.30, 0.50, 0.10] → H ≈ 1.17 nats
 ```
 
 **Formula**:
 ```
-H = -Σ p(x) × log₂(p(x))
+H = -Σ p(x) × ln(p(x))
 ```
 
 ---
@@ -173,10 +173,16 @@ Internal consistency of PHQ-8 items (do items correlate as expected for a depres
 
 ---
 
-### Separation Gate: MDD > Control
+### Separation Gate: MDD > control, p < 0.01, d ≥ 0.5
 
-**Threshold**: MDD mean > Control mean
-**File**: `diagnostics/runner.py:107`
+**Threshold**:
+- `mdd_mean > control_mean`
+- `p_value < 0.01`
+- `cohens_d >= 0.5`
+
+**Files**:
+- `src/vibe_check/diagnostics/runner.py:107` (gate uses `separation.is_valid`)
+- `src/vibe_check/diagnostics/separation.py:55` (definition of `is_valid`)
 
 The corpus should show expected clinical separation.
 
@@ -185,10 +191,8 @@ The corpus should show expected clinical separation.
 | MDD cases | Higher PHQ-8 totals |
 | Control cases | Lower PHQ-8 totals |
 
-**Additional Metrics**:
-- Cohen's d effect size
-- Mann-Whitney U test p-value
-- AUC-ROC
+**Additional Metrics (reported, not gated)**:
+- t-statistic
 
 ---
 
@@ -277,6 +281,6 @@ DISAGREEMENT_RANGE_THRESHOLD=1
 | `total_std_threshold` | 2.0 | `ARBITRATION_TOTAL_STD_THRESHOLD` | Max total score std |
 | Krippendorff α gate | 0.67 | — | Min inter-rater agreement |
 | Cronbach α gate | 0.70 | — | Min internal consistency |
-| Separation gate | MDD > Control | — | Expected direction |
+| Separation gate | MDD > control, p<0.01, d≥0.5 | — | Condition separation validity |
 | Arbitration rate gate | 0.30 | — | Max arbitration rate |
 | `dirichlet_alpha` | 0.5 | `DIRICHLET_ALPHA` | Bayesian smoothing |

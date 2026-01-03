@@ -508,7 +508,7 @@ Features:
 
 ## Related Documentation
 
-- [Concepts: Jury Consensus](../concepts/jury-consensus.md) - How jurors work together
-- [Concepts: Resilience](../concepts/resilience.md) - Three-layer error handling
+- [Scoring: Jury Consensus](../scoring/jury-consensus.md) - How jurors work together
+- [Reliability: Resilience](../reliability/resilience.md) - Three-layer error handling
 - [Judge](judge.md) - Arbitration agent
 - [Agents Overview](index.md) - Agent protocols and constants

@@ -298,5 +298,5 @@ result = score_one_dialogue(
 
 - [System Overview](system-overview.md) - High-level pipeline
 - [Data Flow](data-flow.md) - Schema transformations
-- [Concepts: Jury Consensus](../concepts/jury-consensus.md) - How jurors work
-- [Concepts: Arbitration](../concepts/arbitration.md) - When judge is invoked
+- [Scoring: Jury Consensus](../scoring/jury-consensus.md) - How jurors work
+- [Scoring: Arbitration](../scoring/arbitration.md) - When judge is invoked

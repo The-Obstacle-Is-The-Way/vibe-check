@@ -129,7 +129,7 @@ Technical specifications and lookup tables.
 ```
 ┌─────────────┐     ┌─────────────────┐     ┌─────────────┐
 │  SQPsychConv│────▶│  Preprocessing  │────▶│   6 Jurors  │
-│   Corpus    │     │  (DialogueViews)│     │  (parallel) │
+│   Corpus    │     │  (DialogueViews)│     │ (sequential)│
 └─────────────┘     └─────────────────┘     └──────┬──────┘
                                                    │
                                                    ▼
@@ -192,7 +192,7 @@ A scoring run must pass:
 |------|-----------|----------|
 | Reliability | Krippendorff α ≥ 0.67 | Inter-rater agreement |
 | Consistency | Cronbach α ≥ 0.70 | Internal consistency |
-| Separation | MDD > Control | Clinical validity |
+| Separation | MDD > control, p<0.01, d≥0.5 | Clinical validity |
 | Arbitration | Rate < 30% | Juror consensus |
 
 See [Quality Gates](reliability/quality-gates.md) for details.

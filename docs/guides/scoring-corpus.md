@@ -87,14 +87,7 @@ uv run vibe-check score-corpus \
 
 ## Step 4: Monitor Progress
 
-The runner outputs progress:
-
-```
-Processing 2090 dialogues...
-[====                    ] 20% (418/2090) | ETA: 45m
-```
-
-If interrupted, resume by running the same command again—the checkpoint ensures no duplicate work.
+The runner does not print a progress bar. Progress is tracked via `ledger.sqlite` (job status) and `rows/` (one JSON per completed dialogue).
 
 ---
 
@@ -111,10 +104,9 @@ uv run vibe-check score-corpus \
     --live
 ```
 
-The checkpoint database tracks:
-- Which dialogues are done
-- State of in-progress dialogues
-- Token usage totals
+Resume uses two SQLite databases:
+- `ledger.sqlite`: which dialogues are `done` / `running` / `failed`, plus token usage totals
+- `--checkpoint` DB: LangGraph state checkpoints per `file_id`
 
 ---
 
@@ -162,12 +154,15 @@ cat data/outputs/run_manifest.json | python -m json.tool
 
 ```json
 {
-  "run_id": "2026-01-03_production",
-  "total_dialogues": 2090,
+  "dialogues_total": 2090,
   "completed": 2090,
   "failed": 0,
-  "arbitration_rate": 0.23,
-  "total_tokens": {...}
+  "arbitration_rate": "...",
+  "rows_written": 2090,
+  "arbitrated_dialogues": "...",
+  "counts_by_condition": {"mdd": "...", "control": "..."},
+  "counts_by_split": {"train": "...", "dev": "...", "test": "..."},
+  "token_usage_totals": {...}
 }
 ```
 

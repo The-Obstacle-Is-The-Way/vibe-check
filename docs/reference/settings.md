@@ -259,7 +259,7 @@ Some settings can be overridden via CLI flags:
 | CLI Flag | Overrides | Command |
 |----------|-----------|---------|
 | `--max-concurrency` | `max_concurrent_dialogues` | `score-corpus` |
-| `--dialogue-view` | `scoring_dialogue_view` | `score-corpus` |
-| `--prompt-version` | `prompt_version` | `score-corpus` |
+| `--dialogue-view` | `dialogue_view` (scoring text selection) | `score-corpus` |
+| `--prompt-version` | `prompt_version` label (output/state) | `score-corpus` |
 
-CLI flags take precedence over environment variables.
+CLI flags take precedence for runner options; prompt templates are selected via environment (`PROMPT_VERSION`, `SCORING_DIALOGUE_VIEW`).
