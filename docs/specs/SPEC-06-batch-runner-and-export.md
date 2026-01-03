@@ -96,22 +96,50 @@ Aggregate diagnostics (metrics only), e.g.:
 
 ## 4. Concurrency, Retries, and Determinism
 
+See also: **ADR-001** (`docs/architecture/ADR-001-rate-limiting-retries.md`) for full design rationale.
+
 ### 4.1 Concurrency
 
-- Concurrency must be configurable and default conservative
+- Concurrency must be configurable and default conservative (`max_concurrent_dialogues=50`)
 - Must respect provider rate limits (global and per-provider)
+- **Implementation**: `ProviderRateLimiters` in `resilience.py` wraps each provider with `aiolimiter.AsyncLimiter`
 
-### 4.2 Retries (Bounded)
+### 4.2 Rate Limiting (Layer 3 - Proactive)
 
-- Use bounded retries with exponential backoff
-- No “retry until it parses” loops
-- Persist failures in the ledger with error codes and timestamps
+Per-provider rate limiters prevent 429 errors before they happen:
 
-### 4.3 Determinism
+```python
+# Settings defaults
+openai_rpm: int = 100
+anthropic_rpm: int = 60
+google_rpm: int = 100
+```
+
+### 4.3 Retries (Layer 2 - Reactive)
+
+Bounded retries with exponential backoff + jitter (via `tenacity`):
+
+```python
+# Settings defaults
+max_retries: int = 5
+retry_initial_wait: float = 1.0  # seconds
+retry_max_wait: float = 60.0     # seconds
+retry_jitter: float = 5.0        # seconds
+```
+
+Retry conditions:
+- HTTP 429 (rate limit)
+- HTTP 5xx (server errors)
+- Network/connection errors
+- Timeouts
+
+**NOT retried**: Validation errors (handled by PydanticAI Layer 1).
+
+### 4.4 Determinism
 
 - Split assignment stays deterministic (SPEC-02 SHA256-based)
 - Output ordering is deterministic (sort by `file_id` when exporting)
-- Never use Python’s `hash()` for anything that impacts persisted results
+- Never use Python's `hash()` for anything that impacts persisted results
 - Checkpoint state includes full context (dialogue text) for debugging (see SSOT 3.3)
 
 ---

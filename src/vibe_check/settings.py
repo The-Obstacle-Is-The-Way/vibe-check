@@ -43,6 +43,13 @@ class Settings(BaseSettings):
     anthropic_rpm: int = 60
     google_rpm: int = 100
 
+    # Retry Configuration (ADR-001)
+    max_retries: int = 5
+    retry_initial_wait: float = 1.0
+    retry_max_wait: float = 60.0
+    retry_jitter: float = 5.0
+    validation_retries: int = 2
+
     # Checkpointing
     checkpoint_db: str = "sqlite:///data/checkpoints/vibe_check.db"
 

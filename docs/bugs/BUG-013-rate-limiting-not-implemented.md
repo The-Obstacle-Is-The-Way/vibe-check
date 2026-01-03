@@ -1,8 +1,9 @@
 # BUG-013: Rate limiting and retries not implemented (tenacity/aiolimiter unused)
 
 **Severity**: P2 (production readiness for live API calls)
-**Status**: OPEN
+**Status**: RESOLVED
 **Date**: 2026-01-03
+**Resolution**: ADR-001 - Three-layer resilience strategy
 
 ---
 
@@ -12,63 +13,55 @@ SPEC-05 and SPEC-06 require:
 - "bounded retries with exponential backoff" (tenacity)
 - "respect provider rate limits" (aiolimiter)
 
-Both packages are in `pyproject.toml` but neither is imported or used in the codebase. This could cause issues with real API calls:
-- Rate limit errors when hitting provider limits
-- Unhandled transient failures without retry logic
+Both packages were in `pyproject.toml` but neither was imported or used in the codebase.
 
 ---
 
-## Affected Areas
+## Root Cause
 
-- `src/vibe_check/scoring/agent.py` - Should configure PydanticAI retries
-- `src/vibe_check/run/runner.py` - Should implement rate limiting
-- `src/vibe_check/run/factory.py` - Should wire up rate limiters
+Dependencies were declared but implementation was deferred.
 
 ---
 
-## Spec References
+## Resolution
 
-- **SPEC-05 Section 2.3**: "tenacity (bounded retries; no infinite loops)" + "aiolimiter (rate limiting)"
-- **SPEC-06 Section 4.1**: "Must respect provider rate limits (global and per-provider)"
-- **SPEC-06 Section 4.2**: "Use bounded retries with exponential backoff"
+Implemented ADR-001's three-layer resilience strategy:
+
+| Layer | Tool | Handles |
+|-------|------|---------|
+| 1. Validation | PydanticAI `retries=2` | Schema validation failures (malformed JSON) |
+| 2. Transient | Tenacity decorator | 429 rate limits, 5xx errors, network timeouts |
+| 3. Proactive | Aiolimiter | Prevent 429s by throttling requests per provider |
 
 ---
 
-## Fix Plan
+## Files Changed
 
-### Option A: Minimal (PydanticAI-native)
+- **NEW**: `src/vibe_check/resilience.py` - Rate limiters + retry decorators
+- **NEW**: `docs/architecture/ADR-001-rate-limiting-retries.md` - Architectural decision
+- `src/vibe_check/settings.py` - Added retry configuration
+- `src/vibe_check/scoring/agent.py` - Added `retries` parameter
+- `src/vibe_check/scoring/juror.py` - Integrated rate limiting + retry in `ascore()`
+- `src/vibe_check/run/factory.py` - Wires rate limiters to jurors
 
-Check if PydanticAI has built-in retry/rate-limit config and use it:
+---
+
+## Configuration Added to Settings
 
 ```python
-agent = Agent(
-    model=model,
-    retries=3,  # If supported
-    ...
-)
+# Retry Configuration (ADR-001)
+max_retries: int = 5
+retry_initial_wait: float = 1.0
+retry_max_wait: float = 60.0
+retry_jitter: float = 5.0
+validation_retries: int = 2
 ```
-
-### Option B: Full Implementation
-
-1. Add `aiolimiter` rate limiters per provider:
-   ```python
-   from aiolimiter import AsyncLimiter
-
-   openai_limiter = AsyncLimiter(settings.openai_rpm, 60)
-   ```
-
-2. Add `tenacity` retry decorator:
-   ```python
-   from tenacity import retry, stop_after_attempt, wait_exponential
-
-   @retry(stop=stop_after_attempt(3), wait=wait_exponential())
-   def score(...): ...
-   ```
 
 ---
 
 ## Verification
 
-- `--live` runs respect rate limits and don't get 429 errors
-- Transient failures are retried with backoff
-- Tests mock the rate limiters (no network dependency)
+- [x] All 70 tests pass
+- [x] mypy strict: 0 issues
+- [x] ruff: all checks passed
+- [ ] Production verification pending: `--live` run with real API calls

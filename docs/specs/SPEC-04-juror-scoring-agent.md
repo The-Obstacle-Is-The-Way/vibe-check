@@ -140,8 +140,74 @@ Use PydanticAI `TestModel` with golden fixture dicts and assert:
 
 ---
 
-## 5. Non-Goals
+## 5. Resilience (ADR-001)
+
+The juror scoring system implements a **three-layer resilience strategy** per ADR-001:
+
+### 5.1 Layer 1: PydanticAI Validation Retries
+
+```python
+# agent.py
+agent = Agent(
+    model=model,
+    output_type=PHQ8Assessment,
+    retries=settings.validation_retries,  # Default: 2
+)
+```
+
+Handles: Schema validation failures when the LLM produces malformed JSON.
+
+### 5.2 Layer 2: Tenacity Transient Retry
+
+```python
+# juror.py (inside ascore)
+@with_retry(
+    max_attempts=settings.max_retries,       # Default: 5
+    initial_wait=settings.retry_initial_wait, # Default: 1.0s
+    max_wait=settings.retry_max_wait,         # Default: 60.0s
+    jitter=settings.retry_jitter,             # Default: 5.0s
+)
+async def _call_with_retry():
+    return await self._agent.run(scoring_text)
+```
+
+Handles: HTTP 429 (rate limit), 5xx errors, network timeouts, connection errors.
+
+### 5.3 Layer 3: Aiolimiter Rate Limiting
+
+```python
+# resilience.py
+class ProviderRateLimiters:
+    def __init__(self, settings: Settings):
+        self._openai = AsyncLimiter(settings.openai_rpm, 60.0)    # Default: 100
+        self._anthropic = AsyncLimiter(settings.anthropic_rpm, 60.0)  # Default: 60
+        self._google = AsyncLimiter(settings.google_rpm, 60.0)    # Default: 100
+```
+
+Handles: Proactive throttling to prevent 429 errors before they happen.
+
+### 5.4 Wiring in Factory
+
+`build_real_jury()` in `factory.py` wires all three layers:
+
+```python
+def build_real_jury(settings: Settings) -> Sequence[Juror]:
+    rate_limiters = ProviderRateLimiters(settings)
+    # ... for each provider:
+    limiter = rate_limiters.get_limiter(model_id)
+    agent = build_juror_agent(..., retries=settings.validation_retries)
+    scorer = JurorScorer(
+        agent=agent,
+        rate_limiter=limiter,
+        max_retries=settings.max_retries,
+        # ... other retry settings
+    )
+```
+
+---
+
+## 6. Non-Goals
 
 - Multi-agent orchestration (SPEC-05)
 - Batch scoring across the full corpus (SPEC-06)
-- Any attempt to “optimize” prompts based on SQPsychConv artifacts (avoid overfitting to synthetic generator leakage)
+- Any attempt to "optimize" prompts based on SQPsychConv artifacts (avoid overfitting to synthetic generator leakage)

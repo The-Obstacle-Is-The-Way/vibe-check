@@ -1,9 +1,13 @@
-"""Factory for creating scoring actors (real or fake)."""
+"""Factory for creating scoring actors (real or fake).
+
+Wires up rate limiting and retry configuration (ADR-001) when building real jurors.
+"""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Protocol
 
+from vibe_check.resilience import ProviderRateLimiters
 from vibe_check.scoring.agent import build_juror_agent
 from vibe_check.scoring.fakes import DeterministicFakeJuror, deterministic_fake_judge_item
 from vibe_check.scoring.juror import JurorScorer
@@ -50,7 +54,13 @@ def build_fake_judge_item() -> JudgeItemFn:
 
 
 def build_real_jury(settings: Settings) -> Sequence[Juror]:
-    """Build a list of real PydanticAI-backed jurors using settings."""
+    """Build a list of real PydanticAI-backed jurors using settings.
+
+    Wires up ADR-001's three-layer resilience strategy:
+    - Layer 1: PydanticAI validation retries (via settings.validation_retries)
+    - Layer 2: Tenacity transient retry (via settings.max_retries, etc.)
+    - Layer 3: Aiolimiter rate limiting (via per-provider RPM settings)
+    """
     # PydanticAI provider prefixes: openai, anthropic, google-gla (not "google")
     configs = [
         ("openai", settings.juror_gpt_model),
@@ -58,23 +68,35 @@ def build_real_jury(settings: Settings) -> Sequence[Juror]:
         ("google-gla", settings.juror_gemini_model),
     ]
 
+    # Create rate limiters for all providers
+    rate_limiters = ProviderRateLimiters(settings)
+
     jurors: list[Juror] = []
 
     for provider, model_id in configs:
         # PydanticAI model identifier e.g. "openai:gpt-5.2"
         full_model_name = f"{provider}:{model_id}"
 
+        # Get the rate limiter for this provider
+        limiter = rate_limiters.get_limiter(model_id)
+
         for run_no in range(1, settings.runs_per_model + 1):
             agent = build_juror_agent(
                 model=full_model_name,
                 prompt_version=settings.prompt_version,
                 view_name=settings.scoring_dialogue_view,
+                retries=settings.validation_retries,
             )
             scorer = JurorScorer(
                 agent=agent,
                 model_id=model_id,
                 run_number=run_no,
                 prompt_version=settings.prompt_version,
+                rate_limiter=limiter,
+                max_retries=settings.max_retries,
+                retry_initial_wait=settings.retry_initial_wait,
+                retry_max_wait=settings.retry_max_wait,
+                retry_jitter=settings.retry_jitter,
             )
             jurors.append(scorer)
 
