@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, cast
 
 from vibe_check.constants import PHQ8_ITEMS
-from vibe_check.judge.schema import JudgeItemResolution
+from vibe_check.judge.schema import JudgeItemReport
 from vibe_check.schemas.scoring import PHQ8ItemScore, PHQ8Report, TokenUsage
 
 if TYPE_CHECKING:
@@ -75,14 +75,20 @@ def deterministic_fake_judge_item(
     item: str,
     juror_reports: list[PHQ8Report],
     prompt_version: str,
-) -> JudgeItemResolution:
+) -> JudgeItemReport:
     del scoring_text, prompt_version
     votes = [int(getattr(r, item).score) for r in juror_reports]
     avg = sum(votes) / float(len(votes))
     final = cast("Score", max(0, min(3, round(avg))))
-    return JudgeItemResolution(
+    return JudgeItemReport(
         item=item,
         final_score=final,
         confidence=0.7,
         rationale="Deterministic fake judge (mean of juror votes).",
+        usage=TokenUsage(
+            input_tokens=50,
+            output_tokens=25,
+            reasoning_tokens=5,
+            total_tokens=80,
+        ),
     )

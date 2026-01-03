@@ -1,7 +1,8 @@
 ---
 severity: P4
-status: open
+status: resolved
 opened_date: 2026-01-03
+resolved_date: 2026-01-03
 ---
 
 # BUG-034: `.env.example` missing `ARBITRATION_MAX_PROB_THRESHOLD` / `ARBITRATION_ENTROPY_THRESHOLD`
@@ -22,5 +23,4 @@ opened_date: 2026-01-03
 - Encourages “mystery defaults” in experiments.
 
 ## Fix Plan
-- Add the missing keys to `.env.example` with the current defaults.
-- Keep `.env.example` as an SSOT mirror of `Settings` fields (one-to-one).
+Resolved by adding the missing keys to `.env.example` and adding a unit test to prevent drift.

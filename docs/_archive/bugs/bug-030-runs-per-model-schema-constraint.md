@@ -1,7 +1,8 @@
 ---
 severity: P2
-status: open
+status: resolved
 opened_date: 2026-01-03
+resolved_date: 2026-01-03
 ---
 
 # BUG-030: `RUNS_PER_MODEL` > 2 breaks scoring (`PHQ8Report.run_number` is capped at 2)
@@ -30,7 +31,6 @@ Expected: 3 runs per model.
 Actual: Pydantic `ValidationError` on `PHQ8Report.run_number`.
 
 ## Fix Plan
-- Decide SSOT:
-  - If “2 runs per model” is a hard invariant: enforce it in `Settings` (validation) and in docs; remove configurability.
-  - If configurable runs are intended: remove `le=2` constraint from `PHQ8Report.run_number` (keep `ge=1`) and update docs/tests accordingly.
-- Add a unit test that sets `RUNS_PER_MODEL=3` and asserts the chosen behavior (reject early vs support).
+Resolved by enforcing the invariant:
+- `Settings.runs_per_model` is now validated as `1..2` to match `PHQ8Report.run_number`.
+- Added unit coverage to ensure `RUNS_PER_MODEL=3` fails fast during settings load.

@@ -27,6 +27,7 @@ def aggregate_votes(
     votes_by_item: Mapping[str, Sequence[int]],
     *,
     dirichlet_alpha: float = 0.5,
+    range_threshold: int = 2,
     insufficient_evidence_counts: dict[str, int] | None = None,
     arbitration_max_prob_threshold: float = 0.60,
     arbitration_entropy_threshold: float = 1.2,
@@ -59,6 +60,7 @@ def aggregate_votes(
             posterior,
             votes,
             insufficient_evidence_count=insufficient_count,
+            range_threshold=range_threshold,
             max_prob_threshold=arbitration_max_prob_threshold,
             entropy_threshold=arbitration_entropy_threshold,
         )
@@ -110,6 +112,7 @@ def aggregate_reports(
     condition: Literal["mdd", "control"],
     prompt_version: str,
     dirichlet_alpha: float = 0.5,
+    disagreement_range_threshold: int = 2,
     arbitration_total_std_threshold: float = 2.0,
     arbitration_max_prob_threshold: float = 0.60,
     arbitration_entropy_threshold: float = 1.2,
@@ -131,6 +134,7 @@ def aggregate_reports(
     items, total_posterior, arbitration_items, arbitration_reasons = aggregate_votes(
         votes_by_item,
         dirichlet_alpha=dirichlet_alpha,
+        range_threshold=disagreement_range_threshold,
         insufficient_evidence_counts=insufficient_counts,
         arbitration_max_prob_threshold=arbitration_max_prob_threshold,
         arbitration_entropy_threshold=arbitration_entropy_threshold,

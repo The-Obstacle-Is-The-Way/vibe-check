@@ -16,6 +16,19 @@ from vibe_check.run.runner import score_corpus
 from vibe_check.settings import Settings
 
 
+def export_provider_api_keys(settings: Settings) -> None:
+    """Export Settings API keys to env vars expected by provider SDKs."""
+    # PydanticAI providers read env vars directly, not our Settings object.
+    if settings.openai_api_key:
+        os.environ.setdefault("OPENAI_API_KEY", settings.openai_api_key)
+    if settings.anthropic_api_key:
+        os.environ.setdefault("ANTHROPIC_API_KEY", settings.anthropic_api_key)
+    if settings.google_api_key:
+        # Some integrations still read GEMINI_API_KEY; keep it in sync with GOOGLE_API_KEY.
+        os.environ.setdefault("GOOGLE_API_KEY", settings.google_api_key)
+        os.environ.setdefault("GEMINI_API_KEY", settings.google_api_key)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="vibe-check")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -48,6 +61,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help="Max concurrency for graph execution (defaults to Settings.max_concurrent_dialogues).",
+    )
+    score.add_argument(
+        "--force",
+        action="store_true",
+        help="Allow resetting an existing run directory/checkpoint when the run config differs.",
     )
 
     diagnostics = sub.add_parser("diagnostics", help="Compute run diagnostics from scored.jsonl.")
@@ -92,14 +110,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
         if args.live:
-            # Export API keys to environment for PydanticAI providers
-            # (They read env vars directly, not our Settings object)
-            if settings.openai_api_key:
-                os.environ.setdefault("OPENAI_API_KEY", settings.openai_api_key)
-            if settings.anthropic_api_key:
-                os.environ.setdefault("ANTHROPIC_API_KEY", settings.anthropic_api_key)
-            if settings.google_api_key:
-                os.environ.setdefault("GOOGLE_API_KEY", settings.google_api_key)
+            export_provider_api_keys(settings)
 
             # BUG-027 fix: Pass CLI args to factory functions, not Settings defaults
             jurors = build_real_jury(
@@ -125,10 +136,12 @@ def main(argv: list[str] | None = None) -> int:
             prompt_version=args.prompt_version,
             dialogue_view=args.dialogue_view,
             max_concurrency=max_concurrency,
+            force=args.force,
             dirichlet_alpha=settings.dirichlet_alpha,
             arbitration_total_std_threshold=settings.arbitration_total_std_threshold,
             arbitration_max_prob_threshold=settings.arbitration_max_prob_threshold,
             arbitration_entropy_threshold=settings.arbitration_entropy_threshold,
+            disagreement_range_threshold=settings.disagreement_range_threshold,
         )
         return 0
 

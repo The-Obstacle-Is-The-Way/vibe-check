@@ -11,11 +11,12 @@ from vibe_check.resilience import ProviderRateLimiters
 from vibe_check.scoring.agent import build_juror_agent
 from vibe_check.scoring.fakes import DeterministicFakeJuror, deterministic_fake_judge_item
 from vibe_check.scoring.juror import JurorScorer
+from vibe_check.scoring.usage import token_usage_from_run_usage
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from vibe_check.judge.schema import JudgeItemResolution
+    from vibe_check.judge.schema import JudgeItemReport, JudgeItemResolution
     from vibe_check.schemas.scoring import PHQ8Report
     from vibe_check.settings import Settings
 
@@ -41,7 +42,7 @@ class JudgeItemFn(Protocol):
         item: str,
         juror_reports: list[PHQ8Report],
         prompt_version: str,
-    ) -> JudgeItemResolution:
+    ) -> JudgeItemReport:
         """Resolve a single contested item."""
         ...
 
@@ -157,6 +158,7 @@ def build_real_judge_item(
 
     from vibe_check.judge.agent import build_judge_agent
     from vibe_check.judge.prompting import build_judge_item_prompt
+    from vibe_check.judge.schema import JudgeItemReport
     from vibe_check.resilience import _is_transient_error
 
     full_model_name = f"anthropic:{settings.judge_model}"
@@ -179,7 +181,7 @@ def build_real_judge_item(
         item: str,
         juror_reports: list[PHQ8Report],
         prompt_version: str,
-    ) -> JudgeItemResolution:
+    ) -> JudgeItemReport:
         _ = prompt_version
         evidence_pool: list[str] = []
         votes: list[int] = []
@@ -206,11 +208,13 @@ def build_real_judge_item(
             retry=retry_if_exception(_is_transient_error),
             reraise=True,
         )
-        def _call_with_retry() -> JudgeItemResolution:
+        def _call_with_retry() -> JudgeItemReport:
             result = agent.run_sync(prompt)
             # PydanticAI v1+ puts structured output in .data
             output = getattr(result, "data", getattr(result, "output", None))
-            return cast("JudgeItemResolution", output)
+            resolution = cast("JudgeItemResolution", output)
+            usage = token_usage_from_run_usage(result.usage())
+            return JudgeItemReport(**resolution.model_dump(), usage=usage)
 
         return _call_with_retry()
 

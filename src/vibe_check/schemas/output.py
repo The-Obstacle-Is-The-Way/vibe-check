@@ -8,7 +8,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from vibe_check.constants import SEVERITY_BUCKETS, SeverityBucket
-from vibe_check.schemas.scoring import PHQ8Report
+from vibe_check.schemas.scoring import PHQ8Report, TokenUsage
 
 
 class ItemAggregation(BaseModel):
@@ -63,6 +63,7 @@ class AggregatedPHQ8(BaseModel):
 
     juror_reports: list[PHQ8Report]
     judge_resolution: dict[str, Any] | None = None
+    judge_usage: TokenUsage | None = None
 
     prompt_version: str
     scored_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

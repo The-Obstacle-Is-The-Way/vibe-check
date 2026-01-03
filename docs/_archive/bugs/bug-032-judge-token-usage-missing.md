@@ -1,7 +1,8 @@
 ---
 severity: P3
-status: open
+status: resolved
 opened_date: 2026-01-03
+resolved_date: 2026-01-03
 ---
 
 # BUG-032: Token usage totals omit judge calls (manifest undercounts arbitration cost)
@@ -24,7 +25,8 @@ The batch runner aggregates token usage into `ledger.sqlite` and `run_manifest.j
 - “Hidden reasoning tokens” visibility is incomplete for the judge model.
 
 ## Fix Plan
-- Capture judge usage and persist it:
-  - Extend judge return type to include `TokenUsage` (either inside the resolution model or alongside it)
-  - Store judge usage in `AggregatedPHQ8` (e.g., `judge_usage`) and/or ledger aggregation
-- Add a unit test using PydanticAI `TestModel` (or a fake) to ensure judge usage is captured and included in manifest totals.
+Resolved by:
+- Introducing `JudgeItemReport` (resolution + `usage`) for arbitration results.
+- Adding `AggregatedPHQ8.judge_usage` to persist per-dialogue judge token usage.
+- Including judge usage in ledger/manifest token totals.
+- Adding integration coverage to assert totals include judge calls.

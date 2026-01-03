@@ -1,7 +1,8 @@
 ---
 severity: P3
-status: open
+status: resolved
 opened_date: 2026-01-03
+resolved_date: 2026-01-03
 ---
 
 # BUG-033: Resume can silently mix runs (no run-config hash / ledger reuse footgun)
@@ -24,8 +25,8 @@ The batch runner is designed to resume safely using `ledger.sqlite` and the Lang
 - Hard to audit runs after the fact (manifest counts can be wrong for the current invocation).
 
 ## Fix Plan
-- Persist a run config fingerprint (hash) and validate on start:
-  - Include: input path + dataset hash (or dataset_dict.json digest), prompt_version, dialogue_view, model IDs, runs_per_model, arbitration thresholds
-  - Store in `run_manifest.json` and in `ledger.sqlite` (single-row table)
-- On resume, refuse to run when the fingerprint differs unless an explicit `--force` is provided.
-- Add a test that reuses an output dir with different config and asserts the runner fails fast with a clear error.
+Resolved by:
+- Storing a run configuration fingerprint in `ledger.sqlite`.
+- Writing `run_fingerprint` and `run_config` into `run_manifest.json`.
+- Failing fast on config mismatch unless `--force` is provided, in which case the runner resets run artifacts and the checkpoint DB.
+- Adding integration coverage for mismatch refusal.

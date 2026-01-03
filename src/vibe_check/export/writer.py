@@ -66,7 +66,7 @@ def write_label_exports(
     output_dir: str | Path,
     formats: set[str],
 ) -> ExportValidationReport:
-    """Write `vibe_check_labels.jsonl` and/or `vibe_check_labels.csv` and validate."""
+    """Write `vibe_check_labels.jsonl` and optional `vibe_check_labels.csv`, then validate JSONL."""
     scored_path = Path(scored_jsonl)
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -101,12 +101,11 @@ def write_label_exports(
     jsonl_path = out_dir / "vibe_check_labels.jsonl"
     csv_path = out_dir / "vibe_check_labels.csv"
 
-    if "jsonl" in formats:
-        jsonl_path.write_text(
-            "\n".join(json.dumps(r.model_dump(mode="json"), sort_keys=True) for r in records)
-            + "\n",
-            encoding="utf-8",
-        )
+    # JSONL is the public contract and the target of schema validation; always write it.
+    jsonl_path.write_text(
+        "\n".join(json.dumps(r.model_dump(mode="json"), sort_keys=True) for r in records) + "\n",
+        encoding="utf-8",
+    )
 
     if "csv" in formats:
         fieldnames = [

@@ -1,7 +1,8 @@
 ---
 severity: P1
-status: open
+status: resolved
 opened_date: 2026-01-03
+resolved_date: 2026-01-03
 ---
 
 # BUG-028: Live Gemini jurors fail: `google-gla` expects `GEMINI_API_KEY` (not `GOOGLE_API_KEY`)
@@ -31,7 +32,8 @@ In `--live` runs, the real jury includes Gemini jurors using the PydanticAI prov
 3. Gemini juror calls raise a PydanticAI `UserError` requesting `GEMINI_API_KEY`.
 
 ## Fix Plan
-- Prefer: migrate Gemini jurors from `google-gla` → `google` provider prefix (non-deprecated).
-- Also: set both env vars in live mode (`GEMINI_API_KEY` and `GOOGLE_API_KEY`) for compatibility, or switch Settings to use `GEMINI_API_KEY` as the canonical field.
-- Update `.env.example` and docs to match the provider actually used.
-- Add a unit test covering live env var wiring for the Gemini provider.
+Resolved by:
+- Allowing `Settings.google_api_key` to load from either `GOOGLE_API_KEY` or `GEMINI_API_KEY`.
+- Exporting both `GOOGLE_API_KEY` and `GEMINI_API_KEY` in `--live` mode.
+- Adding `GEMINI_API_KEY` to `.env.example` as a compatibility alias.
+- Adding unit tests to prevent regressions.

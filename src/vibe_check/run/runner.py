@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
+import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -40,7 +43,9 @@ def score_corpus(
     dialogue_view: DialogueViewName = "client_qa",
     max_concurrency: int = 1,
     fail_fast: bool = False,
+    force: bool = False,
     dirichlet_alpha: float = 0.5,
+    disagreement_range_threshold: int = 2,
     arbitration_total_std_threshold: float = 2.0,
     arbitration_max_prob_threshold: float = 0.60,
     arbitration_entropy_threshold: float = 1.2,
@@ -58,7 +63,9 @@ def score_corpus(
             dialogue_view=dialogue_view,
             max_concurrency=max_concurrency,
             fail_fast=fail_fast,
+            force=force,
             dirichlet_alpha=dirichlet_alpha,
+            disagreement_range_threshold=disagreement_range_threshold,
             arbitration_total_std_threshold=arbitration_total_std_threshold,
             arbitration_max_prob_threshold=arbitration_max_prob_threshold,
             arbitration_entropy_threshold=arbitration_entropy_threshold,
@@ -78,7 +85,9 @@ async def score_corpus_async(
     dialogue_view: DialogueViewName = "client_qa",
     max_concurrency: int = 1,
     fail_fast: bool = False,
+    force: bool = False,
     dirichlet_alpha: float = 0.5,
+    disagreement_range_threshold: int = 2,
     arbitration_total_std_threshold: float = 2.0,
     arbitration_max_prob_threshold: float = 0.60,
     arbitration_entropy_threshold: float = 1.2,
@@ -89,15 +98,50 @@ async def score_corpus_async(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    corpus = load_corpus(input_path)
+    corpus_full = load_corpus(input_path)
+    dataset_file_ids = sorted(d.file_id for d in corpus_full)
+    dataset_fingerprint = hashlib.sha256("\n".join(dataset_file_ids).encode("utf-8")).hexdigest()
+
+    corpus = corpus_full
     if limit is not None:
         corpus = corpus[:limit]
+
+    run_config = {
+        "input_path": str(Path(input_path).resolve()),
+        "checkpoint_db": str(checkpoint_db),
+        "dataset_fingerprint": dataset_fingerprint,
+        "limit": limit,
+        "prompt_version": prompt_version,
+        "dialogue_view": dialogue_view,
+        "max_concurrency": max_concurrency,
+        "dirichlet_alpha": dirichlet_alpha,
+        "disagreement_range_threshold": disagreement_range_threshold,
+        "arbitration_total_std_threshold": arbitration_total_std_threshold,
+        "arbitration_max_prob_threshold": arbitration_max_prob_threshold,
+        "arbitration_entropy_threshold": arbitration_entropy_threshold,
+        "jurors": [
+            {
+                "class": j.__class__.__name__,
+                "model_id": getattr(j, "model_id", None),
+                "run_number": getattr(j, "run_number", None),
+            }
+            for j in jurors
+        ],
+        "judge_item": {
+            "module": getattr(judge_item, "__module__", None),
+            "name": getattr(judge_item, "__name__", None),
+            "class": judge_item.__class__.__name__,
+        },
+    }
+    run_config_json = json.dumps(run_config, sort_keys=True, separators=(",", ":"))
+    run_fingerprint = hashlib.sha256(run_config_json.encode("utf-8")).hexdigest()
 
     # Initialize graph and checkpointing
     graph = build_single_dialogue_graph(
         jurors=jurors,
         judge_item=judge_item,
         dirichlet_alpha=dirichlet_alpha,
+        disagreement_range_threshold=disagreement_range_threshold,
         arbitration_total_std_threshold=arbitration_total_std_threshold,
         arbitration_max_prob_threshold=arbitration_max_prob_threshold,
         arbitration_entropy_threshold=arbitration_entropy_threshold,
@@ -116,8 +160,46 @@ async def score_corpus_async(
             raise ValueError(f"computed_split missing for {dialogue.file_id}")
         split_counts[split] = split_counts.get(split, 0) + 1
 
+    ledger_path = output_dir / "ledger.sqlite"
+
+    def _reset_paths() -> None:
+        rows_dir = output_dir / "rows"
+        if rows_dir.exists():
+            shutil.rmtree(rows_dir)
+        for path in (
+            ledger_path,
+            output_dir / "scored.jsonl",
+            output_dir / "run_manifest.json",
+        ):
+            if path.exists():
+                path.unlink()
+        for suffix in (".sqlite-wal", ".sqlite-shm", "-wal", "-shm"):
+            p = Path(str(checkpoint_path) + suffix)
+            if p.exists():
+                p.unlink()
+        if checkpoint_path.exists() and checkpoint_path != Path(":memory:"):
+            checkpoint_path.unlink()
+
     # Use Ledger context manager for persistent connection
-    with JobLedger(output_dir / "ledger.sqlite") as ledger:
+    while True:
+        with JobLedger(ledger_path) as ledger:
+            try:
+                ledger.ensure_run_config(
+                    fingerprint=run_fingerprint,
+                    config_json=run_config_json,
+                )
+            except ValueError as e:
+                if not force:
+                    raise ValueError(
+                        "run configuration mismatch (use a new --output/--checkpoint or pass --force to reset)"
+                    ) from e
+            else:
+                break
+
+        _reset_paths()
+        force = False
+
+    with JobLedger(ledger_path) as ledger:
         ledger.initialize([d.file_id for d in corpus])
         reset_count = ledger.reset_running_items()
         if reset_count > 0:
@@ -176,6 +258,11 @@ async def score_corpus_async(
                             t_output += report.usage.output_tokens or 0
                             t_reasoning += report.usage.reasoning_tokens or 0
                             t_total += report.usage.total_tokens or 0
+                    if result.judge_usage:
+                        t_input += result.judge_usage.input_tokens or 0
+                        t_output += result.judge_usage.output_tokens or 0
+                        t_reasoning += result.judge_usage.reasoning_tokens or 0
+                        t_total += result.judge_usage.total_tokens or 0
 
                     job_tokens = TokenUsage(
                         input_tokens=t_input,
@@ -240,5 +327,7 @@ async def score_corpus_async(
                 "counts_by_condition": condition_counts,
                 "counts_by_split": split_counts,
                 "token_usage_totals": aggregated_tokens,
+                "run_fingerprint": run_fingerprint,
+                "run_config": run_config,
             }
             write_run_manifest(output_dir, manifest)

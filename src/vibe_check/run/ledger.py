@@ -82,6 +82,16 @@ class JobLedger:
                 )
                 """
             )
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS run_config (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    fingerprint TEXT NOT NULL,
+                    config_json TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
             # Migration: Check for missing columns if table existed
             columns = {row[1] for row in self.conn.execute("PRAGMA table_info(jobs)").fetchall()}
             if "total_tokens" not in columns:
@@ -226,3 +236,28 @@ class JobLedger:
             "reasoning_tokens": row[2] or 0,
             "total_tokens": row[3] or 0,
         }
+
+    def get_run_config(self) -> tuple[str, str] | None:
+        row = self.conn.execute(
+            "SELECT fingerprint, config_json FROM run_config WHERE id = 1"
+        ).fetchone()
+        if row is None:
+            return None
+        return str(row[0]), str(row[1])
+
+    def ensure_run_config(self, *, fingerprint: str, config_json: str) -> None:
+        existing = self.get_run_config()
+        if existing is None:
+            with self.conn:
+                self.conn.execute(
+                    """
+                    INSERT INTO run_config (id, fingerprint, config_json, created_at)
+                    VALUES (1, ?, ?, ?)
+                    """,
+                    (fingerprint, config_json, _utc_now_iso()),
+                )
+            return
+
+        existing_fingerprint, _ = existing
+        if existing_fingerprint != fingerprint:
+            raise ValueError("run configuration mismatch")

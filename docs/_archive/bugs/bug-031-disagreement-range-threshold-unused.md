@@ -1,7 +1,8 @@
 ---
 severity: P2
-status: open
+status: resolved
 opened_date: 2026-01-03
+resolved_date: 2026-01-03
 ---
 
 # BUG-031: `DISAGREEMENT_RANGE_THRESHOLD` is exposed but unused (hardcoded range threshold)
@@ -25,7 +26,6 @@ opened_date: 2026-01-03
 - This is a “silent fallback” style failure: configuration is accepted but ignored.
 
 ## Fix Plan
-- Thread the value through (single SSOT path):
-  - CLI → runner → graph → `aggregate_reports(...)` → `aggregate_votes(...)` → `should_arbitrate_item(range_threshold=...)`
-- Or remove the setting + `.env.example` entry entirely if range threshold must be fixed.
-- Add a unit test that changes the setting and asserts arbitration behavior changes accordingly.
+Resolved by threading the setting end-to-end:
+- `disagreement_range_threshold` now flows CLI → runner → graph → `aggregate_reports` → `aggregate_votes` → `should_arbitrate_item`.
+- Added unit coverage to ensure `range_threshold` affects arbitration decisions.

@@ -1,7 +1,8 @@
 ---
 severity: P2
-status: open
+status: resolved
 opened_date: 2026-01-03
+resolved_date: 2026-01-03
 ---
 
 # BUG-029: `vibe-check export --format csv` fails (JSONL validation runs unconditionally)
@@ -28,8 +29,7 @@ Expected: `vibe_check_labels.csv` is written.
 Actual: `FileNotFoundError` for `out/vibe_check_labels.jsonl`.
 
 ## Fix Plan
-- Option A: Always write JSONL (even when only `csv` requested), since JSONL is the canonical contract and enables validation.
-- Option B: Validate only the formats that were written:
-  - If `jsonl` requested, validate JSONL.
-  - If only `csv` requested, either skip schema validation or add a CSV validation path.
-- Add a test for `formats={"csv"}`.
+Resolved by:
+- Always writing `vibe_check_labels.jsonl` (canonical contract) and validating it.
+- Treating `csv` as an optional additional output.
+- Adding an integration test for `--format csv` to prevent regressions.
