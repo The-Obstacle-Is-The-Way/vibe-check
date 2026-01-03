@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 
 class Juror(Protocol):
     def score(self, scoring_text: str) -> PHQ8Report: ...
+    async def ascore(self, scoring_text: str) -> PHQ8Report: ...
 
 
 class JudgeItemFn(Protocol):

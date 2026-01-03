@@ -21,3 +21,51 @@ def test_cli_parses_score_corpus_args() -> None:
     assert args.command == "score-corpus"
     assert args.limit == 5
     assert args.live is False
+
+
+def test_cli_parses_diagnostics_args() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "diagnostics",
+            "--scored",
+            "data/outputs/run/scored.jsonl",
+            "--output",
+            "data/outputs/run/diagnostics.json",
+            "--format",
+            "json",
+            "--strict",
+        ]
+    )
+    assert args.command == "diagnostics"
+    assert args.format == "json"
+    assert args.strict is True
+
+
+def test_cli_parses_export_args() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "export",
+            "--input",
+            "data/outputs/run/scored.jsonl",
+            "--output-dir",
+            "data/outputs/run/export",
+            "--format",
+            "jsonl,csv",
+        ]
+    )
+    assert args.command == "export"
+    assert args.format == "jsonl,csv"
+
+
+def test_cli_parses_validate_export_args() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "validate-export",
+            "--input",
+            "data/outputs/run/export/vibe_check_labels.jsonl",
+        ]
+    )
+    assert args.command == "validate-export"

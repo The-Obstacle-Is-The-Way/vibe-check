@@ -36,6 +36,7 @@ test -f data/outputs/dev_run/run_manifest.json
 Note: The reference implementation defaults to a deterministic fake jury/judge (offline) so CI and local runs never require API keys. Use `--live` to opt into real providers.
 
 Checkpoint note: accept either a raw SQLite file path or SQLAlchemy-style `sqlite:///...` and normalize internally.
+Implementation detail: the batch runner uses LangGraph's async checkpoint interface (`AsyncSqliteSaver`) because the scoring graph runs through async juror calls.
 
 ---
 
@@ -74,6 +75,7 @@ One JSON object per dialogue, matching the `AggregatedPHQ8` schema (full fidelit
 Includes:
 - `file_id`, `condition`, `computed_split`
 - `prompt_version`, `dialogue_view`
+- `scoring_text` (exact view text used for scoring; required for SPEC-08 export)
 - `juror_reports` (full vote history + evidence)
 - `judge_resolution`
 - `total_posterior` (distributional data)
@@ -101,6 +103,7 @@ See also: **ADR-001** (`docs/architecture/ADR-001-rate-limiting-retries.md`) for
 ### 4.1 Concurrency
 
 - Concurrency must be configurable and default conservative (`max_concurrent_dialogues=50`)
+- Implementation: `score_corpus_async()` uses an `asyncio.TaskGroup` worker pool to score up to `max_concurrency` dialogues concurrently
 - Must respect provider rate limits (global and per-provider)
 - **Implementation**: `ProviderRateLimiters` in `resilience.py` wraps each provider with `aiolimiter.AsyncLimiter`
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from langgraph.checkpoint.sqlite import SqliteSaver
 from tests.fixtures.sample_votes import create_mock_report
 
 from vibe_check.graph.single_dialogue import (
@@ -11,6 +10,7 @@ from vibe_check.graph.single_dialogue import (
     invoke_with_checkpoint_resume,
 )
 from vibe_check.judge.schema import JudgeItemResolution
+from vibe_check.sqlite import open_async_sqlite_saver
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -31,6 +31,9 @@ class FakeJuror:
             raise RuntimeError("juror boom")
         return self._report
 
+    async def ascore(self, text: str) -> PHQ8Report:
+        return self.score(text)
+
 
 def _base_state(*, file_id: str = "active82") -> ScoringState:
     return {
@@ -45,7 +48,8 @@ def _base_state(*, file_id: str = "active82") -> ScoringState:
     }
 
 
-def test_graph_arbitration_branch_overrides_final_scores(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_graph_arbitration_branch_overrides_final_scores(tmp_path: Path) -> None:
     reports = [create_mock_report(i, force_disagreement="sleep") for i in range(6)]
     jurors = [FakeJuror(r) for r in reports]
 
@@ -69,9 +73,9 @@ def test_graph_arbitration_branch_overrides_final_scores(tmp_path: Path) -> None
     graph = build_single_dialogue_graph(jurors=jurors, judge_item=judge)
     checkpoint_path = tmp_path / "graph.sqlite"
 
-    with SqliteSaver.from_conn_string(str(checkpoint_path)) as saver:
+    async with open_async_sqlite_saver(checkpoint_path) as saver:
         app = graph.compile(checkpointer=saver)
-        out = invoke_with_checkpoint_resume(
+        out = await invoke_with_checkpoint_resume(
             app,
             checkpointer=saver,
             initial_state=_base_state(),
@@ -85,7 +89,49 @@ def test_graph_arbitration_branch_overrides_final_scores(tmp_path: Path) -> None
     assert final.final_item_scores["sleep"] == 2
 
 
-def test_checkpoint_resume_does_not_repeat_completed_jurors(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_graph_uses_async_juror_path(tmp_path: Path) -> None:
+    class AsyncJuror:
+        def __init__(self, report: PHQ8Report) -> None:
+            self.calls = 0
+            self._report = report
+
+        def score(self, _text: str) -> PHQ8Report:
+            raise AssertionError("sync score() should not be called")
+
+        async def ascore(self, _text: str) -> PHQ8Report:
+            self.calls += 1
+            return self._report
+
+    jurors = [AsyncJuror(create_mock_report(i)) for i in range(6)]
+
+    def judge(
+        _scoring_text: str,
+        _item: str,
+        _juror_reports: list[PHQ8Report],
+        _prompt_version: str,
+    ) -> JudgeItemResolution:
+        raise AssertionError("judge should not be called for unanimous reports")
+
+    graph = build_single_dialogue_graph(jurors=jurors, judge_item=judge)
+    checkpoint_path = tmp_path / "async_graph.sqlite"
+
+    async with open_async_sqlite_saver(checkpoint_path) as saver:
+        app = graph.compile(checkpointer=saver)
+        out = await invoke_with_checkpoint_resume(
+            app,
+            checkpointer=saver,
+            initial_state=_base_state(file_id="async1"),
+            thread_id="async1",
+            max_concurrency=1,
+        )
+
+    assert [j.calls for j in jurors] == [1, 1, 1, 1, 1, 1]
+    assert out["final_output"] is not None
+
+
+@pytest.mark.asyncio
+async def test_checkpoint_resume_does_not_repeat_completed_jurors(tmp_path: Path) -> None:
     reports = [create_mock_report(i) for i in range(6)]
     jurors = [
         FakeJuror(reports[0]),
@@ -107,10 +153,10 @@ def test_checkpoint_resume_does_not_repeat_completed_jurors(tmp_path: Path) -> N
     graph = build_single_dialogue_graph(jurors=jurors, judge_item=judge)
     checkpoint_path = tmp_path / "resume.sqlite"
 
-    with SqliteSaver.from_conn_string(str(checkpoint_path)) as saver:
+    async with open_async_sqlite_saver(checkpoint_path) as saver:
         app = graph.compile(checkpointer=saver)
         with pytest.raises(RuntimeError, match="juror boom"):
-            invoke_with_checkpoint_resume(
+            await invoke_with_checkpoint_resume(
                 app,
                 checkpointer=saver,
                 initial_state=_base_state(file_id="resume1"),
@@ -118,7 +164,7 @@ def test_checkpoint_resume_does_not_repeat_completed_jurors(tmp_path: Path) -> N
                 max_concurrency=1,
             )
 
-        out = invoke_with_checkpoint_resume(
+        out = await invoke_with_checkpoint_resume(
             app,
             checkpointer=saver,
             initial_state=_base_state(file_id="resume1"),

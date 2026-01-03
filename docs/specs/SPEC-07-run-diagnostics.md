@@ -1,6 +1,6 @@
 # SPEC-07: Run Diagnostics & Quality Metrics
 
-**Status**: DRAFT (2026-01-02)
+**Status**: IMPLEMENTED (2026-01-03)
 **Slice Type**: Vertical (Scored Corpus → Quality Report)
 **Dependencies**: SPEC-06 (Batch Runner & Export)
 **Estimated Scope**: ~400 lines of code, ~300 lines of tests

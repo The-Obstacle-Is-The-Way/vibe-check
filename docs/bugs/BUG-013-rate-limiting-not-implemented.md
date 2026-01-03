@@ -42,6 +42,9 @@ Implemented ADR-001's three-layer resilience strategy:
 - `src/vibe_check/settings.py` - Added retry configuration
 - `src/vibe_check/scoring/agent.py` - Added `retries` parameter
 - `src/vibe_check/scoring/juror.py` - Integrated rate limiting + retry in `ascore()`
+- `src/vibe_check/graph/single_dialogue.py` - Runs jurors via async `ascore()` so Layers 2/3 are actually applied
+- `src/vibe_check/sqlite.py` - Async checkpoint helper for LangGraph (`open_async_sqlite_saver`)
+- `src/vibe_check/run/runner.py` - Async batch runner invokes the async graph + supports bounded concurrency
 - `src/vibe_check/run/factory.py` - Wires rate limiters to jurors
 
 ---
@@ -61,7 +64,7 @@ validation_retries: int = 2
 
 ## Verification
 
-- [x] All 70 tests pass
+- [x] `make ci` passes (ruff + mypy + pytest)
 - [x] mypy strict: 0 issues
 - [x] ruff: all checks passed
 - [ ] Production verification pending: `--live` run with real API calls

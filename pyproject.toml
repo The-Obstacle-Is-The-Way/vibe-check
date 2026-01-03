@@ -26,6 +26,7 @@ dependencies = [
     "pyarrow>=18.0.0",
     "numpy>=2.0.0",
     "scipy>=1.14.0",
+    "krippendorff>=0.8.0",
     "pydantic-ai>=1.0.0",
     "langgraph>=1.0.5",
     "langgraph-checkpoint-sqlite>=3.0.1",
@@ -110,6 +111,13 @@ module = [
     "scipy.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "krippendorff",
+    "krippendorff.*",
+]
+follow_untyped_imports = true
 
 # ─────────────────────────────────────────────────────────────
 # Pytest Configuration

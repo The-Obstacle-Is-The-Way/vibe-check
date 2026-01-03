@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
@@ -22,6 +23,7 @@ if TYPE_CHECKING:
 
 class Juror(Protocol):
     def score(self, scoring_text: str) -> PHQ8Report: ...
+    async def ascore(self, scoring_text: str) -> PHQ8Report: ...
 
 
 JudgeItemFn = Callable[[str, str, list[PHQ8Report], str], JudgeItemResolution]
@@ -39,13 +41,14 @@ def build_single_dialogue_graph(
     """Build the single-dialogue jury→aggregate→(optional)judge graph."""
     graph: StateGraph[ScoringState, None, ScoringState, ScoringState] = StateGraph(ScoringState)
 
-    def make_juror_node(juror: Juror) -> Callable[[ScoringState], dict[str, Any]]:
-        def node(state: ScoringState) -> dict[str, Any]:
-            report = juror.score(state["scoring_text"])
+    def make_juror_node(juror: Juror) -> Callable[[ScoringState], Any]:
+        async def node(state: ScoringState) -> dict[str, Any]:
+            report = await juror.ascore(state["scoring_text"])
             return {"jury_results": [report]}
 
         return node
 
+    previous = START
     for idx, juror in enumerate(jurors, start=1):
         node_name = f"juror_{idx}"
         graph.add_node(
@@ -53,8 +56,8 @@ def build_single_dialogue_graph(
             cast("Any", make_juror_node(juror)),
             input_schema=ScoringState,
         )
-        graph.add_edge(START, node_name)
-        graph.add_edge(node_name, "aggregate")
+        graph.add_edge(previous, node_name)
+        previous = node_name
 
     def aggregate_node(state: ScoringState) -> dict[str, Any]:
         agg = aggregate_reports(
@@ -68,6 +71,7 @@ def build_single_dialogue_graph(
         return {"final_output": agg, "needs_arbitration": agg.triggered_arbitration}
 
     graph.add_node("aggregate", aggregate_node, input_schema=ScoringState)
+    graph.add_edge(previous, "aggregate")
 
     def route_after_aggregate(state: ScoringState) -> str:
         return "arbitrate" if state["needs_arbitration"] else END
@@ -116,7 +120,7 @@ def build_single_dialogue_graph(
     return graph
 
 
-def invoke_with_checkpoint_resume(
+async def invoke_with_checkpoint_resume(
     app: Any,
     *,
     checkpointer: Any,
@@ -124,14 +128,14 @@ def invoke_with_checkpoint_resume(
     thread_id: str,
     max_concurrency: int = 1,
 ) -> ScoringState:
-    """Invoke a compiled LangGraph app, resuming from checkpoint when present."""
+    """Invoke a compiled LangGraph app asynchronously, resuming from checkpoint when present."""
     config: dict[str, Any] = {
         "configurable": {"thread_id": thread_id},
         "max_concurrency": max_concurrency,
     }
-    has_checkpoint = checkpointer.get_tuple(config) is not None
+    has_checkpoint = await checkpointer.aget_tuple(config) is not None
     input_state: Any = None if has_checkpoint else initial_state
-    out = app.invoke(input_state, config=config)
+    out = await app.ainvoke(input_state, config=config)
     return cast("ScoringState", out)
 
 
@@ -147,6 +151,32 @@ def score_one_dialogue(
     max_concurrency: int = 1,
 ) -> AggregatedPHQ8:
     """Score one dialogue end-to-end with checkpoint/resume enabled."""
+    return asyncio.run(
+        score_one_dialogue_async(
+            file_id=file_id,
+            corpus_dir=corpus_dir,
+            prompt_version=prompt_version,
+            checkpoint_db=checkpoint_db,
+            jurors=jurors,
+            judge_item=judge_item,
+            dialogue_view=dialogue_view,
+            max_concurrency=max_concurrency,
+        )
+    )
+
+
+async def score_one_dialogue_async(
+    *,
+    file_id: str,
+    corpus_dir: str | Path,
+    prompt_version: str,
+    checkpoint_db: str,
+    jurors: Sequence[Juror],
+    judge_item: JudgeItemFn,
+    dialogue_view: DialogueViewName = "client_qa",
+    max_concurrency: int = 1,
+) -> AggregatedPHQ8:
+    """Async scoring for one dialogue with checkpoint/resume enabled."""
     corpus = load_corpus(corpus_dir)
     dialogue = next((d for d in corpus if d.file_id == file_id), None)
     if dialogue is None:
@@ -168,17 +198,17 @@ def score_one_dialogue(
 
     graph = build_single_dialogue_graph(jurors=jurors, judge_item=judge_item)
 
-    from langgraph.checkpoint.sqlite import SqliteSaver
-
     from vibe_check.sqlite import sqlite_path_from_conn_string
 
     checkpoint_path = sqlite_path_from_conn_string(checkpoint_db)
     if str(checkpoint_path) != ":memory:":
         checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with SqliteSaver.from_conn_string(str(checkpoint_path)) as saver:
+    from vibe_check.sqlite import open_async_sqlite_saver
+
+    async with open_async_sqlite_saver(checkpoint_path) as saver:
         app = graph.compile(checkpointer=saver)
-        final_state = invoke_with_checkpoint_resume(
+        final_state = await invoke_with_checkpoint_resume(
             app,
             checkpointer=saver,
             initial_state=initial_state,

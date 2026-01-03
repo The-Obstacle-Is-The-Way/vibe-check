@@ -44,8 +44,38 @@ def build_parser() -> argparse.ArgumentParser:
         help="Which deterministic view to score.",
     )
     score.add_argument(
-        "--max-concurrency", type=int, default=1, help="Max concurrency for graph execution."
+        "--max-concurrency",
+        type=int,
+        default=None,
+        help="Max concurrency for graph execution (defaults to Settings.max_concurrent_dialogues).",
     )
+
+    diagnostics = sub.add_parser("diagnostics", help="Compute run diagnostics from scored.jsonl.")
+    diagnostics.add_argument("--scored", required=True, help="Path to scored.jsonl.")
+    diagnostics.add_argument("--output", required=True, help="Path to write the report.")
+    diagnostics.add_argument(
+        "--format",
+        choices=["json", "markdown"],
+        default="json",
+        help="Output format for the report.",
+    )
+    diagnostics.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit non-zero if any quality gate fails.",
+    )
+
+    export = sub.add_parser("export", help="Export public label files from scored.jsonl.")
+    export.add_argument("--input", required=True, help="Path to internal scored.jsonl.")
+    export.add_argument("--output-dir", required=True, help="Directory to write export files.")
+    export.add_argument(
+        "--format",
+        default="jsonl,csv",
+        help="Comma-separated formats to write: jsonl,csv",
+    )
+
+    validate_export = sub.add_parser("validate-export", help="Validate a public export JSONL file.")
+    validate_export.add_argument("--input", required=True, help="Path to vibe_check_labels.jsonl.")
     return parser
 
 
@@ -55,6 +85,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "score-corpus":
         settings = Settings()
+        max_concurrency = (
+            int(args.max_concurrency)
+            if args.max_concurrency is not None
+            else int(settings.max_concurrent_dialogues)
+        )
 
         if args.live:
             # Export API keys to environment for PydanticAI providers
@@ -84,11 +119,57 @@ def main(argv: list[str] | None = None) -> int:
             limit=args.limit,
             prompt_version=args.prompt_version,
             dialogue_view=args.dialogue_view,
-            max_concurrency=args.max_concurrency,
+            max_concurrency=max_concurrency,
             dirichlet_alpha=settings.dirichlet_alpha,
             arbitration_total_std_threshold=settings.arbitration_total_std_threshold,
         )
         return 0
+
+    if args.command == "diagnostics":
+        from vibe_check.diagnostics import RunDiagnostics
+        from vibe_check.diagnostics.report import render_diagnostic_report_markdown
+
+        scored_path = Path(args.scored)
+        manifest_guess = scored_path.with_name("run_manifest.json")
+        diagnostics = RunDiagnostics(
+            scored_jsonl=scored_path,
+            run_manifest=manifest_guess if manifest_guess.exists() else None,
+        )
+        report = diagnostics.compute()
+
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        if args.format == "markdown":
+            output_path.write_text(render_diagnostic_report_markdown(report), encoding="utf-8")
+        else:
+            output_path.write_text(report.model_dump_json(indent=2) + "\n", encoding="utf-8")
+
+        if args.strict and not report.passes_all_gates:
+            return 2
+        return 0
+
+    if args.command == "export":
+        from vibe_check.export.writer import write_label_exports
+
+        formats = {part.strip() for part in str(args.format).split(",") if part.strip()}
+        validation = write_label_exports(
+            scored_jsonl=args.input,
+            output_dir=args.output_dir,
+            formats=formats,
+        )
+        return 0 if validation.is_valid else 2
+
+    if args.command == "validate-export":
+        from vibe_check.export.validator import validate_label_export
+
+        validation_report = validate_label_export(args.input)
+        report_path = Path(args.input).with_name("validation_report.json")
+        report_path.write_text(
+            validation_report.model_dump_json(indent=2, exclude={"records"}) + "\n",
+            encoding="utf-8",
+        )
+        return 0 if validation_report.is_valid else 2
 
     raise AssertionError(f"Unknown command: {args.command}")
 

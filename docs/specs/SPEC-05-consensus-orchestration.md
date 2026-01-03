@@ -83,10 +83,10 @@ All network calls must remain optional in tests (fake clients).
 
 ### 3.1 Graph Nodes (Single Dialogue)
 
-**1) Jury (fan-out)**
+**1) Jury (sequential)**
 - Run 6 juror calls (3 models × 2 runs)
 - Each juror node uses `state['scoring_text']` (passed in state)
-- Each call returns `PHQ8Report` (SPEC-04)
+- Each call returns `PHQ8Report` (SPEC-04) via the async `Juror.ascore()` path (enables ADR-001 rate limiting/retries)
 - Collect into state as `jury_results: list[PHQ8Report]` (internal state key)
 
 **2) Aggregate**
@@ -112,6 +112,9 @@ Use LangGraph checkpointing (SQLite) so that:
 - Retries are bounded and error-coded
 - The checkpointed state contains full context (including dialogue text) for debugging
   - Note: The exported output uses `juror_reports` (schema field) even though the internal state key is `jury_results`.
+
+Implementation detail:
+- The workflow uses LangGraph's async checkpoint interface (`AsyncSqliteSaver`) because juror scoring runs through the async `ascore()` path.
 
 Implementation note: accept either a raw SQLite file path (e.g., `data/checkpoints/dev.db`) or SQLAlchemy-style `sqlite:///data/checkpoints/dev.db` and normalize internally.
 

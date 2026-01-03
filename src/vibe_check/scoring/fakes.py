@@ -66,6 +66,9 @@ class DeterministicFakeJuror:
             ),
         )
 
+    async def ascore(self, scoring_text: str) -> PHQ8Report:
+        return self.score(scoring_text)
+
 
 def deterministic_fake_judge_item(
     scoring_text: str,

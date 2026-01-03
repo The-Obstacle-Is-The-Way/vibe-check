@@ -39,6 +39,9 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
         def score(self, _scoring_text: str) -> PHQ8Report:
             return self._report
 
+        async def ascore(self, scoring_text: str) -> PHQ8Report:
+            return self.score(scoring_text)
+
     jurors = [StaticJuror(i) for i in range(6)]
 
     score_corpus(

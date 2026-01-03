@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal
 
 from vibe_check.schemas.scoring import PHQ8ItemScore, PHQ8Report
@@ -21,10 +21,10 @@ def create_mock_report(
     model_ids = [
         "gpt-5.2",
         "gpt-5.2",
-        "claude-sonnet",
-        "claude-sonnet",
-        "gemini-pro",
-        "gemini-pro",
+        "claude-sonnet-4-5-20250929",
+        "claude-sonnet-4-5-20250929",
+        "gemini-3-pro-preview",
+        "gemini-3-pro-preview",
     ]
     run_numbers = [1, 2, 1, 2, 1, 2]
 
@@ -69,7 +69,7 @@ def create_mock_report(
         total_score=sum(base_scores.values()),
         mentions_self_harm=self_harm,
         self_harm_evidence=["Test self-harm evidence"] if self_harm else [],
-        scored_at=datetime.utcnow(),
+        scored_at=datetime.now(UTC),
     )
 
 

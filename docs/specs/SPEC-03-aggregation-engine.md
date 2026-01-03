@@ -116,7 +116,7 @@ class PHQ8ItemScore(BaseModel):
 ### 3.2 PHQ8Report (Full Model Output)
 
 ```python
-from datetime import datetime
+from datetime import UTC, datetime
 from pydantic import BaseModel, Field
 
 class TokenUsage(BaseModel):
@@ -154,7 +154,7 @@ class PHQ8Report(BaseModel):
     usage: TokenUsage | None = None
 
     # Metadata
-    scored_at: datetime = Field(default_factory=datetime.utcnow)
+    scored_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     @property
     def item_scores(self) -> dict[str, int]:
@@ -574,7 +574,7 @@ def aggregate_reports(
         juror_reports=reports,
         judge_resolution=None,
         prompt_version=prompt_version,
-        scored_at=datetime.utcnow(),
+        scored_at=datetime.now(UTC),
     )
 ```
 
@@ -829,7 +829,7 @@ def create_mock_report(
         total_score=sum(base_scores.values()),
         mentions_self_harm=self_harm,
         self_harm_evidence=["Test self-harm evidence"] if self_harm else [],
-        scored_at=datetime.utcnow(),
+        scored_at=datetime.now(UTC),
     )
 
 
