@@ -16,7 +16,7 @@ class SQPsychConvDialogue(BaseModel):
 
     file_id: str = Field(min_length=1, description="Unique identifier, e.g., 'active436'")
     condition: Literal["mdd", "control"] = Field(description="MDD or control group")
-    client_model: str = Field(min_length=1, description="Model used for client, e.g., 'qwq_qwen'")
+    client_model: str = Field(min_length=1, description="Model used for client, e.g., 'qwen25'")
     therapist_model: str = Field(min_length=1, description="Model used for therapist")
     dialogue: str = Field(description="Raw dialogue text with speaker labels")
 

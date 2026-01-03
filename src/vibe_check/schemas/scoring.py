@@ -2,10 +2,23 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Literal
+from datetime import UTC, datetime
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from vibe_check.constants import MAX_EVIDENCE_SNIPPET_CHARS, MAX_EVIDENCE_SNIPPET_WORDS
+
+
+class TokenUsage(BaseModel):
+    """Token usage metadata for a single model call."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    reasoning_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
 
 
 class PHQ8ItemScore(BaseModel):
@@ -20,14 +33,26 @@ class PHQ8ItemScore(BaseModel):
     evidence: list[str] = Field(default_factory=list, max_length=3)
     insufficient_evidence: bool = Field(default=False)
 
+    @field_validator("evidence")
+    @classmethod
+    def _validate_evidence_snippets(cls, value: list[str]) -> list[str]:
+        for snippet in value:
+            cleaned = snippet.strip()
+            if not cleaned:
+                raise ValueError("evidence snippets must be non-empty strings")
+            if len(cleaned) > MAX_EVIDENCE_SNIPPET_CHARS:
+                raise ValueError(
+                    f"evidence snippet exceeds {MAX_EVIDENCE_SNIPPET_CHARS} characters"
+                )
+            if len(cleaned.split()) > MAX_EVIDENCE_SNIPPET_WORDS:
+                raise ValueError(f"evidence snippet exceeds {MAX_EVIDENCE_SNIPPET_WORDS} words")
+        return value
 
-class PHQ8Report(BaseModel):
-    """Complete PHQ-8 assessment from one model run."""
+
+class PHQ8Assessment(BaseModel):
+    """The raw output from the LLM (items + total + safety)."""
 
     model_config = ConfigDict(extra="forbid")
-
-    model_id: str = Field(min_length=1, description="e.g., 'gpt-5.2'")
-    run_number: int = Field(ge=1, le=2, description="Run 1 or 2")
 
     anhedonia: PHQ8ItemScore
     depressed_mood: PHQ8ItemScore
@@ -41,9 +66,7 @@ class PHQ8Report(BaseModel):
     total_score: int = Field(ge=0, le=24)
 
     mentions_self_harm: bool = False
-    self_harm_evidence: list[str] = Field(default_factory=list)
-
-    scored_at: datetime = Field(default_factory=datetime.utcnow)
+    self_harm_evidence: list[str] = Field(default_factory=list, max_length=3)
 
     @property
     def item_scores(self) -> dict[str, int]:
@@ -58,9 +81,65 @@ class PHQ8Report(BaseModel):
             "psychomotor": int(self.psychomotor.score),
         }
 
+    @model_validator(mode="before")
+    @classmethod
+    def _canonicalize_total_score(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+
+        item_keys = (
+            "anhedonia",
+            "depressed_mood",
+            "sleep",
+            "fatigue",
+            "appetite",
+            "guilt",
+            "concentration",
+            "psychomotor",
+        )
+        expected = 0
+        for key in item_keys:
+            item = data.get(key)
+            if item is None:
+                return data
+            score = item.get("score") if isinstance(item, dict) else getattr(item, "score", None)
+            if score is None:
+                return data
+            expected += int(score)
+
+        if data.get("total_score") != expected:
+            data["total_score"] = expected
+        return data
+
     @model_validator(mode="after")
-    def _check_total_score(self) -> PHQ8Report:
+    def _check_total_score(self) -> PHQ8Assessment:
         expected = sum(self.item_scores.values())
         if self.total_score != expected:
             raise ValueError(f"total_score={self.total_score} does not match item sum={expected}")
         return self
+
+    @field_validator("self_harm_evidence")
+    @classmethod
+    def _validate_self_harm_evidence(cls, value: list[str]) -> list[str]:
+        for snippet in value:
+            cleaned = snippet.strip()
+            if not cleaned:
+                raise ValueError("self_harm_evidence snippets must be non-empty strings")
+            if len(cleaned) > MAX_EVIDENCE_SNIPPET_CHARS:
+                raise ValueError(
+                    f"self_harm_evidence snippet exceeds {MAX_EVIDENCE_SNIPPET_CHARS} characters"
+                )
+            if len(cleaned.split()) > MAX_EVIDENCE_SNIPPET_WORDS:
+                raise ValueError(
+                    f"self_harm_evidence snippet exceeds {MAX_EVIDENCE_SNIPPET_WORDS} words"
+                )
+        return value
+
+
+class PHQ8Report(PHQ8Assessment):
+    """Complete PHQ-8 assessment with metadata (provenance)."""
+
+    model_id: str = Field(min_length=1, description="e.g., 'gpt-5.2'")
+    run_number: int = Field(ge=1, le=2, description="Run 1 or 2")
+    usage: TokenUsage | None = None
+    scored_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

@@ -1,0 +1,44 @@
+{
+  "anhedonia": {
+    "score": 1,
+    "confidence": 0.75,
+    "evidence": ["Client reports low interest in hobbies."]
+  },
+  "depressed_mood": {
+    "score": 1,
+    "confidence": 0.8,
+    "evidence": ["Client reports feeling down several days."]
+  },
+  "sleep": {
+    "score": 2,
+    "confidence": 0.7,
+    "evidence": ["Client reports trouble sleeping most nights.", "Extra evidence 1", "Extra evidence 2"]
+  },
+  "fatigue": {
+    "score": 1,
+    "confidence": 0.7,
+    "evidence": ["Client reports low energy."]
+  },
+  "appetite": {
+    "score": 0,
+    "confidence": 0.65,
+    "evidence": []
+  },
+  "guilt": {
+    "score": 1,
+    "confidence": 0.7,
+    "evidence": ["Client reports feeling like a burden."]
+  },
+  "concentration": {
+    "score": 1,
+    "confidence": 0.6,
+    "evidence": ["Client reports difficulty focusing."]
+  },
+  "psychomotor": {
+    "score": 0,
+    "confidence": 0.55,
+    "evidence": []
+  },
+  "mentions_self_harm": false,
+  "self_harm_evidence": []
+}

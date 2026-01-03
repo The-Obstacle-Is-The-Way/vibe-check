@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
@@ -14,6 +14,7 @@ from vibe_check.aggregation.posterior import (
     compute_item_posterior,
     convolve_posteriors,
 )
+from vibe_check.constants import PHQ8_ITEMS, SEVERITY_BUCKETS, SeverityBucket
 from vibe_check.schemas.output import AggregatedPHQ8, ItemAggregation
 
 if TYPE_CHECKING:
@@ -21,33 +22,14 @@ if TYPE_CHECKING:
 
     from vibe_check.schemas.scoring import PHQ8Report
 
-PHQ8_ITEMS: list[str] = [
-    "anhedonia",
-    "depressed_mood",
-    "sleep",
-    "fatigue",
-    "appetite",
-    "guilt",
-    "concentration",
-    "psychomotor",
-]
-
-SeverityBucket = Literal["0-4", "5-9", "10-14", "15-19", "20-24"]
-
-SEVERITY_BUCKETS: dict[SeverityBucket, tuple[int, int]] = {
-    "0-4": (0, 4),
-    "5-9": (5, 9),
-    "10-14": (10, 14),
-    "15-19": (15, 19),
-    "20-24": (20, 24),
-}
-
 
 def aggregate_votes(
     votes_by_item: Mapping[str, Sequence[int]],
     *,
     dirichlet_alpha: float = 0.5,
     insufficient_evidence_counts: dict[str, int] | None = None,
+    arbitration_max_prob_threshold: float = 0.60,
+    arbitration_entropy_threshold: float = 1.2,
 ) -> tuple[dict[str, ItemAggregation], np.ndarray, list[str], dict[str, str]]:
     """Aggregate per-item vote arrays into posteriors and arbitration flags."""
     missing = [item for item in PHQ8_ITEMS if item not in votes_by_item]
@@ -77,6 +59,8 @@ def aggregate_votes(
             posterior,
             votes,
             insufficient_evidence_count=insufficient_count,
+            max_prob_threshold=arbitration_max_prob_threshold,
+            entropy_threshold=arbitration_entropy_threshold,
         )
         if needs_arb and reason is not None:
             arbitration_items.append(item)
@@ -111,6 +95,14 @@ def _select_bucket(severity_probs: dict[str, float]) -> SeverityBucket:
     return cast("SeverityBucket", bucket)
 
 
+def get_severity_bucket(total_score: int) -> SeverityBucket:
+    """Get the severity bucket for a given total score."""
+    for bucket, (lo, hi) in SEVERITY_BUCKETS.items():
+        if lo <= total_score <= hi:
+            return bucket
+    raise ValueError(f"Invalid total_score for severity bucket: {total_score}")
+
+
 def aggregate_reports(
     reports: list[PHQ8Report],
     *,
@@ -118,6 +110,9 @@ def aggregate_reports(
     condition: Literal["mdd", "control"],
     prompt_version: str,
     dirichlet_alpha: float = 0.5,
+    arbitration_total_std_threshold: float = 2.0,
+    arbitration_max_prob_threshold: float = 0.60,
+    arbitration_entropy_threshold: float = 1.2,
 ) -> AggregatedPHQ8:
     """Aggregate multiple juror reports into a final consensus result."""
     if not reports:
@@ -137,6 +132,8 @@ def aggregate_reports(
         votes_by_item,
         dirichlet_alpha=dirichlet_alpha,
         insufficient_evidence_counts=insufficient_counts,
+        arbitration_max_prob_threshold=arbitration_max_prob_threshold,
+        arbitration_entropy_threshold=arbitration_entropy_threshold,
     )
 
     total_mode = int(np.argmax(total_posterior))
@@ -149,12 +146,15 @@ def aggregate_reports(
 
     juror_totals = np.array([r.total_score for r in reports], dtype=float)
     juror_total_std = float(np.std(juror_totals))
-    if juror_total_std >= 2.0:
+    if juror_total_std >= arbitration_total_std_threshold:
         arbitration_items.append("__total__")
         arbitration_reasons["__total__"] = f"total_score_std={juror_total_std:.2f}"
 
     any_self_harm = any(r.mentions_self_harm for r in reports)
     all_evidence = [e for r in reports for e in r.self_harm_evidence]
+
+    final_item_scores = {item: int(items[item].mode) for item in PHQ8_ITEMS}
+    final_total_score = sum(final_item_scores.values())
 
     return AggregatedPHQ8(
         file_id=file_id,
@@ -167,6 +167,10 @@ def aggregate_reports(
         total_ci_90=total_ci_90,
         severity_bucket=severity_bucket,
         severity_bucket_probs=severity_probs,
+        final_item_scores=final_item_scores,
+        final_total_score=final_total_score,
+        final_severity_bucket=get_severity_bucket(final_total_score),
+        final_source="jury_mode",
         triggered_arbitration=bool(arbitration_items),
         arbitration_items=arbitration_items,
         arbitration_reasons=arbitration_reasons,
@@ -175,5 +179,5 @@ def aggregate_reports(
         juror_reports=reports,
         judge_resolution=None,
         prompt_version=prompt_version,
-        scored_at=datetime.utcnow(),
+        scored_at=datetime.now(UTC),
     )

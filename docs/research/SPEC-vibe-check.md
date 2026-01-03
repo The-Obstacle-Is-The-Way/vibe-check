@@ -8,21 +8,35 @@
 
 ---
 
+> ## SCOPE BOUNDARY (2026-01-02)
+>
+> **vibe-check's ONLY job: Score SQPsychConv → Export PHQ-8 labels.**
+>
+> | Responsibility | Owner | Notes |
+> |----------------|-------|-------|
+> | PHQ-8 labeling of SQPsychConv | **vibe-check** | This repo |
+> | Embedding generation | **ai-psychiatrist** | NOT here |
+> | Transfer evaluation | **ai-psychiatrist** | NOT here |
+> | Real clinical data | **ai-psychiatrist** | NEVER here |
+>
+> This spec was originally drafted with embedding/transfer phases included.
+> Those phases have been moved to `ai-psychiatrist` (see `_reference/ai-psychiatrist/`).
+> Any references to embeddings, transfer evaluation, or clinical data below are
+> **OUT OF SCOPE** for vibe-check implementation.
+
+---
+
 ## 1. Executive Summary
 
 **vibe-check** is a production-grade multi-agent LLM system that scores synthetic therapy conversations with PHQ-8 depression severity labels using frontier model consensus.
 
 ### The Problem
 
-The `ai-psychiatrist` pipeline achieves strong PHQ-8 prediction but cannot be deployed because:
-
-- DAIC-WOZ has restrictive academic licensing
-- Embeddings derived from DAIC-WOZ cannot be redistributed
-- Few-shot retrieval requires reference examples with ground truth scores
+The `ai-psychiatrist` pipeline requires labeled reference examples for few-shot retrieval, but existing datasets have licensing restrictions.
 
 ### The Solution
 
-Score SQPsychConv (2,090 synthetic therapy dialogues) with PHQ-8 labels using frontier LLM consensus, intended to create a redistributable retrieval corpus validated against DAIC-WOZ ground truth (contingent on SQPsychConv licensing confirmation; see Section 3.1).
+Score SQPsychConv (2,090 synthetic therapy dialogues) with PHQ-8 labels using frontier LLM consensus. Export labels for downstream consumption by `ai-psychiatrist`.
 
 ### Why "vibe-check"?
 
@@ -30,10 +44,9 @@ The system literally checks the "vibe" of therapy conversations to assess mental
 
 ### Known Sharp Edges (Read First)
 
-- **SQPsychConv “train/test” splits may be identical** (observed in local exports for some variants). Treat HF splits as untrusted and implement a deterministic resplit based on `file_id`.
-- **DAIC-WOZ is evaluation-only**: it must not be redistributed, including derived artifacts (raw text, embeddings, etc.).
-- **No DAIC-WOZ egress**: do not send DAIC-WOZ transcripts to third-party APIs (OpenAI/Anthropic/Google). Keep DAIC-WOZ evaluation local-only (see Section 3.2).
-- **LLM JSON failures can be deterministic at temperature=0**: do not rely on “retry until it parses” as the only mitigation.
+- **SQPsychConv "train/test" splits may be identical** (observed in local exports for some variants). Treat HF splits as untrusted and implement a deterministic resplit based on `file_id`.
+- **vibe-check NEVER touches real clinical data**: Evaluation happens in `ai-psychiatrist`, not here.
+- **LLM JSON failures can be deterministic at temperature=0**: do not rely on "retry until it parses" as the only mitigation.
 - **External facts drift** (pricing/model IDs/benchmarks): any time-sensitive values must be re-verified against provider SSOTs before implementation.
 
 ---
@@ -46,7 +59,7 @@ The system literally checks the "vibe" of therapy conversations to assess mental
 |------|-------|----------|----------|----------------------|
 | **Juror A** | GPT-5.2 Thinking | `gpt-5.2` | OpenAI | $1.25 / $10.00† |
 | **Juror B** | Claude Sonnet 4.5 | `claude-sonnet-4-5-20250929` | Anthropic | $3.00 / $15.00 |
-| **Juror C** | Gemini 3 Flash | `gemini-3-flash-preview` | Google | $0.50 / $3.00 |
+| **Juror C** | Gemini 3 Pro | `gemini-3-pro-preview` | Google | $1.25 / $5.00 |
 | **Judge** | Claude Opus 4.5 | `claude-opus-4-5-20251101` | Anthropic | $5.00 / $25.00 |
 
 **†Hidden Reasoning Tokens Warning**: GPT-5.2 Thinking uses adaptive reasoning that generates hidden chain-of-thought tokens. These tokens are **billed as output tokens but not visible via the API**. Clinical assessments may consume 2,000+ hidden tokens per call. Budget accordingly (see Section 2.3).
@@ -68,13 +81,13 @@ The system literally checks the "vibe" of therapy conversations to assess mental
 - 0% error rate on internal code editing benchmarks (down from 9%)
 - Knowledge cutoff: July 2025
 
-**Gemini 3 Flash** (Dec 2025):
+**Gemini 3 Pro** (Dec 2025):
 
+- Google's most advanced reasoning model
 - 90.4% on GPQA Diamond (PhD-level reasoning)
-- 78% on SWE-bench Verified (outperforms even Gemini 3 Pro for coding)
 - Thinking level parameter (minimal/low/medium/high) for cost control
 - 1M token context window
-- **Cheapest frontier model** - $0.50/$3 per M tokens
+- Superior clinical reasoning capabilities vs Flash
 - Knowledge cutoff: January 2025
 
 **Claude Opus 4.5** (Judge):
@@ -91,10 +104,10 @@ The system literally checks the "vibe" of therapy conversations to assess mental
 |-----------|-------------|----------------|-------------------|------|
 | GPT-5.2 (2 runs × 2,090) | 4,180 calls | 2.5K in / 1K out | +2K hidden out | ~$105† |
 | Sonnet 4.5 (2 runs × 2,090) | 4,180 calls | 2.5K in / 1K out | N/A | ~$38 |
-| Gemini 3 Flash (2 runs × 2,090) | 4,180 calls | 2.5K in / 1K out | N/A | ~$6 |
+| Gemini 3 Pro (2 runs × 2,090) | 4,180 calls | 2.5K in / 1K out | N/A | ~$26 |
 | Opus 4.5 Judge (~20% arbitration) | ~830 calls | 3K in / 1.5K out | N/A | ~$15 |
-| **Total (one pass)** | | | | **~$165** |
-| **With batch discounts (~50%)** | | | | **~$85** |
+| **Total (one pass)** | | | | **~$185** |
+| **With batch discounts (~50%)** | | | | **~$95** |
 
 †GPT-5.2 hidden token estimate: 2,000 reasoning tokens × $10/1M × 4,180 calls = ~$84 additional. Actual costs vary by task complexity—clinical assessments are reasoning-heavy.
 
@@ -106,7 +119,7 @@ The system literally checks the "vibe" of therapy conversations to assess mental
 
 ## 3. Data Governance & Licensing Gates
 
-**This section is a hard gate for redistribution and for any processing of restricted datasets (e.g., DAIC-WOZ) via third-party APIs.** You can still implement the pipeline and run it on non-restricted data, but do not claim or attempt public release of derived artifacts until licensing is confirmed, and do not send restricted transcripts to external vendors without institutional approval.
+**This section is a hard gate for redistribution.** You can still implement the pipeline and run it on non-restricted data, but do not claim or attempt public release of derived artifacts until licensing is confirmed.
 
 ### 3.1 SQPsychConv License
 
@@ -127,33 +140,28 @@ The system literally checks the "vibe" of therapy conversations to assess mental
 2. If license is absent: contact AIMH authors directly to confirm redistribution rights
 3. Until confirmed: treat as "research use only, no redistribution of derived artifacts"
 
-**Fallback Position**: If license remains unclear, the vibe-check corpus can still be used for internal validation but embeddings/labels cannot be publicly redistributed until licensing is resolved.
+**Fallback Position**: If license remains unclear, the vibe-check corpus can still be used for internal validation but labels cannot be publicly redistributed until licensing is resolved.
 
-### 3.2 DAIC-WOZ EULA Restrictions
+### 3.2 Clinical Data Separation
 
-DAIC-WOZ is restricted to academic/non-profit use, and the safest interpretation is to treat it as **non-exportable**.
+> **vibe-check NEVER touches real clinical data.**
+>
+> Any evaluation against clinical datasets (e.g., restricted academic data)
+> happens in `ai-psychiatrist`, NOT in vibe-check. See `_reference/ai-psychiatrist/`.
 
-**Policy (non-negotiable for this spec)**:
+### 3.3 Logging & Observability Policy (Operational Hygiene)
 
-- **Do not send DAIC-WOZ transcripts to third-party APIs** (OpenAI/Anthropic/Google).
-- The `vibe-check` **core labeling pipeline must not require DAIC-WOZ**. DAIC-WOZ data and derived artifacts must never be checked into the repo.
-- Any DAIC-WOZ evaluation happens **locally** (e.g., in `ai-psychiatrist` with Ollama/vLLM) and must avoid cloud logging/telemetry that could capture text.
+> **Note**: SQPsychConv is synthetic data with no PHI. These guidelines exist for **operational hygiene** (cost control, audit trails), not privacy compliance.
 
-If you later obtain explicit institutional/legal approval to process DAIC-WOZ with vendor APIs, that is a separate decision and requires a spec revision.
+| Artifact | Recommended Content | Rationale |
+|----------|---------------------|-----------|
+| Checkpoint DB | File IDs, scores, entropy, status, token usage, **dialogue text** | Full state for debugging |
+| Evidence fields | Bounded snippets (≤50 words) | Cost control (prevents token explosion) |
+| Run manifests | Counts, aggregate stats, sample IDs | Audit trail |
 
-### 3.3 Logging & Observability Policy
-
-To avoid accidental transcript leakage:
-
-| Artifact | Allowed Content | Prohibited Content |
-|----------|-----------------|-------------------|
-| Checkpoint DB | File IDs, scores, entropy, status | Raw transcript text |
-| Exception traces | Stack traces, error codes | Transcript snippets |
-| LangSmith traces | Node timing, token counts | Prompt/response content |
-| Run manifests | Counts, aggregate stats | Individual utterances |
-| Job ledger | Status, attempts, error codes | Transcript excerpts |
-
-**Implementation**: Use a `SensitiveString` wrapper type that refuses to serialize to logs/JSON.
+**Implementation**:
+- LangGraph checkpointers persist **the entire state**; it is safe to include dialogue text in the state for synthetic data.
+- If evidence snippets are persisted, they must be bounded (e.g., ≤3 snippets per field, each ≤50 words and ≤400 chars) to prevent context window bloat.
 
 ### 3.4 Corpus Integrity (Trust No Split)
 
@@ -178,11 +186,34 @@ def compute_split(file_id: str) -> str:
 
 **Corpus Integrity Checks** (run before scoring):
 - `file_id` uniqueness: 0 duplicates allowed
-- Dialogue deduplication: SHA256 hash of `dialogue_clean`
+- Dialogue deduplication: SHA256 hash of `dialogue_clean` (after deterministic view extraction / artifact stripping)
 - Split leakage check: train ∩ test = ∅
-- Near-duplicate detection: MinHash/LSH for high-similarity pairs
+- Generation-artifact stripping: drop obvious instruction/meta blobs even when they are speaker-labeled; record counts-only flags (e.g., unknown-speaker/cleanup needed)
+- (Optional, deferred) Near-duplicate detection: MinHash/LSH for high-similarity pairs
 
 **Output**: `corpus_integrity_manifest.json` with counts + warnings (no transcript text).
+
+### 3.5 Model Variant Selection
+
+SQPsychConv exists in 7 model variants (same 2,090 questionnaires, different LLM generators). Use `SQPsychConv_qwen-2.5` as the **primary corpus**:
+
+| Variant | Expert Score | Status |
+|---------|--------------|--------|
+| **qwen-2.5** | **16.29** | **PRIMARY** (highest quality) |
+| gemma | 16.14 | Backup (second highest) |
+| qwq | 15.71 | **AVOID** (train/test duplication bug) |
+| llama3, mistral, etc. | 12.57-14.86 | Deleted (lower quality) |
+
+**Rationale** (per 2025 synthetic data research):
+- Model capability matters more than model diversity
+- Multi-model mixing provides only marginal gains
+- Quality filtering on one good source beats unfiltered multi-source
+
+**Local Path**: `data/sqpsychconv/qwen-2.5/`
+
+**The qwq Bug**: Train and test splits are 100% identical (MD5: `e3ff92d039b8ee12fa2023fc4d3abfb3`). This was verified on 2026-01-02.
+
+See: `docs/data/DATASET-sqpsychconv-all-variants.md` for full variant documentation.
 
 ---
 
@@ -190,12 +221,11 @@ def compute_split(file_id: str) -> str:
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| **Scoring Metric** | PHQ-8 + self-harm boolean tag | DAIC-WOZ alignment; avoids PHQ-9 safety refusals |
+| **Scoring Metric** | PHQ-8 + self-harm boolean tag | Industry standard; avoids PHQ-9 safety refusals |
 | **Framework** | LangGraph 1.0 + PydanticAI | Production checkpointing, structured outputs, fault tolerance |
 | **Aggregation** | Posterior convolution (Section 7.2) | Principled uncertainty; credible intervals on total score |
 | **Disagreement Threshold** | Posterior-based + range fallback (Section 7.3) | Entropy/max-prob primary; range ≥ 2 as safety net |
 | **Runs per Model** | 2 runs × 3 models = 6 passes | Balances cost vs stability |
-| **Embedding View** | `client_qa` (Section 5.3.1) | Avoids semantic void; acceptable therapist question context |
 | **Scoring View** | `client_qa` | Minimal Q/A context for short-answer interpretation |
 | **Checkpoint Storage** | SQLite (dev) / PostgreSQL (prod) | LangGraph native persistence + psycopg driver |
 | **Structured Output** | Provider-specific modes (Section 13) | JSON schema mode per provider; repair fallback chain |
@@ -253,7 +283,7 @@ claude_agent = Agent(
 )
 
 gemini_agent = Agent(
-    "google:gemini-3-flash-preview",
+    "google:gemini-3-pro-preview",
     output_type=PHQ8Report,
     system_prompt="You are scoring PHQ-8...",
 )
@@ -261,18 +291,17 @@ gemini_agent = Agent(
 # 3. LangGraph orchestrates them
 class ScoringState(TypedDict):
     file_id: str
-    dialogue: str
-    scoring_text: str
     jury_results: list[PHQ8Report]
     needs_arbitration: bool
     final_output: AggregatedPHQ8 | None
 
 async def jury_node(state: ScoringState) -> dict:
     """Run all three jurors in parallel using PydanticAI agents."""
+    scoring_text = load_scoring_view(file_id=state["file_id"])
     results = await asyncio.gather(
-        gpt_agent.run(state["scoring_text"]),
-        claude_agent.run(state["scoring_text"]),
-        gemini_agent.run(state["scoring_text"]),
+        gpt_agent.run(scoring_text),
+        claude_agent.run(scoring_text),
+        gemini_agent.run(scoring_text),
     )
     return {"jury_results": [r.output for r in results]}
 ```
@@ -288,8 +317,10 @@ import operator
 class ScoringState(TypedDict):
     # Identity
     file_id: str
+
+    # Data (Safe to checkpoint for synthetic data)
     dialogue: str
-    scoring_text: str
+    scoring_text: str  # The specific view used for scoring (e.g. client_qa)
 
     # Accumulated results (operator.add allows multiple nodes to append)
     jury_results: Annotated[list[PHQ8Report], operator.add]
@@ -306,15 +337,15 @@ class ScoringState(TypedDict):
 #### Nodes: The Processing Steps
 
 ```python
-async def preprocess_node(state: ScoringState) -> dict:
-    """Build bias-aware text views from the raw dialogue."""
-    views = build_dialogue_views(state["dialogue"])
-    return {"scoring_text": views.client_qa_text}
-
 async def jury_node(state: ScoringState) -> dict:
     """Run 3 models × 2 runs = 6 scoring passes."""
-    # ... parallel scoring ...
-    return {"jury_results": results}
+    # scoring_text is already in state, no need to reload
+    results = await asyncio.gather(
+        gpt_agent.run(state["scoring_text"]),
+        claude_agent.run(state["scoring_text"]),
+        gemini_agent.run(state["scoring_text"]),
+    )
+    return {"jury_results": [r.output for r in results]}
 
 def aggregate_node(state: ScoringState) -> dict:
     """Compute distributional posterior and check disagreement."""
@@ -339,14 +370,12 @@ from langgraph.graph import StateGraph, END
 workflow = StateGraph(ScoringState)
 
 # Add nodes
-workflow.add_node("preprocess", preprocess_node)
 workflow.add_node("jury", jury_node)
 workflow.add_node("aggregate", aggregate_node)
 workflow.add_node("arbitrate", arbitrate_node)
 
-# Linear edges
-workflow.set_entry_point("preprocess")
-workflow.add_edge("preprocess", "jury")
+# Entry point
+workflow.set_entry_point("jury")
 workflow.add_edge("jury", "aggregate")
 
 # Conditional edge: branch based on state
@@ -400,7 +429,7 @@ from langgraph.constants import Send
 MAX_CONCURRENT_DIALOGUES = 50  # Tune based on OS limits and API quotas
 
 class BatchState(TypedDict):
-    dialogues: list[dict]  # [{file_id, dialogue}, ...]
+    file_ids: list[str]
     completed: Annotated[list[AggregatedPHQ8], operator.add]
 
 # Global semaphore for resource protection
@@ -416,9 +445,9 @@ def orchestrator_node(state: BatchState) -> list[Send]:
     return [
         Send(
             "score_single",  # Target node (the subgraph with semaphore)
-            {"file_id": d["file_id"], "dialogue": d["dialogue"]}
+            {"file_id": file_id}
         )
-        for d in state["dialogues"]
+        for file_id in state["file_ids"]
     ]
 
 def collector_node(state: BatchState) -> dict:
@@ -521,7 +550,7 @@ workflow.add_conditional_edges(
 │  │                         OUTPUT ARTIFACTS                             │   │
 │  ├──────────────────────────────────────────────────────────────────────┤   │
 │  │  • scored_sqpsychconv.jsonl     (full structured output)             │   │
-│  │  • scored_sqpsychconv.csv       (flat for pandas)                    │   │
+│  │  • scored_sqpsychconv.csv       (flat CSV)                           │   │
 │  │  • embeddings/*.npz             (vector store for retrieval)         │   │
 │  │  • validation_report.json       (inter-model agreement stats)        │   │
 │  └──────────────────────────────────────────────────────────────────────┘   │
@@ -582,7 +611,9 @@ workflow.add_conditional_edges(
 
 ### 5.3 Preprocessing: Bias-Aware Dialogue Views
 
-**Problem**: In clinical interviews (and synthetic therapy dialogues), the therapist/interviewer contributes a strong *protocol prior*. For DAIC-WOZ in particular, research shows models can exploit interviewer prompts as a shortcut signal rather than learning patient-language indicators of depression severity.
+> **OUT OF SCOPE (Embedding View)**: The discussion of "Embedding View" (`client_qa` vs `client_only`) for retrieval is now relevant only to `ai-psychiatrist`. For vibe-check, we focus only on the **Scoring View**.
+>
+> **Problem**: In clinical interviews (and synthetic therapy dialogues)...
 
 **Key insight**: Even if an LLM can distinguish speakers in the final prompt, **embeddings and retrieval cannot reliably disambiguate “therapist asked about X” from “client reported X.”** Speaker leakage at the embedding layer can corrupt few-shot selection before the scorer ever sees the examples.
 
@@ -621,13 +652,13 @@ If you embed just "Terrible", the vector has no semantic connection to "Sleep" o
 
 #### 5.3.1.1 Contextualized Rewriting (Optional, Best Quality)
 
-For highest embedding quality, use a cheap model (Gemini Flash) to rewrite client responses with context:
+For highest embedding quality, use a model (Gemini Pro) to rewrite client responses with context:
 
 ```python
 async def contextualize_utterance(
     therapist_question: str,
     client_response: str,
-    model: str = "gemini-3-flash-preview"
+    model: str = "gemini-3-pro-preview"
 ) -> str:
     """Rewrite client response with embedded context.
 
@@ -646,7 +677,7 @@ async def contextualize_utterance(
     return await call_model(prompt, model)
 ```
 
-**Cost**: ~$5 for 2,090 dialogues at ~1K tokens each with Gemini Flash ($0.50/1M in).
+**Cost**: ~$13 for 2,090 dialogues at ~1K tokens each with Gemini Pro ($1.25/1M in, $5/1M out).
 
 Deterministic rule for `client_qa_text`:
 
@@ -913,7 +944,7 @@ You are a senior clinical psychologist arbitrating a disagreement between three 
 ## Scorer Outputs:
 - GPT-5.2: Score {gpt_score}, Evidence: "{gpt_evidence}"
 - Claude Sonnet 4.5: Score {claude_score}, Evidence: "{claude_evidence}"
-- Gemini 3 Flash: Score {gemini_score}, Evidence: "{gemini_evidence}"
+- Gemini 3 Pro: Score {gemini_score}, Evidence: "{gemini_evidence}"
 
 ## Client Transcript (relevant excerpt):
 {transcript_excerpt}
@@ -953,12 +984,18 @@ class SQPsychConvDialogue(BaseModel):
 ### 8.2 Per-Item Score
 
 ```python
+class TokenUsage(BaseModel):
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    reasoning_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+
 class PHQ8ItemScore(BaseModel):
     """Single item assessment from one model run."""
     score: Literal[0, 1, 2, 3]
     confidence: float = Field(ge=0.0, le=1.0)
     evidence: list[str] = Field(default_factory=list, max_length=3)
-    insuff_evidence: bool = False
+    insufficient_evidence: bool = False
 
 class PHQ8Report(BaseModel):
     """Full PHQ-8 report from one model run."""
@@ -981,6 +1018,9 @@ class PHQ8Report(BaseModel):
     # Safety tag
     mentions_self_harm: bool = False
     self_harm_evidence: list[str] = Field(default_factory=list)
+
+    # Cost/telemetry (when available)
+    usage: TokenUsage | None = None
 ```
 
 ### 8.3 Aggregated Output
@@ -1013,6 +1053,12 @@ class AggregatedPHQ8(BaseModel):
     severity_bucket: Literal["0-4", "5-9", "10-14", "15-19", "20-24"]
     severity_bucket_probs: dict[str, float] = Field(default_factory=dict)  # P(severity=bucket)
 
+    # Export-ready final labels (jury consensus unless overridden)
+    final_item_scores: dict[str, int]
+    final_total_score: int = Field(ge=0, le=24)
+    final_severity_bucket: Literal["0-4", "5-9", "10-14", "15-19", "20-24"]
+    final_source: Literal["jury_mode", "jury_expected", "judge_override"]
+
     # Consensus metadata
     triggered_arbitration: bool
     arbitration_items: list[str] = Field(default_factory=list)
@@ -1037,6 +1083,7 @@ class AggregatedPHQ8(BaseModel):
 
 ```
 vibe-check/
+├── LICENSE
 ├── README.md
 ├── pyproject.toml
 ├── uv.lock                           # Lockfile for reproducibility
@@ -1044,7 +1091,6 @@ vibe-check/
 ├── .env.example
 ├── .pre-commit-config.yaml           # Pre-commit hooks (ruff + mypy)
 ├── Makefile                          # Developer convenience commands
-├── CLAUDE.md
 │
 ├── .github/
 │   └── workflows/
@@ -1053,76 +1099,50 @@ vibe-check/
 ├── src/
 │   └── vibe_check/
 │       ├── __init__.py
-│       ├── config.py                 # Pydantic Settings
+│       ├── cli.py                    # Batch runner CLI
+│       ├── settings.py               # Pydantic Settings (env-based)
+│       ├── sqlite.py                 # SQLite conn-string helpers
 │       │
+│       ├── data/                     # Load/validate corpus
+│       ├── preprocessing/            # Deterministic dialogue views
 │       ├── schemas/
 │       │   ├── __init__.py
 │       │   ├── input.py              # SQPsychConvDialogue
 │       │   ├── scoring.py            # PHQ8ItemScore, PHQ8Report
 │       │   └── output.py             # AggregatedPHQ8
 │       │
-│       ├── agents/
-│       │   ├── __init__.py
-│       │   ├── base.py               # PydanticAI agent factory
-│       │   ├── jurors.py             # GPT, Claude, Gemini agents
-│       │   └── judge.py              # Opus arbitration agent
-│       │
+│       ├── scoring/                  # Juror scoring (SPEC-04)
+│       ├── judge/                    # Arbitration schemas/prompting (SPEC-05)
 │       ├── graph/
 │       │   ├── __init__.py
 │       │   ├── state.py              # ScoringState, BatchState
-│       │   ├── nodes.py              # preprocess, jury, aggregate, arbitrate
-│       │   ├── edges.py              # Conditional routing logic
-│       │   ├── workflow.py           # Single-dialogue graph
-│       │   └── batch.py              # Map-reduce batch graph
+│       │   └── single_dialogue.py    # Single-dialogue LangGraph workflow (SPEC-05)
 │       │
 │       ├── aggregation/
 │       │   ├── __init__.py
 │       │   ├── posterior.py          # Dirichlet smoothing
 │       │   ├── disagreement.py       # Threshold checks
-│       │   └── metrics.py            # Entropy, ICC, Krippendorff
+│       │   └── entropy.py            # Entropy utilities
 │       │
-│       ├── preprocessing/
-│       │   ├── __init__.py
-│       │   ├── client_extractor.py   # Build dialogue views (client_only, client_qa)
-│       │   └── cleaner.py            # Normalization + CJK detection (optional filtering)
-│       │
-│       └── export/
-│           ├── __init__.py
-│           ├── jsonl.py
-│           ├── csv.py
-│           └── embeddings.py
-│
-├── scripts/
-│   ├── score_corpus.py               # Main CLI entry point
-│   ├── compute_diagnostics.py        # Phase 0: sanity diagnostics (no DAIC-WOZ)
-│   ├── generate_embeddings.py        # Create retrieval corpus
-│   └── evaluate_transfer.py          # Local-only sim-to-real metrics (no vendor APIs)
+│       └── run/                      # Batch runner + export (SPEC-06)
+│           ├── config.py
+│           ├── export.py
+│           ├── ledger.py
+│           └── runner.py
 │
 ├── tests/
-│   ├── conftest.py                   # Shared fixtures (mock clients, sample data)
-│   ├── fixtures/                     # Reusable test fixtures
-│   │   ├── __init__.py
-│   │   ├── mock_llm.py               # Mock LLM client
-│   │   └── sample_dialogues.py       # Sample test dialogues
+│   ├── conftest.py
+│   ├── fixtures/
 │   ├── unit/
-│   │   ├── test_aggregation.py
-│   │   ├── test_preprocessing.py
-│   │   └── test_schemas.py
-│   ├── integration/
-│   │   ├── test_single_dialogue.py
-│   │   └── test_graph_checkpointing.py
-│   └── e2e/
-│       └── test_full_pipeline.py
+│   └── integration/
 │
 ├── data/
-│   ├── raw/                          # HuggingFace downloads
-│   ├── checkpoints/                  # SQLite checkpoint DBs
-│   └── outputs/                      # Final scored datasets
+│   └── sqpsychconv/                  # Local HF dataset exports + samples
 │
 └── docs/
-    ├── architecture.md
-    ├── langgraph-tutorial.md
-    └── validation-protocol.md
+    ├── research/
+    ├── specs/
+    └── _archive/
 ```
 
 ---
@@ -1131,200 +1151,20 @@ vibe-check/
 
 This section defines production-grade Python DevEx based on 2026 best practices with uv, ruff, mypy strict mode, and GitHub Actions.
 
-### 10.1 Complete pyproject.toml
+### Tooling Config
 
-```toml
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+Source of truth (kept in sync with CI):
+- `pyproject.toml`
+- `Makefile`
+- `.pre-commit-config.yaml`
+- `.github/workflows/ci.yml`
 
-[project]
-name = "vibe-check"
-version = "0.1.0"
-description = "Multi-agent PHQ-8 scoring for synthetic therapy dialogues"
-readme = "README.md"
-license = "MIT"
-requires-python = ">=3.11"
-authors = [{ name = "CLARITY-DIGITAL-TWIN" }]
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-]
-
-dependencies = [
-    # Orchestration
-    "langgraph>=1.0.0",
-    "langgraph-checkpoint-postgres>=2.0.0",  # For production checkpointing
-    "psycopg[binary,pool]>=3.2.0",           # REQUIRED for PostgresSaver
-
-    # Agents (PydanticAI for structured outputs)
-    "pydantic-ai>=1.0.0",
-
-    # Provider clients
-    "langchain-openai>=0.3.0",
-    "langchain-anthropic>=0.3.0",
-    "langchain-google-genai>=2.1.0",
-
-    # Data
-    "pydantic>=2.10.0",
-    "pydantic-settings>=2.7.0",
-    "datasets>=3.0.0",
-    "pandas>=2.2.0",
-    "numpy>=2.0.0",
-
-    # Metrics
-    "scikit-learn>=1.5.0",
-    "scipy>=1.14.0",
-
-    # Utilities
-    "tenacity>=9.0.0",
-    "aiolimiter>=1.2.0",
-    "structlog>=25.0.0",
-    "rich>=14.0.0",
-    "python-dotenv>=1.0.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    # Testing
-    "pytest>=8.3.5",
-    "pytest-asyncio>=0.25.0",
-    "pytest-cov>=7.0.0",
-    "pytest-xdist>=3.5.0",
-    "pytest-sugar>=1.0.0",
-    "httpx>=0.28.0",
-    "respx>=0.22.0",
-    # Linting & formatting
-    "ruff>=0.9.2",
-    # Type checking
-    "mypy>=1.15.0",
-    # Pre-commit
-    "pre-commit>=4.1.0",
-]
-
-[project.scripts]
-vibe-check = "vibe_check.cli:main"
-
-# ─────────────────────────────────────────────────────────────
-# Ruff Configuration (linter + formatter)
-# ─────────────────────────────────────────────────────────────
-[tool.ruff]
-line-length = 100
-target-version = "py311"
-src = ["src", "tests", "scripts"]
-
-[tool.ruff.lint]
-select = [
-    "E",      # pycodestyle errors
-    "W",      # pycodestyle warnings
-    "F",      # Pyflakes
-    "I",      # isort
-    "B",      # flake8-bugbear
-    "C4",     # flake8-comprehensions
-    "UP",     # pyupgrade
-    "ARG",    # flake8-unused-arguments
-    "SIM",    # flake8-simplify
-    "TCH",    # flake8-type-checking
-    "PTH",    # flake8-use-pathlib
-    "RUF",    # Ruff-specific rules
-]
-ignore = [
-    "E501",   # line too long (handled by formatter)
-    "B008",   # function call in default argument (needed for FastAPI)
-]
-
-[tool.ruff.lint.isort]
-known-first-party = ["vibe_check"]
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-skip-magic-trailing-comma = false
-
-# ─────────────────────────────────────────────────────────────
-# Mypy Configuration (strict mode)
-# ─────────────────────────────────────────────────────────────
-[tool.mypy]
-python_version = "3.11"
-strict = true
-warn_unused_ignores = true
-warn_redundant_casts = true
-warn_unreachable = true
-show_error_codes = true
-pretty = true
-
-# Per-module overrides for external libs
-[[tool.mypy.overrides]]
-module = [
-    "datasets.*",
-    "langgraph.*",
-    "langchain_openai.*",
-    "langchain_anthropic.*",
-    "langchain_google_genai.*",
-    "scipy.*",
-    "sklearn.*",
-]
-ignore_missing_imports = true
-
-# ─────────────────────────────────────────────────────────────
-# Pytest Configuration
-# ─────────────────────────────────────────────────────────────
-[tool.pytest.ini_options]
-minversion = "8.0"
-testpaths = ["tests"]
-asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
-addopts = [
-    "-v",
-    "--strict-markers",
-    "--strict-config",
-    "-ra",
-    "--tb=short",
-]
-markers = [
-    "unit: Unit tests (fast, no external deps)",
-    "integration: Integration tests (may use mocks)",
-    "e2e: End-to-end tests (requires API keys)",
-    "slow: Slow tests (>10s)",
-]
-filterwarnings = [
-    "ignore::DeprecationWarning:pydantic.*:",
-]
-
-# ─────────────────────────────────────────────────────────────
-# Coverage Configuration
-# ─────────────────────────────────────────────────────────────
-[tool.coverage.run]
-source = ["src/vibe_check"]
-branch = true
-parallel = true
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "if TYPE_CHECKING:",
-    "if __name__ == .__main__.:",
-    "raise NotImplementedError",
-    "@abstractmethod",
-]
-fail_under = 80
-show_missing = true
-skip_covered = true
-
-[tool.coverage.html]
-directory = "htmlcov"
-```
-
-### 10.2 Pre-commit Configuration (.pre-commit-config.yaml)
+### Pre-commit
 
 ```yaml
 # .pre-commit-config.yaml
 # Modern Python pre-commit using uv + ruff (2026)
-# Install: uv run pre-commit install
+# Install: make dev
 
 repos:
   # ─────────────────────────────────────────────────────────────
@@ -1342,6 +1182,9 @@ repos:
         args: ['--maxkb=1000']
       - id: check-merge-conflict
       - id: detect-private-key
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: mixed-line-ending
 
   # ─────────────────────────────────────────────────────────────
   # Ruff (linting + formatting, replaces black/isort/flake8)
@@ -1350,7 +1193,7 @@ repos:
     rev: v0.9.2
     hooks:
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        args: [--fix, --show-fixes, --exit-non-zero-on-fix]
       - id: ruff-format
 
   # ─────────────────────────────────────────────────────────────
@@ -1359,16 +1202,16 @@ repos:
   - repo: local
     hooks:
       - id: mypy
-        name: mypy (strict)
+        name: mypy (strict via pyproject.toml)
         entry: uv run mypy
         language: system
         types: [python]
-        args: [src, tests, scripts]
+        args: [src, tests]
         pass_filenames: false
         require_serial: true
 ```
 
-### 10.3 GitHub Actions CI Workflow (.github/workflows/ci.yml)
+### CI
 
 ```yaml
 # .github/workflows/ci.yml
@@ -1384,12 +1227,20 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PYTHONHASHSEED: "0"
+
 jobs:
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -1398,7 +1249,7 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Install dependencies
-        run: uv sync --locked --all-extras --dev
+        run: uv sync --locked --all-extras
 
       - name: Ruff lint
         run: uv run ruff check . --output-format=github
@@ -1409,8 +1260,13 @@ jobs:
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -1419,14 +1275,21 @@ jobs:
           cache-dependency-glob: "uv.lock"
 
       - name: Install dependencies
-        run: uv sync --locked --all-extras --dev
+        run: uv sync --locked --all-extras
 
       - name: Mypy
-        run: uv run mypy src tests scripts --strict
+        run: uv run mypy src tests
+
+      - name: Smoke import
+        run: uv run python -c "import vibe_check; print(vibe_check.__version__)"
+
+      - name: Build sdist + wheel
+        run: uv build --sdist --wheel --out-dir dist --clear --no-create-gitignore
 
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -1434,22 +1297,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
-      - name: Set Python version
-        run: uv python pin ${{ matrix.python-version }}
-
       - name: Install dependencies
-        run: uv sync --locked --all-extras --dev
+        run: uv sync --locked --all-extras
 
       - name: Run tests with coverage
         run: |
           uv run pytest tests/ \
-            -n auto \
             --cov=src/vibe_check \
             --cov-report=xml \
             --cov-report=term-missing \
@@ -1460,13 +1323,14 @@ jobs:
         with:
           files: coverage.xml
           fail_ci_if_error: false
+          # token: ${{ secrets.CODECOV_TOKEN }}  # uncomment for private repos
 ```
 
-### 10.4 Makefile
+### Makefile
 
 ```makefile
 # Makefile - Developer convenience commands
-.PHONY: help install dev test lint format typecheck ci clean
+.PHONY: help install dev test test-unit lint lint-fix format format-check typecheck ci clean
 
 # Default target
 help:
@@ -1476,10 +1340,10 @@ help:
 	@echo "  make install      Install production dependencies only"
 	@echo "  make test         Run all tests with coverage"
 	@echo "  make test-unit    Run unit tests only (fast)"
-	@echo "  make test-parallel Run tests in parallel"
 	@echo "  make lint         Run ruff linter"
 	@echo "  make lint-fix     Auto-fix linting issues"
 	@echo "  make format       Format code with ruff"
+	@echo "  make format-check Check formatting without changes"
 	@echo "  make typecheck    Run mypy strict type checking"
 	@echo "  make ci           Full CI: lint + typecheck + test"
 	@echo "  make clean        Remove build artifacts"
@@ -1491,7 +1355,7 @@ install:
 	uv sync --locked
 
 dev:
-	uv sync --locked --all-extras --dev
+	uv sync --locked --all-extras
 	uv run pre-commit install
 
 # ─────────────────────────────────────────────────────────────
@@ -1502,9 +1366,6 @@ test:
 
 test-unit:
 	uv run pytest tests/unit/ -v
-
-test-parallel:
-	uv run pytest tests/ -n auto --dist=loadscope
 
 # ─────────────────────────────────────────────────────────────
 # Code Quality
@@ -1522,7 +1383,7 @@ format-check:
 	uv run ruff format --check .
 
 typecheck:
-	uv run mypy src tests scripts --strict
+	uv run mypy src tests
 
 # ─────────────────────────────────────────────────────────────
 # CI
@@ -1557,7 +1418,7 @@ GOOGLE_API_KEY=AI...
 # ─────────────────────────────────────────────────────────────
 JUROR_GPT_MODEL=gpt-5.2
 JUROR_CLAUDE_MODEL=claude-sonnet-4-5-20250929
-JUROR_GEMINI_MODEL=gemini-3-flash-preview
+JUROR_GEMINI_MODEL=gemini-3-pro-preview
 JUDGE_MODEL=claude-opus-4-5-20251101
 
 # ─────────────────────────────────────────────────────────────
@@ -1566,6 +1427,8 @@ JUDGE_MODEL=claude-opus-4-5-20251101
 RUNS_PER_MODEL=2
 DISAGREEMENT_RANGE_THRESHOLD=2
 ARBITRATION_TOTAL_STD_THRESHOLD=2.0
+ARBITRATION_MAX_PROB_THRESHOLD=0.60
+ARBITRATION_ENTROPY_THRESHOLD=1.2
 DIRICHLET_ALPHA=0.5
 
 # ─────────────────────────────────────────────────────────────
@@ -1623,13 +1486,15 @@ class Settings(BaseSettings):
     # Models
     juror_gpt_model: str = "gpt-5.2"
     juror_claude_model: str = "claude-sonnet-4-5-20250929"
-    juror_gemini_model: str = "gemini-3-flash-preview"
+    juror_gemini_model: str = "gemini-3-pro-preview"
     judge_model: str = "claude-opus-4-5-20251101"
 
     # Scoring
     runs_per_model: int = 2
     disagreement_range_threshold: int = 2
     arbitration_total_std_threshold: float = 2.0
+    arbitration_max_prob_threshold: float = 0.60
+    arbitration_entropy_threshold: float = 1.2
     dirichlet_alpha: float = 0.5
 
     # Preprocessing (updated per senior review - client_qa for embeddings)
@@ -1676,7 +1541,7 @@ Example:
 
 ```bash
 uv run python scripts/score_corpus.py \
-    --input AIMH/SQPsychConv_qwq \
+    --input data/sqpsychconv/qwen-2.5 \
     --limit 50 \
     --output data/outputs/scored_sqpsychconv_smoke.jsonl
 ```
@@ -1701,7 +1566,7 @@ If tuning is required, prefer one of:
 
 ```bash
 uv run python scripts/score_corpus.py \
-    --input AIMH/SQPsychConv_qwq \
+    --input data/sqpsychconv/qwen-2.5 \
     --output data/outputs/scored_sqpsychconv.jsonl
 ```
 
@@ -1717,15 +1582,18 @@ uv run python scripts/score_corpus.py \
 
 ### 12.3 Phase 2: Generate Embeddings
 
-```bash
-uv run python scripts/generate_embeddings.py \
-    --input data/outputs/scored_sqpsychconv.jsonl \
-    --output data/outputs/embeddings/
-```
+> **OUT OF SCOPE**: Embedding generation has been moved to `ai-psychiatrist`. Do not implement in this repo.
+>
+> ```bash
+> # MOVED TO AI-PSYCHIATRIST
+> # uv run python scripts/generate_embeddings.py ...
+> ```
 
 ### 12.4 Phase 3: Sim-to-Real Evaluation (Local-Only; No Vendor APIs)
 
-This phase uses DAIC-WOZ and must be executed in a local-only environment where transcripts never leave the machine/network that is authorized to hold them.
+> **OUT OF SCOPE**: Evaluation against DAIC-WOZ has been moved to `ai-psychiatrist`.
+>
+> This phase uses DAIC-WOZ and must be executed in a local-only environment...
 
 `vibe-check` does not require DAIC-WOZ to function; treat this phase as a downstream integration run (recommended) that can be executed from `ai-psychiatrist` or an equivalent local evaluation harness.
 
@@ -1918,7 +1786,7 @@ uv run python scripts/score_corpus.py --retry-failed --error-code rate_limit
 | **Prompt leakage (therapist protocol bias)** | Use bias-aware dialogue views (`client_qa` for embeddings; `client_qa` for scoring); run required ablations |
 | **Semantic void (embeddings)** | Use `client_qa` or `client_contextualized` for embeddings (Section 5.3.1) |
 | **Synthetic circularity** | Cross-vendor scorers; validate on DAIC-WOZ |
-| **Cost overrun** | Hidden token budget (Section 2.3); Gemini 3 Flash is cheapest; batch API discounts |
+| **Cost overrun** | Hidden token budget (Section 2.3); batch API discounts |
 | **Redistribution/license risk** | Data Governance section (Section 3); SQPsychConv license UNKNOWN until author confirmation |
 | **File descriptor exhaustion** | Global semaphore (Section 4.4); MAX_CONCURRENT_DIALOGUES=50 |
 | **Hidden thinking tokens** | 3x budget multiplier for GPT-5.2 (Section 2.3) |
@@ -1992,7 +1860,7 @@ uv run python scripts/score_corpus.py --retry-failed --error-code rate_limit
 
 - [GPT-5.2 Introduction (OpenAI, Dec 2025)](https://openai.com/index/introducing-gpt-5-2/)
 - [Claude Sonnet 4.5 (Anthropic, Sep 2025)](https://www.anthropic.com/news/claude-sonnet-4-5)
-- [Gemini 3 Flash (Google, Dec 2025)](https://blog.google/products/gemini/gemini-3-flash/)
+- [Gemini 3 Pro (Google, Dec 2025)](https://deepmind.google/models/gemini/pro/)
 
 ### Technical Documentation
 

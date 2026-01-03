@@ -14,8 +14,8 @@ def test_dialogue_valid() -> None:
     d = SQPsychConvDialogue(
         file_id="test123",
         condition="mdd",
-        client_model="qwq_qwen",
-        therapist_model="qwq_qwen",
+        client_model="qwen25",
+        therapist_model="qwen25",
         dialogue="Therapist: Hello\nClient: Hi",
     )
     assert d.file_id == "test123"
@@ -27,7 +27,7 @@ def test_dialogue_invalid_condition() -> None:
         SQPsychConvDialogue(
             file_id="test123",
             condition=cast("Condition", "unknown"),
-            client_model="qwq_qwen",
-            therapist_model="qwq_qwen",
+            client_model="qwen25",
+            therapist_model="qwen25",
             dialogue="Therapist: Hello\nClient: Hi",
         )

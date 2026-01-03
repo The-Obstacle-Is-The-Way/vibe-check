@@ -7,13 +7,13 @@ name = "vibe-check"
 version = "0.1.0"
 description = "Multi-agent PHQ-8 scoring for synthetic therapy dialogues"
 readme = "README.md"
-license = "MIT"
+license = { file = "LICENSE" }
 requires-python = ">=3.11"
-authors = [{ name = "CLARITY-DIGITAL-TWIN" }]
+authors = [{ name = "The-Obstacle-Is-The-Way" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
@@ -26,6 +26,12 @@ dependencies = [
     "pyarrow>=18.0.0",
     "numpy>=2.0.0",
     "scipy>=1.14.0",
+    "krippendorff>=0.8.0",
+    "pydantic-ai>=1.0.0",
+    "langgraph>=1.0.5",
+    "langgraph-checkpoint-sqlite>=3.0.1",
+    "tenacity>=9.1.2",
+    "aiolimiter>=1.2.1",
 ]
 
 [project.optional-dependencies]
@@ -41,6 +47,9 @@ dev = [
     # Pre-commit
     "pre-commit>=4.1.0",
 ]
+
+[project.scripts]
+vibe-check = "vibe_check.cli:main"
 
 # ─────────────────────────────────────────────────────────────
 # Ruff Configuration (linter + formatter)
@@ -103,6 +112,13 @@ module = [
 ]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = [
+    "krippendorff",
+    "krippendorff.*",
+]
+follow_untyped_imports = true
+
 # ─────────────────────────────────────────────────────────────
 # Pytest Configuration
 # ─────────────────────────────────────────────────────────────
@@ -155,4 +171,5 @@ directory = "htmlcov"
 # Hatch Build Configuration (src layout)
 # ─────────────────────────────────────────────────────────────
 [tool.hatch.build.targets.wheel]
+# Hatchling expects package directories (not import names) for src layout.
 packages = ["src/vibe_check"]

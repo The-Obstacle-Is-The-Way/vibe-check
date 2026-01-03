@@ -231,5 +231,14 @@ __marimo__/
 data/checkpoints/
 data/outputs/
 
+# Dataset files (downloaded from HuggingFace, not versioned in git)
+# Re-download with: datasets.load_dataset("AIMH/SQPsychConv_qwen-2.5")
+# See: docs/data/DATASET-sqpsychconv-all-variants.md
+data/sqpsychconv/
+
+# Test artifacts (SQLite checkpoint DBs)
+test_checkpoint.sqlite
+*.checkpoint.sqlite
+
 # Local secrets
 .secrets/

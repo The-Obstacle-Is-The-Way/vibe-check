@@ -20,6 +20,19 @@ def test_aggregate_six_reports() -> None:
     assert len(result.total_posterior) == 25
     assert sum(result.total_posterior.values()) == pytest.approx(1.0)
     assert result.severity_bucket in ["0-4", "5-9", "10-14", "15-19", "20-24"]
+    assert result.final_source == "jury_mode"
+    assert set(result.final_item_scores.keys()) == {
+        "anhedonia",
+        "depressed_mood",
+        "sleep",
+        "fatigue",
+        "appetite",
+        "guilt",
+        "concentration",
+        "psychomotor",
+    }
+    assert result.final_total_score == sum(result.final_item_scores.values())
+    assert result.final_severity_bucket in ["0-4", "5-9", "10-14", "15-19", "20-24"]
 
 
 def test_severity_bucket_probs_sum_to_one() -> None:
