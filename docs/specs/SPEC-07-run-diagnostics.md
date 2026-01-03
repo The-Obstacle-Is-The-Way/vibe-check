@@ -18,7 +18,7 @@ Goals:
 4. **Arbitration analysis**: Profile when/why the judge was invoked
 5. **Quality gates**: Define pass/fail thresholds before proceeding
 
-This spec does NOT require ground-truth labels—it validates internal consistency and juror agreement on synthetic data.
+> **Note**: This tool consumes the **Internal** `scored.jsonl` (from SPEC-06) which contains full juror reports and posterior distributions. It does NOT use the flattened public export (SPEC-08).
 
 ### Success Criteria
 
@@ -26,8 +26,9 @@ This spec does NOT require ground-truth labels—it validates internal consisten
 from vibe_check.diagnostics import RunDiagnostics
 from vibe_check.diagnostics.report import DiagnosticReport
 
+# Note: Uses internal scored.jsonl, not export
 diagnostics = RunDiagnostics(
-    scored_jsonl="data/outputs/scored_sqpsychconv.jsonl",
+    scored_jsonl="data/outputs/scored.jsonl",
     run_manifest="data/outputs/run_manifest.json",
 )
 report: DiagnosticReport = diagnostics.compute()
