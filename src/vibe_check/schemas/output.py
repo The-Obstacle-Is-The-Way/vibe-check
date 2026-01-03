@@ -9,6 +9,16 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from vibe_check.schemas.scoring import PHQ8Report
 
+SeverityBucket = Literal["0-4", "5-9", "10-14", "15-19", "20-24"]
+
+_SEVERITY_BUCKET_RANGES: dict[SeverityBucket, tuple[int, int]] = {
+    "0-4": (0, 4),
+    "5-9": (5, 9),
+    "10-14": (10, 14),
+    "15-19": (15, 19),
+    "20-24": (20, 24),
+}
+
 
 class ItemAggregation(BaseModel):
     """Aggregated statistics for one PHQ-8 item."""
@@ -45,8 +55,13 @@ class AggregatedPHQ8(BaseModel):
     total_posterior: dict[int, float]
     total_ci_90: tuple[int, int]
 
-    severity_bucket: Literal["0-4", "5-9", "10-14", "15-19", "20-24"]
+    severity_bucket: SeverityBucket
     severity_bucket_probs: dict[str, float]
+
+    final_item_scores: dict[str, int]
+    final_total_score: int = Field(ge=0, le=24)
+    final_severity_bucket: SeverityBucket
+    final_source: Literal["jury_mode", "jury_expected", "judge_override"]
 
     triggered_arbitration: bool = False
     arbitration_items: list[str] = Field(default_factory=list)
@@ -65,4 +80,17 @@ class AggregatedPHQ8(BaseModel):
     def _validate_juror_reports(self) -> AggregatedPHQ8:
         if any(not isinstance(r, PHQ8Report) for r in self.juror_reports):
             raise TypeError("juror_reports must be PHQ8Report instances")
+        expected_total = sum(self.final_item_scores.values())
+        if self.final_total_score != expected_total:
+            raise ValueError(
+                f"final_total_score={self.final_total_score} does not match "
+                f"sum(final_item_scores)={expected_total}"
+            )
+        bucket = None
+        for name, (lo, hi) in _SEVERITY_BUCKET_RANGES.items():
+            if lo <= self.final_total_score <= hi:
+                bucket = name
+                break
+        if bucket is None or bucket != self.final_severity_bucket:
+            raise ValueError("final_severity_bucket must match final_total_score bucket")
         return self

@@ -33,6 +33,10 @@ test -f data/outputs/dev_run/scored.jsonl
 test -f data/outputs/dev_run/run_manifest.json
 ```
 
+Note: The reference implementation defaults to a deterministic fake jury/judge (offline) so CI and local dry-runs never require API keys. Real-provider wiring is deferred to e2e tests/specs.
+
+Checkpoint note: accept either a raw SQLite file path or SQLAlchemy-style `sqlite:///...` and normalize internally.
+
 ---
 
 ## 2. Deliverables
@@ -134,5 +138,7 @@ Using fake jurors/judge:
 
 ## 6. Non-Goals
 
-- Transfer evaluation against DAIC-WOZ (future spec; restricted dataset)
+- Transfer evaluation (happens in `ai-psychiatrist`, NOT vibe-check)
 - Producing or publishing embeddings until SQPsychConv license is confirmed
+
+> **CRITICAL: vibe-check NEVER touches real clinical data.** See SPEC-08 for export contract.

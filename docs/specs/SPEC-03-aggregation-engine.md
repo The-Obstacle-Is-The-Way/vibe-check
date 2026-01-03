@@ -235,6 +235,14 @@ class AggregatedPHQ8(BaseModel):
         description="P(severity=bucket) for each bucket"
     )
 
+    # Export-ready final labels (jury consensus unless overridden later)
+    final_item_scores: dict[str, int] = Field(
+        description="Per-item final scores (0-3), default = per-item posterior mode"
+    )
+    final_total_score: int = Field(ge=0, le=24)
+    final_severity_bucket: Literal["0-4", "5-9", "10-14", "15-19", "20-24"]
+    final_source: Literal["jury_mode", "jury_expected", "judge_override"]
+
     # Arbitration metadata
     triggered_arbitration: bool = False
     arbitration_items: list[str] = Field(default_factory=list)

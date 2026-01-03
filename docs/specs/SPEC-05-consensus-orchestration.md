@@ -22,7 +22,7 @@ This slice is “one dialogue end-to-end”, but with the same control flow and 
 ### Success Criteria
 
 ```python
-from vibe_check.graphs.single_dialogue import score_one_dialogue
+from vibe_check.graph.single_dialogue import score_one_dialogue
 from vibe_check.schemas.output import AggregatedPHQ8
 
 result: AggregatedPHQ8 = score_one_dialogue(
@@ -30,6 +30,8 @@ result: AggregatedPHQ8 = score_one_dialogue(
     corpus_dir="data/sqpsychconv/qwq",
     prompt_version="v1",
     checkpoint_db="sqlite:///data/checkpoints/dev.db",
+    jurors=[...],        # 3 models × 2 runs (real or deterministic fakes)
+    judge_item=...,      # callable returning JudgeItemResolution
 )
 
 assert result.items["sleep"].posterior["2"] >= 0.0
@@ -57,6 +59,7 @@ assert result.triggered_arbitration in {True, False}
 
 - `final_item_scores: dict[str, int]` (0–3 per item)
 - `final_total_score: int` (0–24)
+- `final_severity_bucket: Literal["0-4", "5-9", "10-14", "15-19", "20-24"]`
 - `final_source: Literal["jury_mode", "jury_expected", "judge_override"]` or equivalent provenance
 
 Rule:
@@ -108,6 +111,8 @@ Use LangGraph checkpointing (SQLite) so that:
 - A crash after the jury step does not repeat completed calls
 - Retries are bounded and error-coded
 - The checkpointed state contains full context (including dialogue text) for debugging
+
+Implementation note: accept either a raw SQLite file path (e.g., `data/checkpoints/dev.db`) or SQLAlchemy-style `sqlite:///data/checkpoints/dev.db` and normalize internally.
 
 ---
 

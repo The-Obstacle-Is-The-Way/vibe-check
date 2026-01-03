@@ -1,0 +1,192 @@
+"""LangGraph workflow for scoring a single dialogue end-to-end (SPEC-05)."""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
+
+from langgraph.graph import END, START, StateGraph
+
+from vibe_check.aggregation.aggregate import PHQ8_ITEMS, SEVERITY_BUCKETS, aggregate_reports
+from vibe_check.data import load_corpus, preprocess_dialogue
+from vibe_check.graph.state import ScoringState
+from vibe_check.judge.schema import JudgeItemResolution
+from vibe_check.schemas.scoring import PHQ8Report
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from vibe_check.schemas.output import AggregatedPHQ8
+
+
+class Juror(Protocol):
+    def score(self, scoring_text: str) -> PHQ8Report: ...
+
+
+JudgeItemFn = Callable[[str, str, list[PHQ8Report], str], JudgeItemResolution]
+
+DialogueViewName = Literal["client_qa", "client_only"]
+
+
+def _bucket_for_total(total_score: int) -> str:
+    for bucket, (lo, hi) in SEVERITY_BUCKETS.items():
+        if lo <= total_score <= hi:
+            return bucket
+    raise ValueError(f"Invalid total_score: {total_score}")
+
+
+def build_single_dialogue_graph(
+    *, jurors: Sequence[Juror], judge_item: JudgeItemFn
+) -> StateGraph[ScoringState, None, ScoringState, ScoringState]:
+    """Build the single-dialogue jury→aggregate→(optional)judge graph."""
+    graph: StateGraph[ScoringState, None, ScoringState, ScoringState] = StateGraph(ScoringState)
+
+    def make_juror_node(juror: Juror) -> Callable[[ScoringState], dict[str, Any]]:
+        def node(state: ScoringState) -> dict[str, Any]:
+            report = juror.score(state["scoring_text"])
+            return {"jury_results": [report]}
+
+        return node
+
+    for idx, juror in enumerate(jurors, start=1):
+        node_name = f"juror_{idx}"
+        graph.add_node(
+            node_name,
+            cast("Any", make_juror_node(juror)),
+            input_schema=ScoringState,
+        )
+        graph.add_edge(START, node_name)
+        graph.add_edge(node_name, "aggregate")
+
+    def aggregate_node(state: ScoringState) -> dict[str, Any]:
+        agg = aggregate_reports(
+            state["jury_results"],
+            file_id=state["file_id"],
+            condition=state["condition"],
+            prompt_version=state["prompt_version"],
+        )
+        return {"final_output": agg, "needs_arbitration": agg.triggered_arbitration}
+
+    graph.add_node("aggregate", aggregate_node, input_schema=ScoringState)
+
+    def route_after_aggregate(state: ScoringState) -> str:
+        return "arbitrate" if state["needs_arbitration"] else END
+
+    def arbitrate_node(state: ScoringState) -> dict[str, Any]:
+        agg = state["final_output"]
+        if agg is None:
+            raise RuntimeError("aggregate node did not produce final_output")
+
+        contested = [item for item in agg.arbitration_items if item in PHQ8_ITEMS]
+        if "__total__" in agg.arbitration_items:
+            contested = list(PHQ8_ITEMS)
+
+        if not contested:
+            return {"final_output": agg, "needs_arbitration": False}
+
+        resolutions: dict[str, JudgeItemResolution] = {}
+        for item in contested:
+            resolutions[item] = judge_item(
+                state["scoring_text"],
+                item,
+                agg.juror_reports,
+                state["prompt_version"],
+            )
+
+        final_item_scores = dict(agg.final_item_scores)
+        for item, resolution in resolutions.items():
+            final_item_scores[item] = int(resolution.final_score)
+
+        final_total_score = sum(final_item_scores.values())
+        updated: AggregatedPHQ8 = agg.model_copy(
+            update={
+                "final_item_scores": final_item_scores,
+                "final_total_score": final_total_score,
+                "final_severity_bucket": _bucket_for_total(final_total_score),
+                "final_source": "judge_override",
+                "judge_resolution": {k: v.model_dump() for k, v in resolutions.items()},
+            }
+        )
+        return {"final_output": updated, "needs_arbitration": False}
+
+    graph.add_node("arbitrate", arbitrate_node, input_schema=ScoringState)
+    graph.add_conditional_edges("aggregate", route_after_aggregate)
+    graph.add_edge("arbitrate", END)
+
+    return graph
+
+
+def invoke_with_checkpoint_resume(
+    app: Any,
+    *,
+    checkpointer: Any,
+    initial_state: ScoringState,
+    thread_id: str,
+    max_concurrency: int = 1,
+) -> ScoringState:
+    """Invoke a compiled LangGraph app, resuming from checkpoint when present."""
+    config: dict[str, Any] = {
+        "configurable": {"thread_id": thread_id},
+        "max_concurrency": max_concurrency,
+    }
+    has_checkpoint = checkpointer.get_tuple(config) is not None
+    input_state: Any = None if has_checkpoint else initial_state
+    out = app.invoke(input_state, config=config)
+    return cast("ScoringState", out)
+
+
+def score_one_dialogue(
+    *,
+    file_id: str,
+    corpus_dir: str | Path,
+    prompt_version: str,
+    checkpoint_db: str,
+    jurors: Sequence[Juror],
+    judge_item: JudgeItemFn,
+    dialogue_view: DialogueViewName = "client_qa",
+    max_concurrency: int = 1,
+) -> AggregatedPHQ8:
+    """Score one dialogue end-to-end with checkpoint/resume enabled."""
+    corpus = load_corpus(corpus_dir)
+    dialogue = next((d for d in corpus if d.file_id == file_id), None)
+    if dialogue is None:
+        raise KeyError(f"file_id not found in corpus: {file_id}")
+
+    views = preprocess_dialogue(dialogue)
+    scoring_text = views.client_qa_text if dialogue_view == "client_qa" else views.client_only_text
+
+    initial_state: ScoringState = {
+        "file_id": file_id,
+        "condition": dialogue.condition,
+        "dialogue": dialogue.dialogue,
+        "scoring_text": scoring_text,
+        "prompt_version": prompt_version,
+        "jury_results": [],
+        "needs_arbitration": False,
+        "final_output": None,
+    }
+
+    graph = build_single_dialogue_graph(jurors=jurors, judge_item=judge_item)
+
+    from langgraph.checkpoint.sqlite import SqliteSaver
+
+    from vibe_check.sqlite import sqlite_path_from_conn_string
+
+    checkpoint_path = sqlite_path_from_conn_string(checkpoint_db)
+    if str(checkpoint_path) != ":memory:":
+        checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with SqliteSaver.from_conn_string(str(checkpoint_path)) as saver:
+        app = graph.compile(checkpointer=saver)
+        final_state = invoke_with_checkpoint_resume(
+            app,
+            checkpointer=saver,
+            initial_state=initial_state,
+            thread_id=file_id,
+            max_concurrency=max_concurrency,
+        )
+
+    final = final_state["final_output"]
+    if final is None:
+        raise RuntimeError("graph completed without producing final_output")
+    return final

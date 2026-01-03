@@ -111,6 +111,13 @@ def _select_bucket(severity_probs: dict[str, float]) -> SeverityBucket:
     return cast("SeverityBucket", bucket)
 
 
+def _bucket_for_total(total_score: int) -> SeverityBucket:
+    for bucket, (lo, hi) in SEVERITY_BUCKETS.items():
+        if lo <= total_score <= hi:
+            return bucket
+    raise ValueError(f"Invalid total_score for severity bucket: {total_score}")
+
+
 def aggregate_reports(
     reports: list[PHQ8Report],
     *,
@@ -156,6 +163,9 @@ def aggregate_reports(
     any_self_harm = any(r.mentions_self_harm for r in reports)
     all_evidence = [e for r in reports for e in r.self_harm_evidence]
 
+    final_item_scores = {item: int(items[item].mode) for item in PHQ8_ITEMS}
+    final_total_score = sum(final_item_scores.values())
+
     return AggregatedPHQ8(
         file_id=file_id,
         condition=condition,
@@ -167,6 +177,10 @@ def aggregate_reports(
         total_ci_90=total_ci_90,
         severity_bucket=severity_bucket,
         severity_bucket_probs=severity_probs,
+        final_item_scores=final_item_scores,
+        final_total_score=final_total_score,
+        final_severity_bucket=_bucket_for_total(final_total_score),
+        final_source="jury_mode",
         triggered_arbitration=bool(arbitration_items),
         arbitration_items=arbitration_items,
         arbitration_reasons=arbitration_reasons,

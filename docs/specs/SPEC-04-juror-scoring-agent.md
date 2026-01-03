@@ -57,6 +57,7 @@ assert report.total_score == sum(report.item_scores.values())
 | File | Purpose |
 |------|---------|
 | `src/vibe_check/scoring/__init__.py` | Public API exports |
+| `src/vibe_check/scoring/juror.py` | `JurorScorer` wrapper (Agent → `PHQ8Report`) |
 | `src/vibe_check/scoring/prompting.py` | Prompt builder + prompt versioning |
 | `src/vibe_check/scoring/parsing.py` | Robust parsing + canonicalization into `PHQ8Report` |
 | `src/vibe_check/scoring/agent.py` | PydanticAI agent builder (providers + `TestModel`) |

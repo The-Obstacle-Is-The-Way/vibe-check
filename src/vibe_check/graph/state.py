@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Annotated, TypedDict
+from typing import Annotated, Literal, TypedDict
 
 from vibe_check.schemas.output import AggregatedPHQ8  # noqa: TC001
 from vibe_check.schemas.scoring import PHQ8Report  # noqa: TC001
@@ -14,6 +14,8 @@ class ScoringState(TypedDict):
 
     # Identity
     file_id: str
+    condition: Literal["mdd", "control"]
+    prompt_version: str
 
     # Data (Safe to checkpoint for synthetic data)
     dialogue: str

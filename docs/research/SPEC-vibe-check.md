@@ -8,21 +8,35 @@
 
 ---
 
+> ## SCOPE BOUNDARY (2026-01-02)
+>
+> **vibe-check's ONLY job: Score SQPsychConv → Export PHQ-8 labels.**
+>
+> | Responsibility | Owner | Notes |
+> |----------------|-------|-------|
+> | PHQ-8 labeling of SQPsychConv | **vibe-check** | This repo |
+> | Embedding generation | **ai-psychiatrist** | NOT here |
+> | Transfer evaluation | **ai-psychiatrist** | NOT here |
+> | Real clinical data | **ai-psychiatrist** | NEVER here |
+>
+> This spec was originally drafted with embedding/transfer phases included.
+> Those phases have been moved to `ai-psychiatrist` (see `_reference/ai-psychiatrist/`).
+> Any references to embeddings, transfer evaluation, or clinical data below are
+> **OUT OF SCOPE** for vibe-check implementation.
+
+---
+
 ## 1. Executive Summary
 
 **vibe-check** is a production-grade multi-agent LLM system that scores synthetic therapy conversations with PHQ-8 depression severity labels using frontier model consensus.
 
 ### The Problem
 
-The `ai-psychiatrist` pipeline achieves strong PHQ-8 prediction but cannot be deployed because:
-
-- DAIC-WOZ has restrictive academic licensing
-- Embeddings derived from DAIC-WOZ cannot be redistributed
-- Few-shot retrieval requires reference examples with ground truth scores
+The `ai-psychiatrist` pipeline requires labeled reference examples for few-shot retrieval, but existing datasets have licensing restrictions.
 
 ### The Solution
 
-Score SQPsychConv (2,090 synthetic therapy dialogues) with PHQ-8 labels using frontier LLM consensus, intended to create a redistributable retrieval corpus validated against DAIC-WOZ ground truth (contingent on SQPsychConv licensing confirmation; see Section 3.1).
+Score SQPsychConv (2,090 synthetic therapy dialogues) with PHQ-8 labels using frontier LLM consensus. Export labels for downstream consumption by `ai-psychiatrist`.
 
 ### Why "vibe-check"?
 
@@ -30,10 +44,9 @@ The system literally checks the "vibe" of therapy conversations to assess mental
 
 ### Known Sharp Edges (Read First)
 
-- **SQPsychConv “train/test” splits may be identical** (observed in local exports for some variants). Treat HF splits as untrusted and implement a deterministic resplit based on `file_id`.
-- **DAIC-WOZ is evaluation-only**: it must not be redistributed, including derived artifacts (raw text, embeddings, etc.).
-- **No DAIC-WOZ egress**: do not send DAIC-WOZ transcripts to third-party APIs (OpenAI/Anthropic/Google). Keep DAIC-WOZ evaluation local-only (see Section 3.2).
-- **LLM JSON failures can be deterministic at temperature=0**: do not rely on “retry until it parses” as the only mitigation.
+- **SQPsychConv "train/test" splits may be identical** (observed in local exports for some variants). Treat HF splits as untrusted and implement a deterministic resplit based on `file_id`.
+- **vibe-check NEVER touches real clinical data**: Evaluation happens in `ai-psychiatrist`, not here.
+- **LLM JSON failures can be deterministic at temperature=0**: do not rely on "retry until it parses" as the only mitigation.
 - **External facts drift** (pricing/model IDs/benchmarks): any time-sensitive values must be re-verified against provider SSOTs before implementation.
 
 ---
@@ -106,7 +119,7 @@ The system literally checks the "vibe" of therapy conversations to assess mental
 
 ## 3. Data Governance & Licensing Gates
 
-**This section is a hard gate for redistribution and for any processing of restricted datasets (e.g., DAIC-WOZ) via third-party APIs.** You can still implement the pipeline and run it on non-restricted data, but do not claim or attempt public release of derived artifacts until licensing is confirmed, and do not send restricted transcripts to external vendors without institutional approval.
+**This section is a hard gate for redistribution.** You can still implement the pipeline and run it on non-restricted data, but do not claim or attempt public release of derived artifacts until licensing is confirmed.
 
 ### 3.1 SQPsychConv License
 
@@ -127,19 +140,14 @@ The system literally checks the "vibe" of therapy conversations to assess mental
 2. If license is absent: contact AIMH authors directly to confirm redistribution rights
 3. Until confirmed: treat as "research use only, no redistribution of derived artifacts"
 
-**Fallback Position**: If license remains unclear, the vibe-check corpus can still be used for internal validation but embeddings/labels cannot be publicly redistributed until licensing is resolved.
+**Fallback Position**: If license remains unclear, the vibe-check corpus can still be used for internal validation but labels cannot be publicly redistributed until licensing is resolved.
 
-### 3.2 DAIC-WOZ EULA Restrictions
+### 3.2 Clinical Data Separation
 
-DAIC-WOZ is restricted to academic/non-profit use, and the safest interpretation is to treat it as **non-exportable**.
-
-**Policy (non-negotiable for this spec)**:
-
-- **Do not send DAIC-WOZ transcripts to third-party APIs** (OpenAI/Anthropic/Google).
-- The `vibe-check` **core labeling pipeline must not require DAIC-WOZ**. DAIC-WOZ data and derived artifacts must never be checked into the repo.
-- Any DAIC-WOZ evaluation happens **locally** (e.g., in `ai-psychiatrist` with Ollama/vLLM) and must avoid cloud logging/telemetry that could capture text.
-
-If you later obtain explicit institutional/legal approval to process DAIC-WOZ with vendor APIs, that is a separate decision and requires a spec revision.
+> **vibe-check NEVER touches real clinical data.**
+>
+> Any evaluation against clinical datasets (e.g., restricted academic data)
+> happens in `ai-psychiatrist`, NOT in vibe-check. See `_reference/ai-psychiatrist/`.
 
 ### 3.3 Logging & Observability Policy (Operational Hygiene)
 
@@ -191,12 +199,11 @@ def compute_split(file_id: str) -> str:
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| **Scoring Metric** | PHQ-8 + self-harm boolean tag | DAIC-WOZ alignment; avoids PHQ-9 safety refusals |
+| **Scoring Metric** | PHQ-8 + self-harm boolean tag | Industry standard; avoids PHQ-9 safety refusals |
 | **Framework** | LangGraph 1.0 + PydanticAI | Production checkpointing, structured outputs, fault tolerance |
 | **Aggregation** | Posterior convolution (Section 7.2) | Principled uncertainty; credible intervals on total score |
 | **Disagreement Threshold** | Posterior-based + range fallback (Section 7.3) | Entropy/max-prob primary; range ≥ 2 as safety net |
 | **Runs per Model** | 2 runs × 3 models = 6 passes | Balances cost vs stability |
-| **Embedding View** | `client_qa` (Section 5.3.1) | Avoids semantic void; acceptable therapist question context |
 | **Scoring View** | `client_qa` | Minimal Q/A context for short-answer interpretation |
 | **Checkpoint Storage** | SQLite (dev) / PostgreSQL (prod) | LangGraph native persistence + psycopg driver |
 | **Structured Output** | Provider-specific modes (Section 13) | JSON schema mode per provider; repair fallback chain |
@@ -582,7 +589,9 @@ workflow.add_conditional_edges(
 
 ### 5.3 Preprocessing: Bias-Aware Dialogue Views
 
-**Problem**: In clinical interviews (and synthetic therapy dialogues), the therapist/interviewer contributes a strong *protocol prior*. For DAIC-WOZ in particular, research shows models can exploit interviewer prompts as a shortcut signal rather than learning patient-language indicators of depression severity.
+> **OUT OF SCOPE (Embedding View)**: The discussion of "Embedding View" (`client_qa` vs `client_only`) for retrieval is now relevant only to `ai-psychiatrist`. For vibe-check, we focus only on the **Scoring View**.
+>
+> **Problem**: In clinical interviews (and synthetic therapy dialogues)...
 
 **Key insight**: Even if an LLM can distinguish speakers in the final prompt, **embeddings and retrieval cannot reliably disambiguate “therapist asked about X” from “client reported X.”** Speaker leakage at the embedding layer can corrupt few-shot selection before the scorer ever sees the examples.
 
@@ -953,12 +962,18 @@ class SQPsychConvDialogue(BaseModel):
 ### 8.2 Per-Item Score
 
 ```python
+class TokenUsage(BaseModel):
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    reasoning_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+
 class PHQ8ItemScore(BaseModel):
     """Single item assessment from one model run."""
     score: Literal[0, 1, 2, 3]
     confidence: float = Field(ge=0.0, le=1.0)
     evidence: list[str] = Field(default_factory=list, max_length=3)
-    insuff_evidence: bool = False
+    insufficient_evidence: bool = False
 
 class PHQ8Report(BaseModel):
     """Full PHQ-8 report from one model run."""
@@ -981,6 +996,9 @@ class PHQ8Report(BaseModel):
     # Safety tag
     mentions_self_harm: bool = False
     self_harm_evidence: list[str] = Field(default_factory=list)
+
+    # Cost/telemetry (when available)
+    usage: TokenUsage | None = None
 ```
 
 ### 8.3 Aggregated Output
@@ -1013,6 +1031,12 @@ class AggregatedPHQ8(BaseModel):
     severity_bucket: Literal["0-4", "5-9", "10-14", "15-19", "20-24"]
     severity_bucket_probs: dict[str, float] = Field(default_factory=dict)  # P(severity=bucket)
 
+    # Export-ready final labels (jury consensus unless overridden)
+    final_item_scores: dict[str, int]
+    final_total_score: int = Field(ge=0, le=24)
+    final_severity_bucket: Literal["0-4", "5-9", "10-14", "15-19", "20-24"]
+    final_source: Literal["jury_mode", "jury_expected", "judge_override"]
+
     # Consensus metadata
     triggered_arbitration: bool
     arbitration_items: list[str] = Field(default_factory=list)
@@ -1037,6 +1061,7 @@ class AggregatedPHQ8(BaseModel):
 
 ```
 vibe-check/
+├── LICENSE
 ├── README.md
 ├── pyproject.toml
 ├── uv.lock                           # Lockfile for reproducibility
@@ -1044,7 +1069,6 @@ vibe-check/
 ├── .env.example
 ├── .pre-commit-config.yaml           # Pre-commit hooks (ruff + mypy)
 ├── Makefile                          # Developer convenience commands
-├── CLAUDE.md
 │
 ├── .github/
 │   └── workflows/
@@ -1053,76 +1077,50 @@ vibe-check/
 ├── src/
 │   └── vibe_check/
 │       ├── __init__.py
-│       ├── config.py                 # Pydantic Settings
+│       ├── cli.py                    # Batch runner CLI
+│       ├── settings.py               # Pydantic Settings (env-based)
+│       ├── sqlite.py                 # SQLite conn-string helpers
 │       │
+│       ├── data/                     # Load/validate corpus
+│       ├── preprocessing/            # Deterministic dialogue views
 │       ├── schemas/
 │       │   ├── __init__.py
 │       │   ├── input.py              # SQPsychConvDialogue
 │       │   ├── scoring.py            # PHQ8ItemScore, PHQ8Report
 │       │   └── output.py             # AggregatedPHQ8
 │       │
-│       ├── agents/
-│       │   ├── __init__.py
-│       │   ├── base.py               # PydanticAI agent factory
-│       │   ├── jurors.py             # GPT, Claude, Gemini agents
-│       │   └── judge.py              # Opus arbitration agent
-│       │
+│       ├── scoring/                  # Juror scoring (SPEC-04)
+│       ├── judge/                    # Arbitration schemas/prompting (SPEC-05)
 │       ├── graph/
 │       │   ├── __init__.py
 │       │   ├── state.py              # ScoringState, BatchState
-│       │   ├── nodes.py              # preprocess, jury, aggregate, arbitrate
-│       │   ├── edges.py              # Conditional routing logic
-│       │   ├── workflow.py           # Single-dialogue graph
-│       │   └── batch.py              # Map-reduce batch graph
+│       │   └── single_dialogue.py    # Single-dialogue LangGraph workflow (SPEC-05)
 │       │
 │       ├── aggregation/
 │       │   ├── __init__.py
 │       │   ├── posterior.py          # Dirichlet smoothing
 │       │   ├── disagreement.py       # Threshold checks
-│       │   └── metrics.py            # Entropy, ICC, Krippendorff
+│       │   └── entropy.py            # Entropy utilities
 │       │
-│       ├── preprocessing/
-│       │   ├── __init__.py
-│       │   ├── client_extractor.py   # Build dialogue views (client_only, client_qa)
-│       │   └── cleaner.py            # Normalization + CJK detection (optional filtering)
-│       │
-│       └── export/
-│           ├── __init__.py
-│           ├── jsonl.py
-│           ├── csv.py
-│           └── embeddings.py
-│
-├── scripts/
-│   ├── score_corpus.py               # Main CLI entry point
-│   ├── compute_diagnostics.py        # Phase 0: sanity diagnostics (no DAIC-WOZ)
-│   ├── generate_embeddings.py        # Create retrieval corpus
-│   └── evaluate_transfer.py          # Local-only sim-to-real metrics (no vendor APIs)
+│       └── run/                      # Batch runner + export (SPEC-06)
+│           ├── config.py
+│           ├── export.py
+│           ├── ledger.py
+│           └── runner.py
 │
 ├── tests/
-│   ├── conftest.py                   # Shared fixtures (mock clients, sample data)
-│   ├── fixtures/                     # Reusable test fixtures
-│   │   ├── __init__.py
-│   │   ├── mock_llm.py               # Mock LLM client
-│   │   └── sample_dialogues.py       # Sample test dialogues
+│   ├── conftest.py
+│   ├── fixtures/
 │   ├── unit/
-│   │   ├── test_aggregation.py
-│   │   ├── test_preprocessing.py
-│   │   └── test_schemas.py
-│   ├── integration/
-│   │   ├── test_single_dialogue.py
-│   │   └── test_graph_checkpointing.py
-│   └── e2e/
-│       └── test_full_pipeline.py
+│   └── integration/
 │
 ├── data/
-│   ├── raw/                          # HuggingFace downloads
-│   ├── checkpoints/                  # SQLite checkpoint DBs
-│   └── outputs/                      # Final scored datasets
+│   └── sqpsychconv/                  # Local HF dataset exports + samples
 │
 └── docs/
-    ├── architecture.md
-    ├── langgraph-tutorial.md
-    └── validation-protocol.md
+    ├── research/
+    ├── specs/
+    └── _archive/
 ```
 
 ---
@@ -1131,195 +1129,15 @@ vibe-check/
 
 This section defines production-grade Python DevEx based on 2026 best practices with uv, ruff, mypy strict mode, and GitHub Actions.
 
-### 10.1 Complete pyproject.toml
+### Tooling Config
 
-```toml
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+Source of truth (kept in sync with CI):
+- `pyproject.toml`
+- `Makefile`
+- `.pre-commit-config.yaml`
+- `.github/workflows/ci.yml`
 
-[project]
-name = "vibe-check"
-version = "0.1.0"
-description = "Multi-agent PHQ-8 scoring for synthetic therapy dialogues"
-readme = "README.md"
-license = { file = "LICENSE" }
-requires-python = ">=3.11"
-authors = [{ name = "CLARITY-DIGITAL-TWIN" }]
- classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-]
-
-dependencies = [
-    # Orchestration
-    "langgraph>=1.0.0",
-    "langgraph-checkpoint-postgres>=2.0.0",  # For production checkpointing
-    "psycopg[binary,pool]>=3.2.0",           # REQUIRED for PostgresSaver
-
-    # Agents (PydanticAI for structured outputs)
-    "pydantic-ai>=1.0.0",
-
-    # Provider clients
-    "langchain-openai>=0.3.0",
-    "langchain-anthropic>=0.3.0",
-    "langchain-google-genai>=2.1.0",
-
-    # Data
-    "pydantic>=2.10.0",
-    "pydantic-settings>=2.7.0",
-    "datasets>=3.0.0",
-    "pyarrow>=18.0.0",
-    "numpy>=2.0.0",
-
-    # Metrics
-    "scikit-learn>=1.5.0",
-    "scipy>=1.14.0",
-
-    # Utilities
-    "tenacity>=9.0.0",
-    "aiolimiter>=1.2.0",
-    "structlog>=25.0.0",
-    "rich>=14.0.0",
-    "python-dotenv>=1.0.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    # Testing
-    "pytest>=8.3.5",
-    "pytest-asyncio>=0.25.0",
-    "pytest-cov>=7.0.0",
-    "pytest-xdist>=3.5.0",
-    "pytest-sugar>=1.0.0",
-    "httpx>=0.28.0",
-    "respx>=0.22.0",
-    # Linting & formatting
-    "ruff>=0.9.2",
-    # Type checking
-    "mypy>=1.15.0",
-    # Pre-commit
-    "pre-commit>=4.1.0",
-]
-
-[project.scripts]
-vibe-check = "vibe_check.cli:main"
-
-# ─────────────────────────────────────────────────────────────
-# Ruff Configuration (linter + formatter)
-# ─────────────────────────────────────────────────────────────
-[tool.ruff]
-line-length = 100
-target-version = "py311"
-src = ["src", "tests", "scripts"]
-
-[tool.ruff.lint]
-select = [
-    "E",      # pycodestyle errors
-    "W",      # pycodestyle warnings
-    "F",      # Pyflakes
-    "I",      # isort
-    "B",      # flake8-bugbear
-    "C4",     # flake8-comprehensions
-    "UP",     # pyupgrade
-    "ARG",    # flake8-unused-arguments
-    "SIM",    # flake8-simplify
-    "TCH",    # flake8-type-checking
-    "PTH",    # flake8-use-pathlib
-    "RUF",    # Ruff-specific rules
-]
-ignore = [
-    "E501",   # line too long (handled by formatter)
-    "B008",   # function call in default argument (needed for FastAPI)
-]
-
-[tool.ruff.lint.isort]
-known-first-party = ["vibe_check"]
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-skip-magic-trailing-comma = false
-
-# ─────────────────────────────────────────────────────────────
-# Mypy Configuration (strict mode)
-# ─────────────────────────────────────────────────────────────
-[tool.mypy]
-python_version = "3.11"
-strict = true
-warn_unused_ignores = true
-warn_redundant_casts = true
-warn_unreachable = true
-show_error_codes = true
-pretty = true
-
-# Per-module overrides for external libs
-[[tool.mypy.overrides]]
-module = [
-    "datasets.*",
-    "langgraph.*",
-    "langchain_openai.*",
-    "langchain_anthropic.*",
-    "langchain_google_genai.*",
-    "scipy.*",
-    "sklearn.*",
-]
-ignore_missing_imports = true
-
-# ─────────────────────────────────────────────────────────────
-# Pytest Configuration
-# ─────────────────────────────────────────────────────────────
-[tool.pytest.ini_options]
-minversion = "8.0"
-testpaths = ["tests"]
-asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
-addopts = [
-    "-v",
-    "--strict-markers",
-    "--strict-config",
-    "-ra",
-    "--tb=short",
-]
-markers = [
-    "unit: Unit tests (fast, no external deps)",
-    "integration: Integration tests (may use mocks)",
-    "e2e: End-to-end tests (requires API keys)",
-    "slow: Slow tests (>10s)",
-]
-filterwarnings = [
-    "ignore::DeprecationWarning:pydantic.*:",
-]
-
-# ─────────────────────────────────────────────────────────────
-# Coverage Configuration
-# ─────────────────────────────────────────────────────────────
-[tool.coverage.run]
-source = ["src/vibe_check"]
-branch = true
-parallel = true
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "if TYPE_CHECKING:",
-    "if __name__ == .__main__.:",
-    "raise NotImplementedError",
-    "@abstractmethod",
-]
-fail_under = 80
-show_missing = true
-skip_covered = true
-
-[tool.coverage.html]
-directory = "htmlcov"
-```
-
-### 10.2 Pre-commit Configuration (.pre-commit-config.yaml)
+### Pre-commit
 
 ```yaml
 # .pre-commit-config.yaml
@@ -1371,7 +1189,7 @@ repos:
         require_serial: true
 ```
 
-### 10.3 GitHub Actions CI Workflow (.github/workflows/ci.yml)
+### CI
 
 ```yaml
 # .github/workflows/ci.yml
@@ -1486,7 +1304,7 @@ jobs:
           # token: ${{ secrets.CODECOV_TOKEN }}  # uncomment for private repos
 ```
 
-### 10.4 Makefile
+### Makefile
 
 ```makefile
 # Makefile - Developer convenience commands
@@ -1738,15 +1556,18 @@ uv run python scripts/score_corpus.py \
 
 ### 12.3 Phase 2: Generate Embeddings
 
-```bash
-uv run python scripts/generate_embeddings.py \
-    --input data/outputs/scored_sqpsychconv.jsonl \
-    --output data/outputs/embeddings/
-```
+> **OUT OF SCOPE**: Embedding generation has been moved to `ai-psychiatrist`. Do not implement in this repo.
+>
+> ```bash
+> # MOVED TO AI-PSYCHIATRIST
+> # uv run python scripts/generate_embeddings.py ...
+> ```
 
 ### 12.4 Phase 3: Sim-to-Real Evaluation (Local-Only; No Vendor APIs)
 
-This phase uses DAIC-WOZ and must be executed in a local-only environment where transcripts never leave the machine/network that is authorized to hold them.
+> **OUT OF SCOPE**: Evaluation against DAIC-WOZ has been moved to `ai-psychiatrist`.
+>
+> This phase uses DAIC-WOZ and must be executed in a local-only environment...
 
 `vibe-check` does not require DAIC-WOZ to function; treat this phase as a downstream integration run (recommended) that can be executed from `ai-psychiatrist` or an equivalent local evaluation harness.
 
