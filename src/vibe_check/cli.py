@@ -101,9 +101,6 @@ def main(argv: list[str] | None = None) -> int:
             if settings.google_api_key:
                 os.environ.setdefault("GOOGLE_API_KEY", settings.google_api_key)
 
-            # Override prompt version from CLI if provided, though settings has it too.
-            # CLI wins.
-            settings.prompt_version = args.prompt_version
             jurors = build_real_jury(settings)
             judge_item = build_real_judge_item(settings)
         else:

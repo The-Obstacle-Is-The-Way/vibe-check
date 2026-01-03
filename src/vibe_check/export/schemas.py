@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from vibe_check.schemas.output import SeverityBucket  # noqa: TC001
+from vibe_check.constants import SeverityBucket  # noqa: TC001 - Required at runtime for Pydantic
 
 
 class ScoredDialogueExport(BaseModel):

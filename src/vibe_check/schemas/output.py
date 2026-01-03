@@ -7,17 +7,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from vibe_check.constants import SEVERITY_BUCKETS, SeverityBucket
 from vibe_check.schemas.scoring import PHQ8Report
-
-SeverityBucket = Literal["0-4", "5-9", "10-14", "15-19", "20-24"]
-
-_SEVERITY_BUCKET_RANGES: dict[SeverityBucket, tuple[int, int]] = {
-    "0-4": (0, 4),
-    "5-9": (5, 9),
-    "10-14": (10, 14),
-    "15-19": (15, 19),
-    "20-24": (20, 24),
-}
 
 
 class ItemAggregation(BaseModel):
@@ -87,7 +78,7 @@ class AggregatedPHQ8(BaseModel):
                 f"sum(final_item_scores)={expected_total}"
             )
         bucket = None
-        for name, (lo, hi) in _SEVERITY_BUCKET_RANGES.items():
+        for name, (lo, hi) in SEVERITY_BUCKETS.items():
             if lo <= self.final_total_score <= hi:
                 bucket = name
                 break
