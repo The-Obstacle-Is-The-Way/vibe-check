@@ -67,17 +67,19 @@ Checkpoint note: accept either a raw SQLite file path or SQLAlchemy-style `sqlit
 
 ## 3. Output Format (SSOT)
 
-### 3.1 scored.jsonl
+### 3.1 scored.jsonl (Internal SSOT)
 
-One JSON object per dialogue, including:
+One JSON object per dialogue, matching the `AggregatedPHQ8` schema (full fidelity). This is the "raw" output used for diagnostics and checkpoints.
 
+Includes:
 - `file_id`, `condition`, `computed_split`
-- `prompt_version`, `dialogue_view` (e.g., `client_qa`)
-- Final labels (`final_item_scores`, `final_total_score`, severity bucket)
-- Audit fields:
-  - arbitration metadata
-  - juror model IDs and run numbers
-  - judge resolutions (no transcript text)
+- `prompt_version`, `dialogue_view`
+- `juror_reports` (full vote history + evidence)
+- `judge_resolution`
+- `total_posterior` (distributional data)
+- `usage` (per-juror token counts)
+
+> **Note**: This file is the input for SPEC-07 (Diagnostics) and SPEC-08 (Export).
 
 ### 3.2 run_manifest.json
 
@@ -86,7 +88,8 @@ Aggregate diagnostics (metrics only), e.g.:
 - counts by split and condition
 - arbitration rate overall + per item
 - distribution summaries (entropy/max-prob, total CI width)
-- token usage totals by provider/model (prompt/output/reasoning where available)
+- **Token Usage Totals**: Must account for *all* items in the corpus, even if the run was resumed.
+  - *Implementation Detail*: The runner must either persist running totals in the ledger OR re-scan existing rows in `data/outputs/rows/` during initialization to reconstruct the baseline usage count.
 - failure counts by error code (rate_limit, parse_error, provider_error)
 
 ---
