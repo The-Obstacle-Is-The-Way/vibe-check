@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
@@ -171,5 +171,5 @@ def aggregate_reports(
         juror_reports=reports,
         judge_resolution=None,
         prompt_version=prompt_version,
-        scored_at=datetime.utcnow(),
+        scored_at=datetime.now(UTC),
     )

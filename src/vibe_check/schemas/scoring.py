@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -142,4 +142,4 @@ class PHQ8Report(PHQ8Assessment):
     model_id: str = Field(min_length=1, description="e.g., 'gpt-5.2'")
     run_number: int = Field(ge=1, le=2, description="Run 1 or 2")
     usage: TokenUsage | None = None
-    scored_at: datetime = Field(default_factory=datetime.utcnow)
+    scored_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from vibe_check.schemas.scoring import PHQ8Assessment, PHQ8Report, TokenUsage
@@ -71,7 +71,7 @@ class JurorScorer:
                 "model_id": self._model_id,
                 "run_number": self._run_number,
                 "usage": usage,
-                "scored_at": datetime.utcnow(),
+                "scored_at": datetime.now(UTC),
             }
         )
 

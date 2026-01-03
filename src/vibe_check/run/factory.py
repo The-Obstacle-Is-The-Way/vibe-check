@@ -36,7 +36,7 @@ def build_fake_jury(
 ) -> Sequence[Juror]:
     """Build a list of deterministic fake jurors."""
     if models is None:
-        models = ["gpt-5.2", "claude-sonnet", "gemini-pro"]
+        models = ["gpt-5.2", "claude-sonnet-4-5-20250929", "gemini-3-pro-preview"]
     jurors: list[Juror] = []
     for model_id in models:
         for run_no in range(1, runs_per_model + 1):
