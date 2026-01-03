@@ -23,15 +23,15 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 │         │                                                       │
 │         ▼                                                       │
 │  ┌─────────────────────────────────────────────────────────┐    │
-│  │                    JURY PHASE                            │    │
+│  │                    JURY PHASE                           │    │
 │  │                                                         │    │
 │  │  ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐ ┌─────┐        │    │
 │  │  │GPT-1│ │GPT-2│ │CLD-1│ │CLD-2│ │GEM-1│ │GEM-2│        │    │
 │  │  └──┬──┘ └──┬──┘ └──┬──┘ └──┬──┘ └──┬──┘ └──┬──┘        │    │
-│  │     │       │       │       │       │       │            │    │
-│  │     └───────┴───────┴───┬───┴───────┴───────┘            │    │
-│  │                         │                                │    │
-│  │              6 PHQ8Reports (parallel)                    │    │
+│  │     │       │       │       │       │       │           │    │
+│  │     └───────┴───────┴───┬───┴───────┴───────┘           │    │
+│  │                         │                               │    │
+│  │              6 PHQ8Reports (parallel)                   │    │
 │  │                                                         │    │
 │  │  Each juror independently scores all 8 PHQ-8 items      │    │
 │  │  with confidence ratings and evidence extraction        │    │
@@ -39,7 +39,7 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 │         │                                                       │
 │         ▼                                                       │
 │  ┌─────────────────────────────────────────────────────────┐    │
-│  │                  AGGREGATION PHASE                       │    │
+│  │                  AGGREGATION PHASE                      │    │
 │  │                                                         │    │
 │  │  For each PHQ-8 item:                                   │    │
 │  │    1. Collect votes from all 6 jurors                   │    │
@@ -54,14 +54,16 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 │  └─────────────────────────────────────────────────────────┘    │
 │         │                                                       │
 │         ▼                                                       │
-│    ┌────────────────────────┐                                   │
-│    │   Arbitration Needed?  │                                   │
-│    │                        │                                   │
-│    │   Triggers:            │                                   │
-│    │   • max_prob < 0.60    │                                   │
-│    │   • entropy > 1.2      │                                   │
-│    │   • vote_range ≥ 2     │                                   │
-│    └──────────┬─────────────┘                                   │
+│    ┌─────────────────────────────────────┐                      │
+│    │        Arbitration Needed?         │                      │
+│    │                                    │                      │
+│    │   Triggers (any one activates):    │                      │
+│    │   • max_prob < 0.60                │                      │
+│    │   • entropy > 1.2                  │                      │
+│    │   • vote_range ≥ 2                 │                      │
+│    │   • clinical_prob in [0.4, 0.6]    │                      │
+│    │   • insufficient_evidence ≥ 2      │                      │
+│    └─────────────────┬──────────────────┘                      │
 │               │                                                 │
 │         ┌─────┴─────┐                                           │
 │         ▼           ▼                                           │

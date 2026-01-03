@@ -77,17 +77,19 @@ The workflow uses a TypedDict state that flows through all nodes:
 
 ```python
 class ScoringState(TypedDict):
-    # Input (set at start)
+    # Identity
     file_id: str
-    condition: str
-    dialogue: str
-    scoring_text: str
+    condition: Literal["mdd", "control"]
     prompt_version: str
+
+    # Data
+    dialogue: str
+    scoring_text: str  # The specific view used for scoring
 
     # Accumulated (grows as jurors complete)
     jury_results: Annotated[list[PHQ8Report], operator.add]
 
-    # Decision (set by aggregate node)
+    # Control flow
     needs_arbitration: bool
 
     # Output (set by aggregate, possibly updated by arbitrate)

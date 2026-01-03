@@ -21,18 +21,29 @@ if TYPE_CHECKING:
 
 
 class Juror(Protocol):
-    def score(self, scoring_text: str) -> PHQ8Report: ...
-    async def ascore(self, scoring_text: str) -> PHQ8Report: ...
+    """Protocol for PHQ-8 scoring agents."""
+
+    def score(self, scoring_text: str) -> PHQ8Report:
+        """Synchronous scoring (for simple use cases)."""
+        ...
+
+    async def ascore(self, scoring_text: str) -> PHQ8Report:
+        """Async scoring with full resilience (for production)."""
+        ...
 
 
 class JudgeItemFn(Protocol):
+    """Protocol for judge arbitration functions."""
+
     def __call__(
         self,
         scoring_text: str,
         item: str,
         juror_reports: list[PHQ8Report],
         prompt_version: str,
-    ) -> JudgeItemResolution: ...
+    ) -> JudgeItemResolution:
+        """Resolve a single contested item."""
+        ...
 
 
 def build_fake_jury(
@@ -79,7 +90,7 @@ def build_real_jury(settings: Settings) -> Sequence[Juror]:
         full_model_name = f"{provider}:{model_id}"
 
         # Get the rate limiter for this provider
-        limiter = rate_limiters.get_limiter(model_id)
+        limiter = rate_limiters.get_limiter(full_model_name)
 
         for run_no in range(1, settings.runs_per_model + 1):
             agent = build_juror_agent(
@@ -112,7 +123,7 @@ def build_real_judge_item(settings: Settings) -> JudgeItemFn:
     - Layer 2: Tenacity transient retry (via settings.max_retries, etc.)
 
     Note: Layer 3 (rate limiting) is omitted for the judge because:
-    - Judge calls are infrequent (only on arbitration, ~30% of dialogues)
+    - Judge calls are infrequent relative to juror calls (only on arbitration)
     - The judge is called synchronously, making async rate limiting complex
     - Transient retry (Layer 2) handles 429s when they occur
     """

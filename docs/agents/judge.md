@@ -10,7 +10,7 @@ The judge:
 
 1. Reviews contested items identified by aggregation
 2. Sees all juror votes and evidence
-3. Has access to the full dialogue
+3. Has access to the scoring view text (`scoring_text`, typically `client_qa`)
 4. Renders a final decision with rationale
 
 ---
@@ -178,10 +178,9 @@ Key constraints:
 | **Purpose** | Independent scoring | Arbitration |
 | **Model** | Mixed (GPT, Claude, Gemini) | Claude Opus (most capable) |
 | **Scope** | All 8 items | Only contested items |
-| **Context** | Dialogue only | Dialogue + juror votes + evidence |
-| **Invocation** | Always (6 per dialogue) | Conditional (~30% of dialogues) |
-| **Cost** | ~$0.05/dialogue | ~$0.50/item |
-| **Rate Limiting** | Yes (Layer 3) | No (infrequent calls) |
+| **Context** | `scoring_text` view | `scoring_text` + juror votes + evidence |
+| **Invocation** | Always (6 per dialogue) | Conditional (contested items only) |
+| **Rate Limiting** | Yes (Layer 3) | No (Layer 1–2 only) |
 
 ---
 
@@ -241,7 +240,7 @@ def _call_with_retry() -> JudgeItemResolution:
 
 The judge does **not** use Layer 3 rate limiting because:
 
-- Judge calls are infrequent (only on arbitration, ~30% of dialogues)
+- Judge calls are conditional (only on contested items)
 - Calls are sequential (one contested item at a time)
 - Layer 2 retry handles 429s when they occur
 - Synchronous execution makes async rate limiting complex

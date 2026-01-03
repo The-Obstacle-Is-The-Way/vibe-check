@@ -147,7 +147,7 @@ SEVERITY_BUCKETS: dict[SeverityBucket, tuple[int, int]] = {
 
 ### Real Agents
 
-Use live LLM APIs with full ADR-001 resilience (three-layer strategy):
+Use live LLM APIs with ADR-001 resilience (jurors: 3 layers; judge: 2 layers):
 
 ```python
 from vibe_check.run.factory import build_real_jury, build_real_judge_item
@@ -156,11 +156,10 @@ jurors = build_real_jury(settings)  # 6 JurorScorer instances
 judge = build_real_judge_item(settings)  # Closure with Agent
 ```
 
-Real agents include:
+Resilience layers:
 
-- **Layer 1**: PydanticAI validation retries (`retries=2`)
-- **Layer 2**: Tenacity transient retry (429, 5xx, network errors)
-- **Layer 3**: Aiolimiter rate limiting (per-provider RPM)
+- **Jurors**: Layer 1 (PydanticAI) + Layer 2 (Tenacity) + Layer 3 (Aiolimiter)
+- **Judge**: Layer 1 (PydanticAI) + Layer 2 (Tenacity); no Layer 3 rate limiting
 
 ### Fake Agents
 
@@ -178,7 +177,7 @@ judge = build_fake_judge_item()  # deterministic_fake_judge_item function
 ```python
 # Hash-based scoring for reproducibility
 seed = f"{model_id}|{run_number}|{item}|{scoring_text}"
-score = stable_int(seed) % 4  # Always 0-3
+score = int(hashlib.sha256(seed.encode()).hexdigest(), 16) % 4  # Always 0-3
 ```
 
 **How Fake Judge Works:**
@@ -186,7 +185,7 @@ score = stable_int(seed) % 4  # Always 0-3
 ```python
 # Mean of juror votes, rounded
 votes = [getattr(report, item).score for report in juror_reports]
-final = round(sum(votes) / len(votes))
+final = max(0, min(3, round(sum(votes) / len(votes))))
 ```
 
 ---

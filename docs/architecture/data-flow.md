@@ -26,12 +26,12 @@ list[SQPsychConvDialogue]
 
 ```python
 class SQPsychConvDialogue(BaseModel):
-    file_id: str           # "active436"
-    condition: str         # "mdd" or "control"
-    client_model: str      # "qwen-2.5"
-    therapist_model: str   # "qwen-2.5"
-    dialogue: str          # Raw dialogue text
-    computed_split: str    # "train", "dev", or "test"
+    file_id: str                           # "active436"
+    condition: Literal["mdd", "control"]   # MDD or control group
+    client_model: str                      # "qwen-2.5"
+    therapist_model: str                   # "qwen-2.5"
+    dialogue: str                          # Raw dialogue text
+    computed_split: SplitName | None       # "train", "dev", "test", or None
 ```
 
 ---
@@ -240,10 +240,10 @@ Update final_item_scores
 
 ```python
 class JudgeItemResolution(BaseModel):
-    item: str           # "anhedonia"
-    final_score: int    # 0, 1, 2, or 3
-    confidence: float   # 0.0-1.0
-    rationale: str      # Explanation
+    item: str                       # "anhedonia"
+    final_score: Literal[0, 1, 2, 3]  # PHQ-8 score
+    confidence: float               # 0.0-1.0
+    rationale: str                  # Explanation
 ```
 
 ---
