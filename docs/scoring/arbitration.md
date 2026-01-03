@@ -76,7 +76,7 @@ The judge is a specialized LLM agent (default: Claude Opus) that:
 ```python
 class JudgeItemResolution:
     item: str           # e.g., "anhedonia"
-    final_score: int    # 0, 1, 2, or 3
+    final_score: Literal[0, 1, 2, 3]
     confidence: float   # 0.0 to 1.0
     rationale: str      # Why this score was chosen
 ```

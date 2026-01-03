@@ -172,7 +172,7 @@ arbitration = {
 ```python
 class DiagnosticReport(BaseModel):
     run_id: str
-    computed_at: datetime
+    computed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     n_dialogues: int
     n_mdd: int
     n_control: int

@@ -134,8 +134,8 @@ class DialogueViews(BaseModel):
     therapist_utterance_count: int
     short_answer_count: int    # Client responses < 5 words
 
-    has_empty_client_text: bool
-    has_unknown_speaker: bool
+    has_empty_client_text: bool = False
+    has_unknown_speaker: bool = False
 ```
 
 ---
