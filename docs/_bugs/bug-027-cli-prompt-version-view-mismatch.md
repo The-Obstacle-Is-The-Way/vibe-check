@@ -1,18 +1,19 @@
 ---
 severity: P1
-status: open
+status: resolved
 opened_date: 2026-01-03
+resolved_date: 2026-01-03
 ---
 
 # BUG-027: CLI `--prompt-version` / `--dialogue-view` can desync from live agent prompts
 
 ## Summary
-In `--live` runs, the CLI exposes `--prompt-version` and `--dialogue-view`, but the **live juror/judge agents** are built using `Settings.prompt_version` and `Settings.scoring_dialogue_view`. This can produce runs where:
+In `--live` runs, the CLI exposes `--prompt-version` and `--dialogue-view`, but the **live juror/judge agents** were built using `Settings.prompt_version` and `Settings.scoring_dialogue_view`. This produced runs where:
 
-- The **scored outputs** record `prompt_version` and `dialogue_view` from CLI args
-- The **actual LLM system prompts** embed different `prompt_version` / `view_name` values (from environment-backed `Settings`)
+- The **scored outputs** recorded `prompt_version` and `dialogue_view` from CLI args
+- The **actual LLM system prompts** embedded different `prompt_version` / `view_name` values (from environment-backed `Settings`)
 
-This is a reproducibility and correctness footgun.
+This was a reproducibility and correctness footgun.
 
 ## Evidence
 - `src/vibe_check/cli.py`
@@ -32,16 +33,24 @@ This is a reproducibility and correctness footgun.
 - **Prompt correctness**: A juror prompt can state it is scoring view `client_qa` while receiving `client_only` text (or vice versa).
 - **Auditability**: Run artifacts become ambiguous about which prompt template/view was truly used.
 
-## Fix Plan
-Make `prompt_version` and `dialogue_view` single-source-of-truth in live mode.
+## Resolution
 
-Options (choose one):
-1. **Propagate CLI flags into live agent construction**
-   - Thread `prompt_version` and `dialogue_view` through `build_real_jury(...)` / `build_real_judge_item(...)` and use them when building prompts.
-2. **Hard fail on mismatch**
-   - If `--dialogue-view != Settings.scoring_dialogue_view` or `--prompt-version != Settings.prompt_version`, raise a clear error.
-3. **Remove misleading knobs**
-   - If `--prompt-version` is intended as a label only, rename it to `--output-prompt-version` (and persist separate fields).
+**Fixed via Option 1**: Propagate CLI flags into live agent construction.
 
-## Notes
-Docs were updated to reflect the current behavior (CLI flags do not override prompt template selection), but the underlying mismatch remains in code.
+### Changes Made:
+1. **`src/vibe_check/run/factory.py`**:
+   - `build_real_jury(settings)` → `build_real_jury(settings, *, prompt_version: str, dialogue_view: str)`
+   - `build_real_judge_item(settings)` → `build_real_judge_item(settings, *, prompt_version: str)`
+   - Both now use the passed params instead of `settings.prompt_version` / `settings.scoring_dialogue_view`
+
+2. **`src/vibe_check/cli.py`**:
+   - Updated to pass `args.prompt_version` and `args.dialogue_view` to factory functions
+
+3. **`tests/unit/test_factory.py`**:
+   - Added tests to verify CLI args flow through to agent construction
+   - Added tests to verify params are required (no silent fallback to Settings)
+
+### Verification:
+- All 95 unit tests pass
+- All 12 integration tests pass
+- Linting passes

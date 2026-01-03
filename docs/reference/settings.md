@@ -259,7 +259,11 @@ Some settings can be overridden via CLI flags:
 | CLI Flag | Overrides | Command |
 |----------|-----------|---------|
 | `--max-concurrency` | `max_concurrent_dialogues` | `score-corpus` |
-| `--dialogue-view` | `dialogue_view` (scoring text selection) | `score-corpus` |
-| `--prompt-version` | `prompt_version` label (output/state) | `score-corpus` |
+| `--dialogue-view` | `scoring_dialogue_view` (used in agent prompts) | `score-corpus` |
+| `--prompt-version` | `prompt_version` (used in agent prompts) | `score-corpus` |
 
-CLI flags take precedence for runner options; prompt templates are selected via environment (`PROMPT_VERSION`, `SCORING_DIALOGUE_VIEW`).
+CLI flags take full precedence in `--live` mode. The `--prompt-version` and `--dialogue-view` values are used both:
+- In the scoring text selection (runner)
+- In the agent system prompts (jurors and judge)
+
+This ensures CLI args always match what agents actually use (BUG-027 fix).

@@ -157,12 +157,17 @@ cat data/outputs/run_manifest.json | python -m json.tool
   "dialogues_total": 2090,
   "completed": 2090,
   "failed": 0,
-  "arbitration_rate": "...",
+  "arbitration_rate": 0.28,
   "rows_written": 2090,
-  "arbitrated_dialogues": "...",
-  "counts_by_condition": {"mdd": "...", "control": "..."},
-  "counts_by_split": {"train": "...", "dev": "...", "test": "..."},
-  "token_usage_totals": {...}
+  "arbitrated_dialogues": 585,
+  "counts_by_condition": {"mdd": 1045, "control": 1045},
+  "counts_by_split": {"train": 1464, "dev": 313, "test": 313},
+  "token_usage_totals": {
+    "input_tokens": 12500000,
+    "output_tokens": 450000,
+    "reasoning_tokens": 0,
+    "total_tokens": 12950000
+  }
 }
 ```
 

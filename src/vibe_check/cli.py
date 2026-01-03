@@ -101,8 +101,16 @@ def main(argv: list[str] | None = None) -> int:
             if settings.google_api_key:
                 os.environ.setdefault("GOOGLE_API_KEY", settings.google_api_key)
 
-            jurors = build_real_jury(settings)
-            judge_item = build_real_judge_item(settings)
+            # BUG-027 fix: Pass CLI args to factory functions, not Settings defaults
+            jurors = build_real_jury(
+                settings,
+                prompt_version=args.prompt_version,
+                dialogue_view=args.dialogue_view,
+            )
+            judge_item = build_real_judge_item(
+                settings,
+                prompt_version=args.prompt_version,
+            )
         else:
             jurors = build_fake_jury()
             judge_item = build_fake_judge_item()

@@ -65,13 +65,26 @@ def build_fake_judge_item() -> JudgeItemFn:
     return deterministic_fake_judge_item
 
 
-def build_real_jury(settings: Settings) -> Sequence[Juror]:
-    """Build a list of real PydanticAI-backed jurors using settings.
+def build_real_jury(
+    settings: Settings,
+    *,
+    prompt_version: str,
+    dialogue_view: str,
+) -> Sequence[Juror]:
+    """Build a list of real PydanticAI-backed jurors.
+
+    Args:
+        settings: Configuration for models, rate limits, and retry behavior.
+        prompt_version: Prompt version to embed in agent system prompts (from CLI).
+        dialogue_view: Dialogue view name for scoring context (from CLI).
 
     Wires up ADR-001's three-layer resilience strategy:
     - Layer 1: PydanticAI validation retries (via settings.validation_retries)
     - Layer 2: Tenacity transient retry (via settings.max_retries, etc.)
     - Layer 3: Aiolimiter rate limiting (via per-provider RPM settings)
+
+    Note (BUG-027 fix): prompt_version and dialogue_view are now explicit params
+    to ensure CLI args flow through to agent prompts, not Settings defaults.
     """
     # PydanticAI provider prefixes: openai, anthropic, google-gla (not "google")
     configs = [
@@ -95,15 +108,15 @@ def build_real_jury(settings: Settings) -> Sequence[Juror]:
         for run_no in range(1, settings.runs_per_model + 1):
             agent = build_juror_agent(
                 model=full_model_name,
-                prompt_version=settings.prompt_version,
-                view_name=settings.scoring_dialogue_view,
+                prompt_version=prompt_version,
+                view_name=dialogue_view,
                 retries=settings.validation_retries,
             )
             scorer = JurorScorer(
                 agent=agent,
                 model_id=model_id,
                 run_number=run_no,
-                prompt_version=settings.prompt_version,
+                prompt_version=prompt_version,
                 rate_limiter=limiter,
                 max_retries=settings.max_retries,
                 retry_initial_wait=settings.retry_initial_wait,
@@ -115,8 +128,16 @@ def build_real_jury(settings: Settings) -> Sequence[Juror]:
     return jurors
 
 
-def build_real_judge_item(settings: Settings) -> JudgeItemFn:
+def build_real_judge_item(
+    settings: Settings,
+    *,
+    prompt_version: str,
+) -> JudgeItemFn:
     """Build a real judge function backed by an Agent.
+
+    Args:
+        settings: Configuration for model, retry behavior.
+        prompt_version: Prompt version to embed in agent system prompt (from CLI).
 
     Wires up ADR-001's resilience strategy:
     - Layer 1: PydanticAI validation retries (via settings.validation_retries)
@@ -126,6 +147,9 @@ def build_real_judge_item(settings: Settings) -> JudgeItemFn:
     - Judge calls are infrequent relative to juror calls (only on arbitration)
     - The judge is called synchronously, making async rate limiting complex
     - Transient retry (Layer 2) handles 429s when they occur
+
+    Note (BUG-027 fix): prompt_version is now an explicit param to ensure CLI args
+    flow through to agent prompts, not Settings defaults.
     """
     from typing import cast
 
@@ -140,7 +164,7 @@ def build_real_judge_item(settings: Settings) -> JudgeItemFn:
     # Layer 1: PydanticAI validation retries
     agent = build_judge_agent(
         model=full_model_name,
-        prompt_version=settings.prompt_version,
+        prompt_version=prompt_version,
         retries=settings.validation_retries,
     )
 
