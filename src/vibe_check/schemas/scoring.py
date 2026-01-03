@@ -5,7 +5,21 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+MAX_EVIDENCE_SNIPPET_WORDS = 50
+MAX_EVIDENCE_SNIPPET_CHARS = 400
+
+
+class TokenUsage(BaseModel):
+    """Token usage metadata for a single model call."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    reasoning_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
 
 
 class PHQ8ItemScore(BaseModel):
@@ -19,6 +33,21 @@ class PHQ8ItemScore(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0, description="Model's self-reported confidence")
     evidence: list[str] = Field(default_factory=list, max_length=3)
     insufficient_evidence: bool = Field(default=False)
+
+    @field_validator("evidence")
+    @classmethod
+    def _validate_evidence_snippets(cls, value: list[str]) -> list[str]:
+        for snippet in value:
+            cleaned = snippet.strip()
+            if not cleaned:
+                raise ValueError("evidence snippets must be non-empty strings")
+            if len(cleaned) > MAX_EVIDENCE_SNIPPET_CHARS:
+                raise ValueError(
+                    f"evidence snippet exceeds {MAX_EVIDENCE_SNIPPET_CHARS} characters"
+                )
+            if len(cleaned.split()) > MAX_EVIDENCE_SNIPPET_WORDS:
+                raise ValueError(f"evidence snippet exceeds {MAX_EVIDENCE_SNIPPET_WORDS} words")
+        return value
 
 
 class PHQ8Report(BaseModel):
@@ -41,7 +70,9 @@ class PHQ8Report(BaseModel):
     total_score: int = Field(ge=0, le=24)
 
     mentions_self_harm: bool = False
-    self_harm_evidence: list[str] = Field(default_factory=list)
+    self_harm_evidence: list[str] = Field(default_factory=list, max_length=3)
+
+    usage: TokenUsage | None = None
 
     scored_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -64,3 +95,20 @@ class PHQ8Report(BaseModel):
         if self.total_score != expected:
             raise ValueError(f"total_score={self.total_score} does not match item sum={expected}")
         return self
+
+    @field_validator("self_harm_evidence")
+    @classmethod
+    def _validate_self_harm_evidence(cls, value: list[str]) -> list[str]:
+        for snippet in value:
+            cleaned = snippet.strip()
+            if not cleaned:
+                raise ValueError("self_harm_evidence snippets must be non-empty strings")
+            if len(cleaned) > MAX_EVIDENCE_SNIPPET_CHARS:
+                raise ValueError(
+                    f"self_harm_evidence snippet exceeds {MAX_EVIDENCE_SNIPPET_CHARS} characters"
+                )
+            if len(cleaned.split()) > MAX_EVIDENCE_SNIPPET_WORDS:
+                raise ValueError(
+                    f"self_harm_evidence snippet exceeds {MAX_EVIDENCE_SNIPPET_WORDS} words"
+                )
+        return value
