@@ -34,7 +34,9 @@ def write_scored_jsonl(output_dir: Path) -> None:
     """Materialize `scored.jsonl` from per-dialogue row files (sorted by file_id)."""
     rows_dir = output_dir / ROWS_DIR
     if not rows_dir.exists():
-        raise FileNotFoundError(rows_dir)
+        # No rows written yet, produce empty file
+        _atomic_write_text(output_dir / "scored.jsonl", "")
+        return
 
     row_files = sorted(rows_dir.glob("*.json"), key=lambda p: p.stem)
     lines: list[str] = []

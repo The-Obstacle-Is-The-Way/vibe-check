@@ -38,8 +38,8 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
     assert "final_total_score" in row
     assert "final_item_scores" in row
 
-    ledger = JobLedger(output_dir / "ledger.sqlite")
-    attempts_before = {file_id: ledger.get_attempts(file_id) for file_id in ledger.list_all()}
+    with JobLedger(output_dir / "ledger.sqlite") as ledger:
+        attempts_before = {file_id: ledger.get_attempts(file_id) for file_id in ledger.list_all()}
 
     score_corpus(
         input_path="data/sqpsychconv/qwq",
@@ -52,5 +52,15 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
         judge_item=build_fake_judge_item(),
     )
 
-    attempts_after = {file_id: ledger.get_attempts(file_id) for file_id in ledger.list_all()}
+    with JobLedger(output_dir / "ledger.sqlite") as ledger:
+        attempts_after = {file_id: ledger.get_attempts(file_id) for file_id in ledger.list_all()}
     assert attempts_after == attempts_before
+
+    # Verify token usage is present in manifest
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    token_totals = manifest["token_usage_totals"]
+    assert token_totals["total_tokens"] > 0
+    assert token_totals["input_tokens"] > 0
+    assert token_totals["output_tokens"] > 0
+    # Reasoning might be 0 depending on the model/fake used, so we check >= 0
+    assert token_totals["reasoning_tokens"] >= 0

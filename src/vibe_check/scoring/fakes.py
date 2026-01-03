@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from vibe_check.constants import PHQ8_ITEMS
 from vibe_check.judge.schema import JudgeItemResolution
-from vibe_check.schemas.scoring import PHQ8ItemScore, PHQ8Report
+from vibe_check.schemas.scoring import PHQ8ItemScore, PHQ8Report, TokenUsage
 
 if TYPE_CHECKING:
     from vibe_check.scoring.juror import JurorScorer  # noqa: F401
@@ -55,7 +55,12 @@ class DeterministicFakeJuror:
             total_score=total,
             mentions_self_harm=False,
             self_harm_evidence=[],
-            usage=None,
+            usage=TokenUsage(
+                input_tokens=100,
+                output_tokens=50,
+                reasoning_tokens=10,
+                total_tokens=160,
+            ),
         )
 
 

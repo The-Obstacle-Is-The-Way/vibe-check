@@ -1,8 +1,9 @@
 # BUG-013: JobLedger Connection Churn (Performance)
 
-**Status**: OPEN
+**Status**: FIXED
 **Severity**: P4 (Low - Performance Only)
 **Discovered**: 2026-01-02
+**Fixed**: 2026-01-02
 **Component**: `src/vibe_check/run/ledger.py`
 
 ---

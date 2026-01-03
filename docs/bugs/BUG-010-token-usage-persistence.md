@@ -1,8 +1,9 @@
 # BUG-010: Token Usage Not Persisted on Resume
 
-**Status**: OPEN
+**Status**: FIXED
 **Severity**: P2 (Medium - Data Integrity)
 **Discovered**: 2026-01-02
+**Fixed**: 2026-01-02
 **Component**: `src/vibe_check/run/runner.py`
 
 ---
