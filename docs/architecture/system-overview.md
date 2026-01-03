@@ -31,7 +31,7 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 │  │     │       │       │       │       │       │           │    │
 │  │     └───────┴───────┴───┬───┴───────┴───────┘           │    │
 │  │                         │                               │    │
-│  │              6 PHQ8Reports (parallel)                   │    │
+│  │              6 PHQ8Reports (sequential)                 │    │
 │  │                                                         │    │
 │  │  Each juror independently scores all 8 PHQ-8 items      │    │
 │  │  with confidence ratings and evidence extraction        │    │
@@ -63,6 +63,7 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 │    │   • vote_range ≥ 2                 │                      │
 │    │   • clinical_prob in [0.4, 0.6]    │                      │
 │    │   • insufficient_evidence ≥ 2      │                      │
+│    │   • total_score_std ≥ 2.0          │                      │
 │    └─────────────────┬──────────────────┘                      │
 │               │                                                 │
 │         ┌─────┴─────┐                                           │
@@ -96,8 +97,8 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 │         ▼                                                       │
 │  ┌──────────────┐    ┌───────────────┐    ┌──────────────┐      │
 │  │ scored.jsonl │    │  Diagnostics  │    │    Export    │      │
-│  │  (internal)  │───▶│ Quality Gates │───▶│ labels.jsonl │      │
-│  │              │    │               │    │  (public)    │      │
+│  │  (internal)  │───▶│ Quality Gates │───▶│ vibe_check_  │      │
+│  │              │    │               │    │ labels.jsonl │      │
 │  │ Full records │    │ • Reliability │    │ Flattened    │      │
 │  │ with proofs  │    │ • Consistency │    │ schema for   │      │
 │  │              │    │ • Separation  │    │ downstream   │      │
@@ -117,7 +118,7 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 | **Aggregation** | PHQ8Reports | AggregatedPHQ8 | `aggregation/aggregate.py` |
 | **Judge** | Contested items | JudgeItemResolution | `judge/agent.py` |
 | **Diagnostics** | scored.jsonl | DiagnosticReport | `diagnostics/runner.py` |
-| **Export** | scored.jsonl | labels.jsonl | `export/writer.py` |
+| **Export** | scored.jsonl | vibe_check_labels.jsonl | `export/writer.py` |
 
 ---
 
@@ -137,9 +138,9 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 |------|---------|-----------|
 | `scored.jsonl` | Full scoring records | Internal |
 | `run_manifest.json` | Run metadata | Internal |
-| `checkpoint.db` | LangGraph checkpoints | Temporary |
-| `labels.jsonl` | Public export | Permanent |
-| `labels.csv` | Alternative format | Permanent |
+| `data/checkpoints/vibe_check.db` | LangGraph checkpoints | Temporary |
+| `vibe_check_labels.jsonl` | Public export | Permanent |
+| `vibe_check_labels.csv` | Alternative format | Permanent |
 
 ---
 

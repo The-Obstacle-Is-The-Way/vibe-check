@@ -88,9 +88,9 @@ src/vibe_check/
 
 | Component | Technology | Version |
 |-----------|------------|---------|
-| LLM Framework | PydanticAI | 0.1+ |
-| Workflow | LangGraph | 1.0+ |
-| Retry | Tenacity | 9.1+ |
-| Rate Limiting | aiolimiter | 1.2+ |
-| Math | NumPy, SciPy | Latest |
-| Schemas | Pydantic | 2.0+ |
+| LLM Framework | PydanticAI | 1.0.0+ |
+| Workflow | LangGraph | 1.0.5+ |
+| Retry | Tenacity | 9.1.2+ |
+| Rate Limiting | aiolimiter | 1.2.1+ |
+| Math | NumPy, SciPy | 2.0.0+ / 1.14.0+ |
+| Schemas | Pydantic | 2.10.0+ |

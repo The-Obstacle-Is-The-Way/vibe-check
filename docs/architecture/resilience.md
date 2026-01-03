@@ -5,7 +5,7 @@ vibe-check implements a three-layer resilience strategy for live LLM API calls:
 | Layer | Tool | Handles |
 |-------|------|---------|
 | **Layer 1** | PydanticAI `retries` | Schema validation failures (malformed JSON / wrong types) |
-| **Layer 2** | Tenacity (via `with_retry`) | 429s, 5xx, network/timeouts |
+| **Layer 2** | Tenacity (`with_retry` / `retry`) | 429s, 5xx, network/timeouts |
 | **Layer 3** | Aiolimiter (`AsyncLimiter`) | Proactive throttling per provider (RPM) |
 
 This document describes the **actual wiring in code**.
@@ -24,7 +24,7 @@ Layer 1 is configured at the agent level via PydanticAI:
 ```python
 return Agent(
     model=model,
-    output_type=PHQ8Assessment,
+    output_type=output_type,
     retries=retries,
     system_prompt=...,
 )

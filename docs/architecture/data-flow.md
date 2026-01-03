@@ -31,7 +31,7 @@ class SQPsychConvDialogue(BaseModel):
     client_model: str                      # "qwen-2.5"
     therapist_model: str                   # "qwen-2.5"
     dialogue: str                          # Raw dialogue text
-    computed_split: SplitName | None       # "train", "dev", "test", or None
+    computed_split: SplitName | None = None  # "train", "dev", "test", or None
 ```
 
 ---
@@ -67,8 +67,8 @@ class DialogueViews(BaseModel):
     client_utterance_count: int
     therapist_utterance_count: int
     short_answer_count: int
-    has_empty_client_text: bool
-    has_unknown_speaker: bool
+    has_empty_client_text: bool = False
+    has_unknown_speaker: bool = False
 ```
 
 ---
@@ -94,7 +94,7 @@ scoring_text
 ### Schema: PHQ8Report
 
 ```python
-class PHQ8Report(BaseModel):
+class PHQ8Report(PHQ8Assessment):
     # 8 PHQ items
     anhedonia: PHQ8ItemScore
     depressed_mood: PHQ8ItemScore
@@ -107,8 +107,8 @@ class PHQ8Report(BaseModel):
 
     total_score: int  # 0-24
 
-    mentions_self_harm: bool
-    self_harm_evidence: list[str]
+    mentions_self_harm: bool = False
+    self_harm_evidence: list[str] = Field(default_factory=list, max_length=3)
 
     # Metadata
     model_id: str
@@ -119,8 +119,8 @@ class PHQ8Report(BaseModel):
 class PHQ8ItemScore(BaseModel):
     score: Literal[0, 1, 2, 3]
     confidence: float  # 0.0-1.0
-    evidence: list[str]  # Up to 3 quotes
-    insufficient_evidence: bool
+    evidence: list[str] = Field(default_factory=list, max_length=3)  # Up to 3 quotes
+    insufficient_evidence: bool = False
 ```
 
 ---
@@ -252,15 +252,15 @@ class JudgeItemResolution(BaseModel):
 
 **Input**: `AggregatedPHQ8`
 
-**Output**: JSONL row + ledger update
+**Output**: `scored.jsonl` + ledger update
 
 ```
 AggregatedPHQ8
       │
       ├──────────────┬────────────────┐
       ▼              ▼                ▼
-scored.jsonl   run_manifest.json   ledger.db
-(append row)   (update stats)    (mark done)
+scored.jsonl   run_manifest.json   ledger.sqlite
+(materialize)  (end-of-run stats) (mark done)
 ```
 
 ---
@@ -293,7 +293,7 @@ DiagnosticReport
 
 **Input**: `scored.jsonl`
 
-**Output**: `labels.jsonl` + `labels.csv`
+**Output**: `vibe_check_labels.jsonl` + `vibe_check_labels.csv`
 
 ```
 scored.jsonl (internal format)
@@ -306,7 +306,7 @@ write_label_exports()
       └── Write CSV
       │
       ▼
-labels.jsonl  labels.csv (public format)
+vibe_check_labels.jsonl  vibe_check_labels.csv (public format)
 ```
 
 ### Schema: ScoredDialogueExport
@@ -360,5 +360,5 @@ scored.jsonl
     ↓
 DiagnosticReport
     ↓
-labels.jsonl / labels.csv
+vibe_check_labels.jsonl / vibe_check_labels.csv
 ```

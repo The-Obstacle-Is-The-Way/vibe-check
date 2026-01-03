@@ -151,7 +151,15 @@ Only runs if `needs_arbitration` is True:
 ```python
 def arbitrate_node(state: ScoringState) -> dict:
     agg = state["final_output"]
-    contested = agg.arbitration_items
+    if agg is None:
+        raise RuntimeError("aggregate node did not produce final_output")
+
+    contested = [item for item in agg.arbitration_items if item in PHQ8_ITEMS]
+    if "__total__" in agg.arbitration_items:
+        contested = list(PHQ8_ITEMS)
+
+    if not contested:
+        return {"final_output": agg, "needs_arbitration": False}
 
     resolutions = {}
     for item in contested:
@@ -165,16 +173,19 @@ def arbitrate_node(state: ScoringState) -> dict:
     # Update final scores with judge decisions
     final_item_scores = dict(agg.final_item_scores)
     for item, resolution in resolutions.items():
-        final_item_scores[item] = resolution.final_score
+        final_item_scores[item] = int(resolution.final_score)
+    final_total_score = sum(final_item_scores.values())
 
     updated = agg.model_copy(
         update={
             "final_item_scores": final_item_scores,
+            "final_total_score": final_total_score,
+            "final_severity_bucket": get_severity_bucket(final_total_score),
             "final_source": "judge_override",
-            "judge_resolution": resolutions,
+            "judge_resolution": {k: v.model_dump() for k, v in resolutions.items()},
         }
     )
-    return {"final_output": updated}
+    return {"final_output": updated, "needs_arbitration": False}
 ```
 
 ---
