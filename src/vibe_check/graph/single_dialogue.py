@@ -37,6 +37,8 @@ def build_single_dialogue_graph(
     judge_item: JudgeItemFn,
     dirichlet_alpha: float = 0.5,
     arbitration_total_std_threshold: float = 2.0,
+    arbitration_max_prob_threshold: float = 0.60,
+    arbitration_entropy_threshold: float = 1.2,
 ) -> StateGraph[ScoringState, None, ScoringState, ScoringState]:
     """Build the single-dialogue jury→aggregate→(optional)judge graph."""
     graph: StateGraph[ScoringState, None, ScoringState, ScoringState] = StateGraph(ScoringState)
@@ -67,6 +69,8 @@ def build_single_dialogue_graph(
             prompt_version=state["prompt_version"],
             dirichlet_alpha=dirichlet_alpha,
             arbitration_total_std_threshold=arbitration_total_std_threshold,
+            arbitration_max_prob_threshold=arbitration_max_prob_threshold,
+            arbitration_entropy_threshold=arbitration_entropy_threshold,
         )
         return {"final_output": agg, "needs_arbitration": agg.triggered_arbitration}
 

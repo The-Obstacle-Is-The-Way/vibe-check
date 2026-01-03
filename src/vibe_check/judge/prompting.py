@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from vibe_check.constants import PHQ8_ITEMS
+from vibe_check.constants import MAX_JUDGE_EVIDENCE_SNIPPETS, PHQ8_ITEMS
 
 JUDGE_SYSTEM_PROMPT_V1 = """\nYou are an expert clinical psychologist acting as an arbitration judge for PHQ-8 assessments.
 Your goal is to resolve disagreements between independent juror models scoring a clinical interview.
@@ -27,7 +27,7 @@ def build_judge_item_prompt(
     if item not in PHQ8_ITEMS:
         raise ValueError(f"Unknown PHQ-8 item: {item!r}")
 
-    evidence_block = "\n".join(f"- {e}" for e in juror_evidence[:10])
+    evidence_block = "\n".join(f"- {e}" for e in juror_evidence[:MAX_JUDGE_EVIDENCE_SNIPPETS])
 
     return f"""Contested item: {item}
 

@@ -122,6 +122,8 @@ def main(argv: list[str] | None = None) -> int:
             max_concurrency=max_concurrency,
             dirichlet_alpha=settings.dirichlet_alpha,
             arbitration_total_std_threshold=settings.arbitration_total_std_threshold,
+            arbitration_max_prob_threshold=settings.arbitration_max_prob_threshold,
+            arbitration_entropy_threshold=settings.arbitration_entropy_threshold,
         )
         return 0
 

@@ -42,6 +42,8 @@ def score_corpus(
     fail_fast: bool = False,
     dirichlet_alpha: float = 0.5,
     arbitration_total_std_threshold: float = 2.0,
+    arbitration_max_prob_threshold: float = 0.60,
+    arbitration_entropy_threshold: float = 1.2,
 ) -> None:
     """Score a corpus and write outputs to disk, safe to resume."""
     asyncio.run(
@@ -58,6 +60,8 @@ def score_corpus(
             fail_fast=fail_fast,
             dirichlet_alpha=dirichlet_alpha,
             arbitration_total_std_threshold=arbitration_total_std_threshold,
+            arbitration_max_prob_threshold=arbitration_max_prob_threshold,
+            arbitration_entropy_threshold=arbitration_entropy_threshold,
         )
     )
 
@@ -76,6 +80,8 @@ async def score_corpus_async(
     fail_fast: bool = False,
     dirichlet_alpha: float = 0.5,
     arbitration_total_std_threshold: float = 2.0,
+    arbitration_max_prob_threshold: float = 0.60,
+    arbitration_entropy_threshold: float = 1.2,
 ) -> None:
     """Async batch runner implementation for corpus-scale scoring."""
     if max_concurrency < 1:
@@ -93,6 +99,8 @@ async def score_corpus_async(
         judge_item=judge_item,
         dirichlet_alpha=dirichlet_alpha,
         arbitration_total_std_threshold=arbitration_total_std_threshold,
+        arbitration_max_prob_threshold=arbitration_max_prob_threshold,
+        arbitration_entropy_threshold=arbitration_entropy_threshold,
     )
 
     checkpoint_path = sqlite_path_from_conn_string(checkpoint_db)

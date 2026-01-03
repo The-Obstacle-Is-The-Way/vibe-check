@@ -28,3 +28,4 @@ SEVERITY_BUCKETS: dict[SeverityBucket, tuple[int, int]] = {
 # Operational Hygiene / Cost Control
 MAX_EVIDENCE_SNIPPET_WORDS = 50
 MAX_EVIDENCE_SNIPPET_CHARS = 400
+MAX_JUDGE_EVIDENCE_SNIPPETS = 10

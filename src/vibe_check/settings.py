@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     runs_per_model: int = 2
     disagreement_range_threshold: int = 2
     arbitration_total_std_threshold: float = 2.0
+    arbitration_max_prob_threshold: float = 0.60
+    arbitration_entropy_threshold: float = 1.2
     dirichlet_alpha: float = 0.5
 
     # Preprocessing
