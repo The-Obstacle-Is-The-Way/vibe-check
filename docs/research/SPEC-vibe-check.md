@@ -1427,6 +1427,8 @@ JUDGE_MODEL=claude-opus-4-5-20251101
 RUNS_PER_MODEL=2
 DISAGREEMENT_RANGE_THRESHOLD=2
 ARBITRATION_TOTAL_STD_THRESHOLD=2.0
+ARBITRATION_MAX_PROB_THRESHOLD=0.60
+ARBITRATION_ENTROPY_THRESHOLD=1.2
 DIRICHLET_ALPHA=0.5
 
 # ─────────────────────────────────────────────────────────────
@@ -1491,6 +1493,8 @@ class Settings(BaseSettings):
     runs_per_model: int = 2
     disagreement_range_threshold: int = 2
     arbitration_total_std_threshold: float = 2.0
+    arbitration_max_prob_threshold: float = 0.60
+    arbitration_entropy_threshold: float = 1.2
     dirichlet_alpha: float = 0.5
 
     # Preprocessing (updated per senior review - client_qa for embeddings)
