@@ -51,10 +51,11 @@ def build_fake_judge_item() -> JudgeItemFn:
 
 def build_real_jury(settings: Settings) -> Sequence[Juror]:
     """Build a list of real PydanticAI-backed jurors using settings."""
+    # PydanticAI provider prefixes: openai, anthropic, google-gla (not "google")
     configs = [
         ("openai", settings.juror_gpt_model),
         ("anthropic", settings.juror_claude_model),
-        ("google", settings.juror_gemini_model),
+        ("google-gla", settings.juror_gemini_model),
     ]
 
     jurors: list[Juror] = []

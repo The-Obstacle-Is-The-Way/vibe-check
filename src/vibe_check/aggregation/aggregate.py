@@ -106,6 +106,7 @@ def aggregate_reports(
     condition: Literal["mdd", "control"],
     prompt_version: str,
     dirichlet_alpha: float = 0.5,
+    arbitration_total_std_threshold: float = 2.0,
 ) -> AggregatedPHQ8:
     """Aggregate multiple juror reports into a final consensus result."""
     if not reports:
@@ -137,7 +138,7 @@ def aggregate_reports(
 
     juror_totals = np.array([r.total_score for r in reports], dtype=float)
     juror_total_std = float(np.std(juror_totals))
-    if juror_total_std >= 2.0:
+    if juror_total_std >= arbitration_total_std_threshold:
         arbitration_items.append("__total__")
         arbitration_reasons["__total__"] = f"total_score_std={juror_total_std:.2f}"
 

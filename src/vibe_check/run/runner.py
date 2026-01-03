@@ -33,6 +33,8 @@ def score_corpus(
     dialogue_view: DialogueViewName = "client_qa",
     max_concurrency: int = 1,
     fail_fast: bool = False,
+    dirichlet_alpha: float = 0.5,
+    arbitration_total_std_threshold: float = 2.0,
 ) -> None:
     """Score a corpus and write outputs to disk, safe to resume."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -44,7 +46,12 @@ def score_corpus(
     ledger = JobLedger(output_dir / "ledger.sqlite")
     ledger.initialize([d.file_id for d in corpus])
 
-    graph = build_single_dialogue_graph(jurors=jurors, judge_item=judge_item)
+    graph = build_single_dialogue_graph(
+        jurors=jurors,
+        judge_item=judge_item,
+        dirichlet_alpha=dirichlet_alpha,
+        arbitration_total_std_threshold=arbitration_total_std_threshold,
+    )
 
     from langgraph.checkpoint.sqlite import SqliteSaver
 

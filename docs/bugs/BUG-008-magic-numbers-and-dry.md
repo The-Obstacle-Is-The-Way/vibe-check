@@ -40,3 +40,8 @@ Multiple files contain "magic numbers" (thresholds, defaults) and repeated const
     - Deleted `src/vibe_check/scoring/parsing.py` (which contained duplicates).
     - Updated `src/vibe_check/aggregation/aggregate.py` to import constants and export `get_severity_bucket`.
     - Updated `src/vibe_check/graph/single_dialogue.py` to use `get_severity_bucket` and imported constants, removing local duplication.
+- **Threshold Injection (2026-01-02 follow-up)**:
+    - `aggregate_reports()` now accepts `arbitration_total_std_threshold` parameter instead of hardcoding `2.0`.
+    - `build_single_dialogue_graph()` accepts `dirichlet_alpha` and `arbitration_total_std_threshold` params.
+    - `score_corpus()` accepts these params and passes them through.
+    - CLI passes `settings.dirichlet_alpha` and `settings.arbitration_total_std_threshold` from Settings SSOT.

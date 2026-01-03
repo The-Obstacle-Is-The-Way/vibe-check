@@ -30,7 +30,11 @@ DialogueViewName = Literal["client_qa", "client_only"]
 
 
 def build_single_dialogue_graph(
-    *, jurors: Sequence[Juror], judge_item: JudgeItemFn
+    *,
+    jurors: Sequence[Juror],
+    judge_item: JudgeItemFn,
+    dirichlet_alpha: float = 0.5,
+    arbitration_total_std_threshold: float = 2.0,
 ) -> StateGraph[ScoringState, None, ScoringState, ScoringState]:
     """Build the single-dialogue jury→aggregate→(optional)judge graph."""
     graph: StateGraph[ScoringState, None, ScoringState, ScoringState] = StateGraph(ScoringState)
@@ -58,6 +62,8 @@ def build_single_dialogue_graph(
             file_id=state["file_id"],
             condition=state["condition"],
             prompt_version=state["prompt_version"],
+            dirichlet_alpha=dirichlet_alpha,
+            arbitration_total_std_threshold=arbitration_total_std_threshold,
         )
         return {"final_output": agg, "needs_arbitration": agg.triggered_arbitration}
 

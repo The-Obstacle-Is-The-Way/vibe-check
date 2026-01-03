@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 from vibe_check.run.factory import (
@@ -51,6 +52,15 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "score-corpus":
         settings = Settings()
 
+        # Export API keys to environment for PydanticAI providers
+        # (They read env vars directly, not our Settings object)
+        if settings.openai_api_key:
+            os.environ.setdefault("OPENAI_API_KEY", settings.openai_api_key)
+        if settings.anthropic_api_key:
+            os.environ.setdefault("ANTHROPIC_API_KEY", settings.anthropic_api_key)
+        if settings.google_api_key:
+            os.environ.setdefault("GOOGLE_API_KEY", settings.google_api_key)
+
         # Override prompt version from CLI if provided, though settings has it too.
         # CLI wins.
         settings.prompt_version = args.prompt_version
@@ -72,6 +82,8 @@ def main(argv: list[str] | None = None) -> int:
             prompt_version=args.prompt_version,
             dialogue_view=args.dialogue_view,
             max_concurrency=args.max_concurrency,
+            dirichlet_alpha=settings.dirichlet_alpha,
+            arbitration_total_std_threshold=settings.arbitration_total_std_threshold,
         )
         return 0
 
