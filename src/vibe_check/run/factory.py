@@ -105,14 +105,39 @@ def build_real_jury(settings: Settings) -> Sequence[Juror]:
 
 
 def build_real_judge_item(settings: Settings) -> JudgeItemFn:
-    """Build a real judge function backed by an Agent."""
+    """Build a real judge function backed by an Agent.
+
+    Wires up ADR-001's resilience strategy:
+    - Layer 1: PydanticAI validation retries (via settings.validation_retries)
+    - Layer 2: Tenacity transient retry (via settings.max_retries, etc.)
+
+    Note: Layer 3 (rate limiting) is omitted for the judge because:
+    - Judge calls are infrequent (only on arbitration, ~30% of dialogues)
+    - The judge is called synchronously, making async rate limiting complex
+    - Transient retry (Layer 2) handles 429s when they occur
+    """
     from typing import cast
+
+    from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential_jitter
 
     from vibe_check.judge.agent import build_judge_agent
     from vibe_check.judge.prompting import build_judge_item_prompt
+    from vibe_check.resilience import _is_transient_error
 
     full_model_name = f"anthropic:{settings.judge_model}"
-    agent = build_judge_agent(model=full_model_name, prompt_version=settings.prompt_version)
+
+    # Layer 1: PydanticAI validation retries
+    agent = build_judge_agent(
+        model=full_model_name,
+        prompt_version=settings.prompt_version,
+        retries=settings.validation_retries,
+    )
+
+    # Capture retry settings at build time
+    max_retries = settings.max_retries
+    retry_initial_wait = settings.retry_initial_wait
+    retry_max_wait = settings.retry_max_wait
+    retry_jitter = settings.retry_jitter
 
     def judge_fn(
         scoring_text: str,
@@ -135,9 +160,23 @@ def build_real_judge_item(settings: Settings) -> JudgeItemFn:
             juror_evidence=evidence_pool,
         )
 
-        result = agent.run_sync(prompt)
-        # PydanticAI v1+ puts structured output in .data
-        output = getattr(result, "data", getattr(result, "output", None))
-        return cast("JudgeItemResolution", output)
+        # Layer 2: Tenacity transient retry with exponential backoff
+        @retry(
+            stop=stop_after_attempt(max_retries),
+            wait=wait_exponential_jitter(
+                initial=retry_initial_wait,
+                max=retry_max_wait,
+                jitter=retry_jitter,
+            ),
+            retry=retry_if_exception(_is_transient_error),
+            reraise=True,
+        )
+        def _call_with_retry() -> JudgeItemResolution:
+            result = agent.run_sync(prompt)
+            # PydanticAI v1+ puts structured output in .data
+            output = getattr(result, "data", getattr(result, "output", None))
+            return cast("JudgeItemResolution", output)
+
+        return _call_with_retry()
 
     return judge_fn

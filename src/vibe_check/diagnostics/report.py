@@ -13,7 +13,8 @@ from vibe_check.diagnostics.separation import SeparationMetrics  # noqa: TC001
 class ReliabilityMetrics(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    krippendorff_alpha: float = Field(ge=0.0, le=1.0)
+    # Krippendorff's alpha can be negative when agreement is worse than chance
+    krippendorff_alpha: float = Field(ge=-1.0, le=1.0)
     krippendorff_alpha_per_item: dict[str, float]
     icc_consistency: float
     icc_agreement: float
@@ -23,7 +24,8 @@ class ReliabilityMetrics(BaseModel):
 class ConsistencyMetrics(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    cronbach_alpha: float = Field(ge=0.0, le=1.0)
+    # Cronbach's alpha can be negative when items are negatively correlated
+    cronbach_alpha: float = Field(ge=-1.0, le=1.0)
     item_total_correlations: dict[str, float]
 
 
