@@ -21,6 +21,7 @@ vibe-check is a multi-agent PHQ-8 scoring system built on:
 | [System Overview](system-overview.md) | High-level pipeline diagram |
 | [Data Flow](data-flow.md) | Input → Processing → Output journey |
 | [LangGraph Workflow](langgraph-workflow.md) | Single-dialogue graph and checkpointing |
+| [Resilience](resilience.md) | Three-layer retry and rate limiting wiring |
 | [ADR-001: Rate Limiting](adr-001-rate-limiting-retries.md) | Three-layer resilience strategy |
 
 ---
@@ -54,6 +55,8 @@ API failures are handled by three complementary mechanisms:
 - PydanticAI validation retries (malformed JSON)
 - Tenacity transient retry (429, 5xx, network errors)
 - Aiolimiter rate limiting (proactive throttling)
+
+See [Resilience](resilience.md) for implementation wiring details.
 
 ---
 
