@@ -22,6 +22,9 @@ The comprehensive system design lives in the research directory:
 | SPEC-06 | [Batch Runner & Export](SPEC-06-batch-runner-and-export.md) | IMPLEMENTED | Batch processing, checkpointing |
 | SPEC-07 | [Run Diagnostics](SPEC-07-run-diagnostics.md) | IMPLEMENTED | Quality metrics, gates |
 | SPEC-08 | [Export Contract](SPEC-08-export-contract.md) | IMPLEMENTED | Public label format |
+| SPEC-09 | [Human Alignment](SPEC-09-human-alignment.md) | PLANNED | Calibration, golden set, Kappa metrics |
+| SPEC-10 | [Adversarial Robustness](SPEC-10-adversarial-robustness.md) | PLANNED | Chaos testing, prompt injection, resilience |
+| SPEC-11 | [Interactive Inspector](SPEC-11-interactive-inspector.md) | PLANNED | TUI, visualization, explainability |
 
 ---
 
@@ -36,10 +39,10 @@ The comprehensive system design lives in the research directory:
 
 ## Statistics
 
-- **Total specs**: 8
+- **Total specs**: 11
 - **Implemented**: 8
 - **In Progress**: 0
-- **Planned**: 0
+- **Planned**: 3
 
 ---
 
@@ -47,7 +50,7 @@ The comprehensive system design lives in the research directory:
 
 When creating a new specification:
 
-1. Use the next available number (currently: **SPEC-09**)
+1. Use the next available number (currently: **SPEC-12**)
 2. Follow the naming convention: `SPEC-XX-short-description.md`
 3. Include: Status, Dependencies, Deliverables, Acceptance Criteria
 4. Update this index after creating the spec file
