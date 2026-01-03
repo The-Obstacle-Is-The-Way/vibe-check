@@ -16,7 +16,7 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
     checkpoint_db = str(tmp_path / "checkpoints.sqlite")
 
     score_corpus(
-        input_path="data/sqpsychconv/qwq",
+        input_path="data/sqpsychconv/qwen-2.5",
         output_dir=output_dir,
         checkpoint_db=checkpoint_db,
         limit=5,
@@ -42,7 +42,7 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
         attempts_before = {file_id: ledger.get_attempts(file_id) for file_id in ledger.list_all()}
 
     score_corpus(
-        input_path="data/sqpsychconv/qwq",
+        input_path="data/sqpsychconv/qwen-2.5",
         output_dir=output_dir,
         checkpoint_db=checkpoint_db,
         limit=5,

@@ -1,7 +1,7 @@
 # SPEC REVISION: SQPsychConv Model Variant Selection
 
 **Date**: 2026-01-02
-**Status**: CRITICAL - Requires Master Spec Update
+**Status**: RESOLVED (Cleanup Executed)
 **Affects**: SPEC-vibe-check.md, SPEC-02-data-pipeline.md
 **Priority**: HIGH - Discovered during dataset analysis
 **Research Basis**: 2025/2026 synthetic data best practices (see Section 9)
@@ -11,6 +11,12 @@
 ## 1. Executive Summary
 
 **Problem Discovered**: The SQPsychConv dataset exists in 7 model variants, each with different conversation quality. Our original download (`qwq`) has a HuggingFace upload bug AND is not the highest-quality variant.
+
+**Action Taken**:
+1.  **Verified Bug**: `qwq` train and test splits have identical MD5 hashes (`e3ff92d039b8ee12fa2023fc4d3abfb3`).
+2.  **Selected Primary**: `SQPsychConv_qwen-2.5` (highest quality, 16.29/18).
+3.  **Selected Backup**: `SQPsychConv_gemma` (second highest, 16.14/18).
+4.  **Cleanup**: Deleted bugged and lower-quality variants (`qwq`, `command`, `llama3`, `mistral`, `nemotron`).
 
 **Recommendation**: Use `SQPsychConv_qwen-2.5` as the **single primary corpus**.
 
@@ -24,15 +30,15 @@
 
 The SQPsychConv paper generates conversations using 7 different LLMs from the same 2,090 questionnaires:
 
-| Variant | HuggingFace Dataset | Train | Test | Split Status |
-|---------|---------------------|-------|------|--------------|
-| qwq | `AIMH/SQPsychConv_qwq` | 2090 | 2090 | **BUGGED** (train=test) |
-| qwen-2.5 | `AIMH/SQPsychConv_qwen-2.5` | 1837 | 253 | OK (88/12) |
-| gemma | `AIMH/SQPsychConv_gemma` | 1837 | 253 | OK (88/12) |
-| llama3 | `AIMH/SQPsychConv_llama3` | 1837 | 253 | OK (88/12) |
-| mistral | `AIMH/SQPsychConv_mistral` | 1837 | 253 | OK (88/12) |
-| nemotron | `AIMH/SQPsychConv_nemotron` | 1837 | 253 | OK (88/12) |
-| command | `AIMH/SQPsychConv_command` | 1837 | 253 | OK (88/12) |
+| Variant | HuggingFace Dataset | Train | Test | Status |
+|---------|---------------------|-------|------|--------|
+| qwq | `AIMH/SQPsychConv_qwq` | 2090 | 2090 | **DELETED** (Bugged) |
+| qwen-2.5 | `AIMH/SQPsychConv_qwen-2.5` | 1837 | 253 | **KEPT (PRIMARY)** |
+| gemma | `AIMH/SQPsychConv_gemma` | 1837 | 253 | **KEPT (BACKUP)** |
+| llama3 | `AIMH/SQPsychConv_llama3` | 1837 | 253 | DELETED |
+| mistral | `AIMH/SQPsychConv_mistral` | 1837 | 253 | DELETED |
+| nemotron | `AIMH/SQPsychConv_nemotron` | 1837 | 253 | DELETED |
+| command | `AIMH/SQPsychConv_command` | 1837 | 253 | DELETED |
 
 ### 2.2 Expert Quality Scores (Paper Table 5)
 

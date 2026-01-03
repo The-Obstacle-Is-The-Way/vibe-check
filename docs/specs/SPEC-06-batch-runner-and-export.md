@@ -23,7 +23,7 @@ Implement the corpus-scale runner that:
 ```bash
 # Dry-run a small subset (no network calls when using fake clients)
 uv run python -m vibe_check.cli score-corpus \
-  --input data/sqpsychconv/qwq \
+  --input data/sqpsychconv/qwen-2.5 \
   --limit 5 \
   --checkpoint sqlite:///data/checkpoints/dev.db \
   --output data/outputs/dev_run/
@@ -128,7 +128,7 @@ Aggregate diagnostics (metrics only), e.g.:
 
 Using fake jurors/judge:
 
-- Run scoring on `N=5` real dialogues from `data/sqpsychconv/qwq`
+- Run scoring on `N=5` real dialogues from `data/sqpsychconv/qwen-2.5`
 - Assert output files created and contain N rows
 - Assert resume works (run twice; second run does no extra work)
 

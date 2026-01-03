@@ -42,7 +42,7 @@ This is not theoretical: in this repo, `data/sqpsychconv/train_sample.csv` and `
 # This should work end-to-end:
 from vibe_check.data import load_corpus, validate_corpus, preprocess_dialogue
 
-corpus = load_corpus("data/sqpsychconv/qwq")
+corpus = load_corpus("data/sqpsychconv/qwen-2.5")
 report = validate_corpus(corpus)
 assert report.duplicate_count == 0
 assert report.split_leakage == 0
@@ -405,7 +405,7 @@ def test_semantic_void_detection():
 def test_full_pipeline_with_real_data():
     """Load real SQPsychConv data and validate end-to-end."""
     # Load from actual data directory
-    corpus = load_corpus("data/sqpsychconv/qwq")
+    corpus = load_corpus("data/sqpsychconv/qwen-2.5")
 
     # Should have data
     assert len(corpus) > 0
@@ -427,7 +427,7 @@ def test_full_pipeline_with_real_data():
 @pytest.mark.integration
 def test_condition_distribution():
     """MDD and control conditions are both present."""
-    corpus = load_corpus("data/sqpsychconv/qwq")
+    corpus = load_corpus("data/sqpsychconv/qwen-2.5")
     report = validate_corpus(corpus)
 
     assert report.mdd_count > 0, "Should have MDD dialogues"
@@ -466,7 +466,7 @@ def test_condition_distribution():
 ## 7. Definition of Done
 
 - [x] All schemas pass type checking
-- [x] `load_corpus()` loads HF `save_to_disk()` data from `data/sqpsychconv/qwq`
+- [x] `load_corpus()` loads HF `save_to_disk()` data from `data/sqpsychconv/qwen-2.5`
 - [x] `validate_corpus()` returns valid report for real data
 - [x] `compute_split()` is deterministic and follows 80/10/10
 - [x] `preprocess_dialogue()` produces all three views

@@ -9,7 +9,7 @@ def test_cli_parses_score_corpus_args() -> None:
         [
             "score-corpus",
             "--input",
-            "data/sqpsychconv/qwq",
+            "data/sqpsychconv/qwen-2.5",
             "--checkpoint",
             "sqlite:///tmp/checkpoints.db",
             "--output",

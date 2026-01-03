@@ -7,7 +7,7 @@ from vibe_check.data import load_corpus, preprocess_dialogue, validate_corpus
 
 @pytest.mark.integration
 def test_full_pipeline_with_real_data() -> None:
-    corpus = load_corpus("data/sqpsychconv/qwq")
+    corpus = load_corpus("data/sqpsychconv/qwen-2.5")
     assert len(corpus) == 2090
 
     report = validate_corpus(corpus)
@@ -26,7 +26,7 @@ def test_full_pipeline_with_real_data() -> None:
 
 @pytest.mark.integration
 def test_condition_distribution() -> None:
-    corpus = load_corpus("data/sqpsychconv/qwq")
+    corpus = load_corpus("data/sqpsychconv/qwen-2.5")
     report = validate_corpus(corpus)
 
     assert report.mdd_count == 912
@@ -35,7 +35,7 @@ def test_condition_distribution() -> None:
 
 @pytest.mark.integration
 def test_known_bad_preamble_is_flagged() -> None:
-    corpus = load_corpus("data/sqpsychconv/qwq")
+    corpus = load_corpus("data/sqpsychconv/qwen-2.5")
     active82 = next(d for d in corpus if d.file_id == "active82")
     views = preprocess_dialogue(active82)
     assert views.has_unknown_speaker is True

@@ -27,7 +27,7 @@ from vibe_check.schemas.output import AggregatedPHQ8
 
 result: AggregatedPHQ8 = score_one_dialogue(
     file_id="active82",
-    corpus_dir="data/sqpsychconv/qwq",
+    corpus_dir="data/sqpsychconv/qwen-2.5",
     prompt_version="v1",
     checkpoint_db="sqlite:///data/checkpoints/dev.db",
     jurors=[...],        # 3 models × 2 runs (real or deterministic fakes)
