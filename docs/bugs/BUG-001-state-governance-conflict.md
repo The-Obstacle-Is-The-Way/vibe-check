@@ -1,6 +1,6 @@
 ---
 severity: P0
-status: fixed
+status: reverted
 ---
 
 # BUG-001: ScoringState violates checkpoint privacy rules
@@ -27,8 +27,6 @@ The SSOT previously defined LangGraph `ScoringState` with raw `dialogue` / `scor
 
 ## Resolution
 
-Fixed by updating SSOT and SPEC-05 to:
+**REVERTED** by `docs/research/SPEC-REVISION-synthetic-data-simplification.md`.
 
-- Remove `dialogue` / `scoring_text` from `ScoringState`
-- Fan-out by `file_id` only in batch examples
-- Explicitly document that LangGraph persists full state and state must exclude transcript strings
+SQPsychConv is synthetic data with no PHI. The original constraint was unnecessary "privacy theater". We have restored `dialogue` and `scoring_text` to the `ScoringState` to simplify the architecture (operational hygiene). Checkpointing synthetic text is acceptable.

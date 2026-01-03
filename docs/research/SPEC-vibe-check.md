@@ -141,22 +141,19 @@ DAIC-WOZ is restricted to academic/non-profit use, and the safest interpretation
 
 If you later obtain explicit institutional/legal approval to process DAIC-WOZ with vendor APIs, that is a separate decision and requires a spec revision.
 
-### 3.3 Logging & Observability Policy
+### 3.3 Logging & Observability Policy (Operational Hygiene)
 
-To avoid accidental transcript leakage:
+> **Note**: SQPsychConv is synthetic data with no PHI. These guidelines exist for **operational hygiene** (cost control, audit trails), not privacy compliance.
 
-| Artifact | Allowed Content | Prohibited Content |
-|----------|-----------------|-------------------|
-| Checkpoint DB | File IDs, scores, entropy, status, token usage, **bounded** evidence snippets | Raw transcript text (full dialogue/views) |
-| Exception traces | Stack traces, error codes | Transcript snippets |
-| LangSmith traces | Node timing, token counts | Prompt/response content |
-| Run manifests | Counts, aggregate stats | Individual utterances |
-| Job ledger | Status, attempts, error codes | Transcript excerpts |
+| Artifact | Recommended Content | Rationale |
+|----------|---------------------|-----------|
+| Checkpoint DB | File IDs, scores, entropy, status, token usage, **dialogue text** | Full state for debugging |
+| Evidence fields | Bounded snippets (≤50 words) | Cost control (prevents token explosion) |
+| Run manifests | Counts, aggregate stats, sample IDs | Audit trail |
 
 **Implementation**:
-- Use a `SensitiveString` wrapper type that refuses to serialize to logs/JSON.
-- LangGraph checkpointers persist **the entire state**; therefore the checkpointed state must never contain full dialogue text or dialogue views.
-- If evidence snippets are persisted (for audit/arbitration), they must be bounded (e.g., ≤3 snippets per field, each ≤50 words and ≤400 chars).
+- LangGraph checkpointers persist **the entire state**; it is safe to include dialogue text in the state for synthetic data.
+- If evidence snippets are persisted, they must be bounded (e.g., ≤3 snippets per field, each ≤50 words and ≤400 chars) to prevent context window bloat.
 
 ### 3.4 Corpus Integrity (Trust No Split)
 
@@ -292,6 +289,10 @@ class ScoringState(TypedDict):
     # Identity
     file_id: str
 
+    # Data (Safe to checkpoint for synthetic data)
+    dialogue: str
+    scoring_text: str  # The specific view used for scoring (e.g. client_qa)
+
     # Accumulated results (operator.add allows multiple nodes to append)
     jury_results: Annotated[list[PHQ8Report], operator.add]
 
@@ -309,9 +310,13 @@ class ScoringState(TypedDict):
 ```python
 async def jury_node(state: ScoringState) -> dict:
     """Run 3 models × 2 runs = 6 scoring passes."""
-    scoring_text = load_scoring_view(file_id=state["file_id"])
-    # ... parallel scoring ...
-    return {"jury_results": results}
+    # scoring_text is already in state, no need to reload
+    results = await asyncio.gather(
+        gpt_agent.run(state["scoring_text"]),
+        claude_agent.run(state["scoring_text"]),
+        gemini_agent.run(state["scoring_text"]),
+    )
+    return {"jury_results": [r.output for r in results]}
 
 def aggregate_node(state: ScoringState) -> dict:
     """Compute distributional posterior and check disagreement."""
@@ -395,7 +400,7 @@ from langgraph.constants import Send
 MAX_CONCURRENT_DIALOGUES = 50  # Tune based on OS limits and API quotas
 
 class BatchState(TypedDict):
-    file_ids: list[str]  # Persistent state must not include raw dialogue text
+    file_ids: list[str]
     completed: Annotated[list[AggregatedPHQ8], operator.add]
 
 # Global semaphore for resource protection

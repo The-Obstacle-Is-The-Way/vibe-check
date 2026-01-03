@@ -82,7 +82,7 @@ All network calls must remain optional in tests (fake clients).
 
 **1) Jury (fan-out)**
 - Run 6 juror calls (3 models × 2 runs)
-- Each juror node loads the scoring view text **ephemerally** via `file_id` (do not store transcript/view text in checkpointed state)
+- Each juror node uses `state['scoring_text']` (passed in state)
 - Each call returns `PHQ8Report` (SPEC-04)
 - Collect into state as `juror_reports: list[PHQ8Report]`
 
@@ -95,7 +95,7 @@ All network calls must remain optional in tests (fake clients).
   - For each contested item, call the judge with:
     - PHQ-8 item definition
     - juror scores + evidence
-    - a short transcript excerpt (derived from the configured dialogue view; loaded by `file_id`, not persisted)
+    - a short transcript excerpt (derived from `state['scoring_text']`)
   - Produce `judge_resolution` and compute `final_item_scores`
 
 **4) Finalize**
@@ -107,7 +107,7 @@ Use LangGraph checkpointing (SQLite) so that:
 
 - A crash after the jury step does not repeat completed calls
 - Retries are bounded and error-coded
-- The checkpointed state contains **no raw dialogue text or dialogue views** (state must be safe to persist by construction)
+- The checkpointed state contains full context (including dialogue text) for debugging
 
 ---
 
@@ -130,7 +130,7 @@ Judge returns strict JSON:
 
 - Judge only decides contested items (never re-scores everything)
 - The judge decision is the final label for that item
-- Store all judge outputs for audit, but keep transcript text out of logs/checkpoints
+- Store all judge outputs for audit
 
 ---
 

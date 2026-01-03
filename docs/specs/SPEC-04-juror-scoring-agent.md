@@ -15,7 +15,7 @@ Implement a single-model “juror” scoring agent that:
 2. Prompts an LLM to score **PHQ-8** (not PHQ-9) with evidence
 3. Produces a validated `PHQ8Report` (Pydantic schema)
 4. Captures per-call token usage (incl. reasoning tokens when available)
-5. Never logs raw transcript text (data governance)
+5. Logs transcript text at DEBUG level only (operational hygiene)
 
 This slice is the smallest end-to-end unit that touches LLM I/O while remaining testable and deterministic via a local `TestModel` (no network / no API keys).
 
@@ -60,7 +60,6 @@ assert report.total_score == sum(report.item_scores.values())
 | `src/vibe_check/scoring/prompting.py` | Prompt builder + prompt versioning |
 | `src/vibe_check/scoring/parsing.py` | Robust parsing + canonicalization into `PHQ8Report` |
 | `src/vibe_check/scoring/agent.py` | PydanticAI agent builder (providers + `TestModel`) |
-| `src/vibe_check/security/redaction.py` | `SensitiveString` + safe logging helpers |
 | `src/vibe_check/settings.py` | Pydantic-settings for API keys/model IDs (no secrets committed) |
 
 ### 2.2 New Test Files
@@ -69,7 +68,6 @@ assert report.total_score == sum(report.item_scores.values())
 |------|---------|
 | `tests/unit/test_prompting.py` | Prompt structure + PHQ-8 invariants |
 | `tests/unit/test_parsing.py` | Parse/canonicalize raw model output into `PHQ8Report` |
-| `tests/unit/test_redaction.py` | Ensure transcripts can’t leak via repr/logging |
 | `tests/integration/test_juror_scorer.py` | End-to-end scoring via PydanticAI `TestModel` |
 | `tests/fixtures/juror_outputs/*.json` | Golden juror outputs for deterministic tests |
 
@@ -119,14 +117,7 @@ Canonicalization rule:
 
 - Compute `total_score` as the sum of the 8 item scores and construct `PHQ8Report` from canonical fields.
 
-Failures must be typed and machine-actionable (e.g., `ParseError`, `SchemaError`) without including transcript text in exception messages.
-
-### 3.4 Redaction (Data Governance)
-
-Implement `SensitiveString` such that:
-
-- `repr(SensitiveString("..."))` does not reveal content
-- Exceptions and logs never include raw transcript text
+Failures must be typed and machine-actionable (e.g., `ParseError`, `SchemaError`).
 
 ---
 
@@ -136,7 +127,6 @@ Implement `SensitiveString` such that:
 
 - Prompt invariants: PHQ-8 only; JSON-only response instruction; includes view name/version
 - Parser invariants: handles missing/incorrect totals via canonicalization
-- Redaction: no transcript appears in repr/exception strings
 
 ### 4.2 Integration Tests (Deterministic)
 

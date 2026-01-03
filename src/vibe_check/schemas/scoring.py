@@ -7,6 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+# Limits to prevent token bloat and context window exhaustion (Operational Hygiene)
 MAX_EVIDENCE_SNIPPET_WORDS = 50
 MAX_EVIDENCE_SNIPPET_CHARS = 400
 

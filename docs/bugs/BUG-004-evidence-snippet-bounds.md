@@ -3,20 +3,20 @@ severity: P2
 status: fixed
 ---
 
-# BUG-004: Evidence snippets are not bounded by length (governance + cost risk)
+# BUG-004: Evidence snippets are not bounded by length (cost risk)
 
 ## Summary
 
-`PHQ8ItemScore.evidence` and `PHQ8Report.self_harm_evidence` are lists of strings. The schemas cap list lengths, but do not constrain the size of each string. A single “evidence” entry could unintentionally contain large transcript chunks, increasing privacy risk and exploding prompt/output token counts.
+`PHQ8ItemScore.evidence` and `PHQ8Report.self_harm_evidence` are lists of strings. The schemas cap list lengths, but do not constrain the size of each string. A single “evidence” entry could unintentionally contain large transcript chunks, increasing token usage and cost volatility (token bloat).
 
 ## Evidence
 
 - Evidence fields exist in schemas: `src/vibe_check/schemas/scoring.py:14`
-- Governance requires bounded snippets (not full transcript/views): `docs/research/SPEC-vibe-check.md:145`
+- Operational hygiene recommends bounded snippets (not full transcript/views): `docs/research/SPEC-vibe-check.md:145`
 
 ## Impact
 
-- Potential leakage of large transcript text into persisted artifacts.
+- Potential leakage of large transcript text into persisted artifacts (bloat).
 - Increased token usage and cost volatility.
 
 ## Fix Plan
