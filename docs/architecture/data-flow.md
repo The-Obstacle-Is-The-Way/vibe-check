@@ -153,53 +153,56 @@ AggregatedPHQ8
 class AggregatedPHQ8(BaseModel):
     # Identity
     file_id: str
-    condition: str  # "mdd" or "control"
+    condition: Literal["mdd", "control"]
 
-    # Per-item aggregation
+    # Per-item aggregation (8 items)
     items: dict[str, ItemAggregation]
 
-    # Total score distribution
-    total_mode: int
-    total_expected: float
-    total_std: float
-    total_posterior: dict[int, float]
-    total_ci_90: tuple[int, int]
+    # Total score distribution (0-24)
+    total_mode: int           # Most probable total
+    total_expected: float     # Expected value
+    total_std: float          # Standard deviation
+    total_posterior: dict[int, float]  # P(total=k) for k in 0-24
+    total_ci_90: tuple[int, int]       # 90% credible interval
 
-    # Severity
-    severity_bucket: str
+    # Severity (from posterior mode)
+    severity_bucket: SeverityBucket    # "0-4", "5-9", "10-14", "15-19", "20-24"
     severity_bucket_probs: dict[str, float]
 
-    # Final results
-    final_item_scores: dict[str, int]
-    final_total_score: int
-    final_severity_bucket: str
-    final_source: str  # "jury_mode" or "judge_override"
+    # Final results (may be updated by judge)
+    final_item_scores: dict[str, int]      # {"anhedonia": 1, ...}
+    final_total_score: int                 # 0-24
+    final_severity_bucket: SeverityBucket
+    final_source: Literal["jury_mode", "jury_expected", "judge_override"]
 
-    # Arbitration
+    # Arbitration metadata
     triggered_arbitration: bool
-    arbitration_items: list[str]
-    arbitration_reasons: dict[str, str]
+    arbitration_items: list[str]           # Items needing judge review
+    arbitration_reasons: dict[str, str]    # Why each item was flagged
 
-    # Safety
+    # Safety signals
     mentions_self_harm: bool
     self_harm_evidence: list[str]
 
     # Provenance
-    juror_reports: list[PHQ8Report]
-    judge_resolution: dict | None
+    juror_reports: list[PHQ8Report]        # All 6 juror outputs
+    judge_resolution: dict[str, Any] | None  # Judge decisions if arbitrated
 
     prompt_version: str
     scored_at: datetime
 
+
 class ItemAggregation(BaseModel):
-    votes: list[int]
-    vote_counts: dict[str, int]
-    posterior: dict[str, float]
-    mode: int
-    expected: float
-    entropy: float
-    vote_range: int
-    clinical_prob: float
+    votes: list[int]               # [1, 2, 1, 1, 2, 2] from 6 jurors
+    vote_counts: dict[str, int]    # {"0": 0, "1": 2, "2": 4, "3": 0}
+    posterior: dict[str, float]    # Dirichlet posterior probabilities
+
+    mode: int                      # 0-3
+    expected: float                # 0.0-3.0
+    entropy: float                 # Shannon entropy (uncertainty)
+    vote_range: int                # max - min vote
+    clinical_prob: float           # P(score >= 2)
+
     needs_arbitration: bool
     arbitration_reason: str | None
 ```
@@ -311,20 +314,25 @@ labels.jsonl  labels.csv (public format)
 ```python
 class ScoredDialogueExport(BaseModel):
     dialogue_id: str
-    condition: str
-    phq8_item_1: int
-    phq8_item_2: int
-    phq8_item_3: int
-    phq8_item_4: int
-    phq8_item_5: int
-    phq8_item_6: int
-    phq8_item_7: int
-    phq8_item_8: int
-    phq8_total: int
-    severity_bucket: str
+    condition: Literal["mdd", "control"]
+
+    phq8_item_1: int  # 0-3 (anhedonia)
+    phq8_item_2: int  # 0-3 (depressed_mood)
+    phq8_item_3: int  # 0-3 (sleep)
+    phq8_item_4: int  # 0-3 (fatigue)
+    phq8_item_5: int  # 0-3 (appetite)
+    phq8_item_6: int  # 0-3 (guilt)
+    phq8_item_7: int  # 0-3 (concentration)
+    phq8_item_8: int  # 0-3 (psychomotor)
+
+    phq8_total: int   # 0-24 (validated sum of items)
+    severity_bucket: SeverityBucket  # "0-4", "5-9", etc.
+
     client_qa_text: str
-    juror_votes: dict[str, list[int]]
-    arbitration_triggered: bool
+
+    juror_votes: dict[str, list[int]]      # {"anhedonia": [1, 2, 1, ...], ...}
+    arbitration_triggered: dict[str, bool]  # {"anhedonia": false, ...}
+
     run_id: str
     prompt_version: str
 ```

@@ -82,7 +82,7 @@ System design and data flow.
 | [System Overview](architecture/system-overview.md) | High-level pipeline |
 | [Data Flow](architecture/data-flow.md) | Input to output schemas |
 | [LangGraph Workflow](architecture/langgraph-workflow.md) | Single-dialogue graph |
-| [ADR-001: Rate Limiting](architecture/adr-001-rate-limiting-retries.md) | Resilience architecture |
+| [Resilience](architecture/resilience.md) | Three-layer retry and rate-limiting |
 
 ### Agents
 

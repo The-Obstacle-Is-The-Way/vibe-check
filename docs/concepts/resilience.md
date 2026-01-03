@@ -1,6 +1,6 @@
 # Resilience Strategy
 
-vibe-check implements a **three-layer resilience strategy** to handle LLM API failures gracefully. This design is documented in [ADR-001](../architecture/adr-001-rate-limiting-retries.md).
+vibe-check implements a **three-layer resilience strategy** to handle LLM API failures gracefully. For implementation details, see [Architecture: Resilience](../architecture/resilience.md).
 
 ---
 
@@ -34,7 +34,7 @@ No single mechanism handles all cases. The three-layer approach ensures each fai
 │  │                                                     │    │
 │  │  ┌──────────┐  ┌──────────┐  ┌──────────┐           │    │
 │  │  │ OpenAI   │  │Anthropic │  │  Google  │           │    │
-│  │  │ 3500 RPM │  │ 3500 RPM │  │ 1500 RPM │           │    │
+│  │  │ 100 RPM  │  │  60 RPM  │  │ 100 RPM  │           │    │
 │  │  └──────────┘  └──────────┘  └──────────┘           │    │
 │  │                                                     │    │
 │  │  → Throttles requests BEFORE hitting provider       │    │
@@ -160,8 +160,8 @@ class ProviderRateLimiters:
 │                    TOKEN BUCKET                            │
 ├────────────────────────────────────────────────────────────┤
 │                                                            │
-│  Bucket capacity: 3500 tokens (requests)                   │
-│  Refill rate: 3500 tokens per 60 seconds                   │
+│  Bucket capacity: N tokens (N = configured RPM)            │
+│  Refill rate: N tokens per 60 seconds                      │
 │                                                            │
 │  Request arrives:                                          │
 │    - If bucket has token → consume and proceed             │
@@ -202,9 +202,9 @@ Execution order:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `openai_rpm` | `3500` | OpenAI requests per minute |
-| `anthropic_rpm` | `3500` | Anthropic requests per minute |
-| `google_rpm` | `1500` | Google requests per minute |
+| `openai_rpm` | `100` | OpenAI requests per minute |
+| `anthropic_rpm` | `60` | Anthropic requests per minute |
+| `google_rpm` | `100` | Google requests per minute |
 | `max_retries` | `5` | Max transient retry attempts |
 | `retry_initial_wait` | `1.0` | Initial backoff (seconds) |
 | `retry_max_wait` | `60.0` | Max backoff (seconds) |
