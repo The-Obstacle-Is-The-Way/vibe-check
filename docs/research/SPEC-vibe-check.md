@@ -147,13 +147,16 @@ To avoid accidental transcript leakage:
 
 | Artifact | Allowed Content | Prohibited Content |
 |----------|-----------------|-------------------|
-| Checkpoint DB | File IDs, scores, entropy, status | Raw transcript text |
+| Checkpoint DB | File IDs, scores, entropy, status, token usage, **bounded** evidence snippets | Raw transcript text (full dialogue/views) |
 | Exception traces | Stack traces, error codes | Transcript snippets |
 | LangSmith traces | Node timing, token counts | Prompt/response content |
 | Run manifests | Counts, aggregate stats | Individual utterances |
 | Job ledger | Status, attempts, error codes | Transcript excerpts |
 
-**Implementation**: Use a `SensitiveString` wrapper type that refuses to serialize to logs/JSON.
+**Implementation**:
+- Use a `SensitiveString` wrapper type that refuses to serialize to logs/JSON.
+- LangGraph checkpointers persist **the entire state**; therefore the checkpointed state must never contain full dialogue text or dialogue views.
+- If evidence snippets are persisted (for audit/arbitration), they must be bounded (e.g., ≤3 snippets per field, each ≤50 words and ≤400 chars).
 
 ### 3.4 Corpus Integrity (Trust No Split)
 
@@ -262,18 +265,17 @@ gemini_agent = Agent(
 # 3. LangGraph orchestrates them
 class ScoringState(TypedDict):
     file_id: str
-    dialogue: str
-    scoring_text: str
     jury_results: list[PHQ8Report]
     needs_arbitration: bool
     final_output: AggregatedPHQ8 | None
 
 async def jury_node(state: ScoringState) -> dict:
     """Run all three jurors in parallel using PydanticAI agents."""
+    scoring_text = load_scoring_view(file_id=state["file_id"])
     results = await asyncio.gather(
-        gpt_agent.run(state["scoring_text"]),
-        claude_agent.run(state["scoring_text"]),
-        gemini_agent.run(state["scoring_text"]),
+        gpt_agent.run(scoring_text),
+        claude_agent.run(scoring_text),
+        gemini_agent.run(scoring_text),
     )
     return {"jury_results": [r.output for r in results]}
 ```
@@ -289,8 +291,6 @@ import operator
 class ScoringState(TypedDict):
     # Identity
     file_id: str
-    dialogue: str
-    scoring_text: str
 
     # Accumulated results (operator.add allows multiple nodes to append)
     jury_results: Annotated[list[PHQ8Report], operator.add]
@@ -307,13 +307,9 @@ class ScoringState(TypedDict):
 #### Nodes: The Processing Steps
 
 ```python
-async def preprocess_node(state: ScoringState) -> dict:
-    """Build bias-aware text views from the raw dialogue."""
-    views = build_dialogue_views(state["dialogue"])
-    return {"scoring_text": views.client_qa_text}
-
 async def jury_node(state: ScoringState) -> dict:
     """Run 3 models × 2 runs = 6 scoring passes."""
+    scoring_text = load_scoring_view(file_id=state["file_id"])
     # ... parallel scoring ...
     return {"jury_results": results}
 
@@ -340,14 +336,12 @@ from langgraph.graph import StateGraph, END
 workflow = StateGraph(ScoringState)
 
 # Add nodes
-workflow.add_node("preprocess", preprocess_node)
 workflow.add_node("jury", jury_node)
 workflow.add_node("aggregate", aggregate_node)
 workflow.add_node("arbitrate", arbitrate_node)
 
-# Linear edges
-workflow.set_entry_point("preprocess")
-workflow.add_edge("preprocess", "jury")
+# Entry point
+workflow.set_entry_point("jury")
 workflow.add_edge("jury", "aggregate")
 
 # Conditional edge: branch based on state
@@ -401,7 +395,7 @@ from langgraph.constants import Send
 MAX_CONCURRENT_DIALOGUES = 50  # Tune based on OS limits and API quotas
 
 class BatchState(TypedDict):
-    dialogues: list[dict]  # [{file_id, dialogue}, ...]
+    file_ids: list[str]  # Persistent state must not include raw dialogue text
     completed: Annotated[list[AggregatedPHQ8], operator.add]
 
 # Global semaphore for resource protection
@@ -417,9 +411,9 @@ def orchestrator_node(state: BatchState) -> list[Send]:
     return [
         Send(
             "score_single",  # Target node (the subgraph with semaphore)
-            {"file_id": d["file_id"], "dialogue": d["dialogue"]}
+            {"file_id": file_id}
         )
-        for d in state["dialogues"]
+        for file_id in state["file_ids"]
     ]
 
 def collector_node(state: BatchState) -> dict:

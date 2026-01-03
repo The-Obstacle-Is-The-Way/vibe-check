@@ -16,6 +16,7 @@ Implement the corpus-scale runner that:
 3. Writes outputs incrementally to `data/outputs/` (safe to resume)
 4. Maintains a job-level ledger (status/attempts/errors) without storing transcript text
 5. Produces a run manifest with aggregate diagnostics (arbitration rate, entropy distribution, per-condition summaries)
+6. Tracks token usage (incl. reasoning tokens when available) to validate SSOT cost assumptions
 
 ### Success Criteria
 
@@ -81,6 +82,7 @@ Aggregate diagnostics (no transcript text), e.g.:
 - counts by split and condition
 - arbitration rate overall + per item
 - distribution summaries (entropy/max-prob, total CI width)
+- token usage totals by provider/model (prompt/output/reasoning where available)
 - failure counts by error code (rate_limit, parse_error, provider_error)
 
 ---
@@ -103,6 +105,7 @@ Aggregate diagnostics (no transcript text), e.g.:
 - Split assignment stays deterministic (SPEC-02 SHA256-based)
 - Output ordering is deterministic (sort by `file_id` when exporting)
 - Never use Python’s `hash()` for anything that impacts persisted results
+- Checkpoint state must be safe-by-construction (no raw dialogue text or dialogue views persisted)
 
 ---
 

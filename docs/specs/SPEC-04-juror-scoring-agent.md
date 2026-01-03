@@ -14,9 +14,10 @@ Implement a single-model “juror” scoring agent that:
 1. Takes a preprocessed dialogue view (default: `client_qa_text`)
 2. Prompts an LLM to score **PHQ-8** (not PHQ-9) with evidence
 3. Produces a validated `PHQ8Report` (Pydantic schema)
-4. Never logs raw transcript text (data governance)
+4. Captures per-call token usage (incl. reasoning tokens when available)
+5. Never logs raw transcript text (data governance)
 
-This slice is the smallest end-to-end unit that touches LLM I/O while remaining testable and deterministic via a fake transport.
+This slice is the smallest end-to-end unit that touches LLM I/O while remaining testable and deterministic via a local `TestModel` (no network / no API keys).
 
 ### Success Criteria
 
@@ -24,7 +25,10 @@ This slice is the smallest end-to-end unit that touches LLM I/O while remaining 
 from vibe_check.preprocessing import preprocess_dialogue
 from vibe_check.schemas.input import SQPsychConvDialogue
 from vibe_check.schemas.scoring import PHQ8Report
-from vibe_check.scoring import JurorScorer, FakeLLMClient
+from pydantic_ai import Agent
+from pydantic_ai.models.test import TestModel
+
+from vibe_check.scoring import JurorScorer
 
 dialogue = SQPsychConvDialogue(
     file_id="active82",
@@ -36,8 +40,9 @@ dialogue = SQPsychConvDialogue(
 )
 views = preprocess_dialogue(dialogue)
 
-client = FakeLLMClient.for_fixture("tests/fixtures/juror_outputs/valid_report.json")
-scorer = JurorScorer(client=client, model_id="fake-model", run_number=1, prompt_version="v1")
+model = TestModel(custom_output_args={"...": "fixture-loaded"})
+agent = Agent(model=model, output_type=dict, system_prompt="...")
+scorer = JurorScorer(agent=agent, model_id="fake-model", run_number=1, prompt_version="v1")
 
 report: PHQ8Report = scorer.score(views.client_qa_text)
 assert report.total_score == sum(report.item_scores.values())
@@ -54,7 +59,7 @@ assert report.total_score == sum(report.item_scores.values())
 | `src/vibe_check/scoring/__init__.py` | Public API exports |
 | `src/vibe_check/scoring/prompting.py` | Prompt builder + prompt versioning |
 | `src/vibe_check/scoring/parsing.py` | Robust parsing + canonicalization into `PHQ8Report` |
-| `src/vibe_check/scoring/client.py` | `LLMClient` protocol + provider adapters (stubbed initially) |
+| `src/vibe_check/scoring/agent.py` | PydanticAI agent builder (providers + `TestModel`) |
 | `src/vibe_check/security/redaction.py` | `SensitiveString` + safe logging helpers |
 | `src/vibe_check/settings.py` | Pydantic-settings for API keys/model IDs (no secrets committed) |
 
@@ -65,15 +70,18 @@ assert report.total_score == sum(report.item_scores.values())
 | `tests/unit/test_prompting.py` | Prompt structure + PHQ-8 invariants |
 | `tests/unit/test_parsing.py` | Parse/canonicalize raw model output into `PHQ8Report` |
 | `tests/unit/test_redaction.py` | Ensure transcripts can’t leak via repr/logging |
-| `tests/integration/test_juror_scorer.py` | End-to-end scoring via `FakeLLMClient` |
+| `tests/integration/test_juror_scorer.py` | End-to-end scoring via PydanticAI `TestModel` |
 | `tests/fixtures/juror_outputs/*.json` | Golden juror outputs for deterministic tests |
 
 ### 2.3 pyproject.toml Updates
 
-Add dependencies needed for real provider calls (implementation choice):
+Add required dependencies:
 
-- **Preferred**: lightweight official SDKs per provider
-- **Alternative**: keep provider integration deferred; implement only `FakeLLMClient` + interfaces in this spec
+- `pydantic-ai>=1.0.0` (SSOT: structured outputs / provider abstraction)
+
+Optional (e2e only):
+
+- Provider SDKs only if required by the chosen PydanticAI model adapters
 
 Hard requirement: tests must not require network or API keys; any real-provider tests must be `@pytest.mark.e2e` and skipped by default.
 
@@ -86,8 +94,8 @@ Hard requirement: tests must not require network or API keys; any real-provider 
 Expose a small stable surface:
 
 - `JurorScorer.score(text: str) -> PHQ8Report`
-- `LLMClient.complete(prompt: str) -> str` (raw text, usually JSON)
-- `FakeLLMClient` for deterministic tests
+- `JurorScorer` wraps a PydanticAI `Agent` (model selection is a config detail)
+- Deterministic tests use `pydantic_ai.models.test.TestModel`
 
 ### 3.2 Prompting Requirements
 
@@ -132,7 +140,7 @@ Implement `SensitiveString` such that:
 
 ### 4.2 Integration Tests (Deterministic)
 
-Use `FakeLLMClient` with golden JSON fixtures and assert:
+Use PydanticAI `TestModel` with golden fixture dicts and assert:
 
 - `PHQ8Report` validates
 - Evidence lists are capped at 3

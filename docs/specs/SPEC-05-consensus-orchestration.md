@@ -27,8 +27,7 @@ from vibe_check.schemas.output import AggregatedPHQ8
 
 result: AggregatedPHQ8 = score_one_dialogue(
     file_id="active82",
-    condition="mdd",
-    dialogue_text="...",
+    corpus_dir="data/sqpsychconv/qwq",
     prompt_version="v1",
     checkpoint_db="sqlite:///data/checkpoints/dev.db",
 )
@@ -68,7 +67,8 @@ Rule:
 
 Add orchestration/runtime deps:
 
-- `langgraph` (+ sqlite checkpoint backend)
+- `langgraph>=1.0.0`
+- `langgraph-checkpoint-sqlite>=1.0.0`
 - `tenacity` (bounded retries; no infinite loops)
 - `aiolimiter` (rate limiting)
 
@@ -80,29 +80,25 @@ All network calls must remain optional in tests (fake clients).
 
 ### 3.1 Graph Nodes (Single Dialogue)
 
-**1) Preprocess**
-- Input: raw dialogue text
-- Output: `DialogueViews` (uses SPEC-02 extractor)
-- Must never reintroduce dropped preamble lines
-
-**2) Jury (fan-out)**
+**1) Jury (fan-out)**
 - Run 6 juror calls (3 models × 2 runs)
+- Each juror node loads the scoring view text **ephemerally** via `file_id` (do not store transcript/view text in checkpointed state)
 - Each call returns `PHQ8Report` (SPEC-04)
 - Collect into state as `juror_reports: list[PHQ8Report]`
 
-**3) Aggregate**
+**2) Aggregate**
 - Call `aggregate_reports(...)` (SPEC-03)
 - Output: `AggregatedPHQ8` with arbitration flags set
 
-**4) Arbitrate (conditional)**
+**3) Arbitrate (conditional)**
 - If `AggregatedPHQ8.triggered_arbitration`:
   - For each contested item, call the judge with:
     - PHQ-8 item definition
     - juror scores + evidence
-    - a short transcript excerpt (view text, not raw)
+    - a short transcript excerpt (derived from the configured dialogue view; loaded by `file_id`, not persisted)
   - Produce `judge_resolution` and compute `final_item_scores`
 
-**5) Finalize**
+**4) Finalize**
 - Compute `final_total_score` and derived severity bucket from final item scores
 
 ### 3.2 Checkpointing
@@ -111,6 +107,7 @@ Use LangGraph checkpointing (SQLite) so that:
 
 - A crash after the jury step does not repeat completed calls
 - Retries are bounded and error-coded
+- The checkpointed state contains **no raw dialogue text or dialogue views** (state must be safe to persist by construction)
 
 ---
 

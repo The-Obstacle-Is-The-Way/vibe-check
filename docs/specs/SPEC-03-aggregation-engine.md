@@ -105,7 +105,7 @@ class PHQ8ItemScore(BaseModel):
     evidence: list[str] = Field(
         default_factory=list,
         max_length=3,
-        description="Quotes supporting this score"
+        description="Quotes supporting this score (bounded: short snippets only)"
     )
     insufficient_evidence: bool = Field(
         default=False,
@@ -117,6 +117,15 @@ class PHQ8ItemScore(BaseModel):
 
 ```python
 from datetime import datetime
+from pydantic import BaseModel, Field
+
+class TokenUsage(BaseModel):
+    """Token usage metadata for a single model call."""
+
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    reasoning_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
 
 class PHQ8Report(BaseModel):
     """Complete PHQ-8 assessment from one model run."""
@@ -139,7 +148,10 @@ class PHQ8Report(BaseModel):
 
     # Self-harm flag (separate from PHQ-8)
     mentions_self_harm: bool = False
-    self_harm_evidence: list[str] = Field(default_factory=list)
+    self_harm_evidence: list[str] = Field(default_factory=list, max_length=3)
+
+    # Token usage (optional; used for cost visibility)
+    usage: TokenUsage | None = None
 
     # Metadata
     scored_at: datetime = Field(default_factory=datetime.utcnow)
