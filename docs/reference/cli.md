@@ -67,9 +67,11 @@ vibe-check score-corpus \
 
 | File | Description |
 |------|-------------|
-| `scored.jsonl` | One AggregatedPHQ8 per line |
-| `run_manifest.json` | Run metadata |
-| `checkpoint.db` | LangGraph checkpoints |
+| `scored.jsonl` | One AggregatedPHQ8 per line (final output) |
+| `run_manifest.json` | Run metadata, counts, and token usage totals |
+| `ledger.sqlite` | Processing ledger tracking job statuses |
+| `rows/` | Individual row JSON files (intermediate outputs) |
+| `checkpoint.db` | LangGraph checkpoints (at checkpoint path) |
 
 ---
 
