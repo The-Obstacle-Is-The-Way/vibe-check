@@ -14,7 +14,7 @@ Implement the corpus-scale runner that:
 1. Loads SQPsychConv (2,090 dialogues) via SPEC-02
 2. Scores each dialogue via the SPEC-05 graph (jury → aggregate → judge as needed)
 3. Writes outputs incrementally to `data/outputs/` (safe to resume)
-4. Maintains a job-level ledger (status/attempts/errors) without storing transcript text
+4. Maintains a job-level ledger (status/attempts/errors) - lightweight, no massive text blobs
 5. Produces a run manifest with aggregate diagnostics (arbitration rate, entropy distribution, per-condition summaries)
 6. Tracks token usage (incl. reasoning tokens when available) to validate SSOT cost assumptions
 
@@ -77,7 +77,7 @@ One JSON object per dialogue, including:
 
 ### 3.2 run_manifest.json
 
-Aggregate diagnostics (no transcript text), e.g.:
+Aggregate diagnostics (metrics only), e.g.:
 
 - counts by split and condition
 - arbitration rate overall + per item
@@ -105,7 +105,7 @@ Aggregate diagnostics (no transcript text), e.g.:
 - Split assignment stays deterministic (SPEC-02 SHA256-based)
 - Output ordering is deterministic (sort by `file_id` when exporting)
 - Never use Python’s `hash()` for anything that impacts persisted results
-- Checkpoint state must be safe-by-construction (no raw dialogue text or dialogue views persisted)
+- Checkpoint state includes full context (dialogue text) for debugging (see SSOT 3.3)
 
 ---
 
