@@ -1,6 +1,6 @@
 # Resilience Strategy
 
-vibe-check implements a **three-layer resilience strategy** to handle LLM API failures gracefully. For implementation details, see [Architecture: Resilience](../architecture/resilience.md).
+vibe-check implements a **three-layer resilience strategy** for juror scoring (and Layers 1-2 for judge calls) to handle LLM API failures gracefully. For implementation details, see [Architecture: Resilience](../architecture/resilience.md).
 
 ---
 
@@ -26,7 +26,7 @@ No single mechanism handles all cases. The three-layer approach ensures each fai
 │              THREE-LAYER RESILIENCE STRATEGY                │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  INCOMING REQUEST (score one dialogue)                      │
+│  INCOMING REQUEST (score one juror run)                     │
 │         │                                                   │
 │         ▼                                                   │
 │  ┌─────────────────────────────────────────────────────┐    │
@@ -72,7 +72,7 @@ No single mechanism handles all cases. The three-layer approach ensures each fai
 │  └─────────────────────────────────────────────────────┘    │
 │         │                                                   │
 │         ▼                                                   │
-│  SUCCESS: PHQ8Report or JudgeItemResolution returned        │
+│  SUCCESS: PHQ8Report returned                               │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```

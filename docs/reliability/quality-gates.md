@@ -1,6 +1,6 @@
 # Quality Gates
 
-Quality gates validate that the scoring run meets statistical thresholds before labels are exported. They detect problems with juror agreement, internal consistency, and clinical validity.
+Quality gates validate that a scored run meets statistical thresholds (computed via `vibe-check diagnostics`) before labels are exported. They detect problems with juror agreement, internal consistency, and clinical validity.
 
 ---
 
@@ -12,7 +12,7 @@ After scoring completes, diagnostics compute:
 |------|--------|-----------|---------|
 | **Reliability** | Krippendorff's α | ≥ 0.67 | Jurors agree with each other |
 | **Consistency** | Cronbach's α | ≥ 0.70 | PHQ-8 items correlate internally |
-| **Separation** | MDD mean > Control mean | True | Scores differentiate conditions |
+| **Separation** | MDD > control, p<0.01, d≥0.5 | True | Scores differentiate conditions |
 | **Arbitration** | Rate < 30% | True | Not too many disagreements |
 
 All gates must pass before export is considered valid.
@@ -114,7 +114,8 @@ The gate computes:
 | `mdd_mean` | Average total score for MDD dialogues |
 | `control_mean` | Average total score for Control dialogues |
 | `cohens_d` | Effect size (standardized difference) |
-| `is_valid` | True if `mdd_mean > control_mean` |
+| `p_value` | Welch's t-test p-value for MDD vs Control |
+| `is_valid` | True if `mdd_mean > control_mean` and `p_value < 0.01` and `cohens_d >= 0.5` |
 
 ### Expected Values
 
@@ -149,17 +150,18 @@ The report includes:
 ```python
 arbitration = {
     "overall_rate": 0.23,  # 23% of items needed arbitration
-    "per_item_rate": {
+    "per_item_rates": {
         "anhedonia": 0.35,      # 35% of dialogues
         "depressed_mood": 0.18,
         # ... etc
     },
-    "trigger_counts": {
+    "trigger_reasons": {
         "low_max_prob": 145,
         "high_entropy": 89,
         "vote_range": 67,
         # ... etc
-    }
+    },
+    "judge_agreement_with_mode": 0.74,
 }
 ```
 
@@ -170,6 +172,7 @@ arbitration = {
 ```python
 class DiagnosticReport(BaseModel):
     run_id: str
+    computed_at: datetime
     n_dialogues: int
     n_mdd: int
     n_control: int
@@ -181,7 +184,7 @@ class DiagnosticReport(BaseModel):
 
     passes_reliability_gate: bool  # α ≥ 0.67
     passes_consistency_gate: bool  # α ≥ 0.70
-    passes_separation_gate: bool   # mdd_mean > control_mean
+    passes_separation_gate: bool   # mdd_mean > control_mean, p<0.01, d>=0.5
     passes_arbitration_gate: bool  # rate < 30%
 ```
 
@@ -192,30 +195,23 @@ class DiagnosticReport(BaseModel):
 ```bash
 vibe-check diagnostics \
     --scored data/outputs/scored.jsonl \
+    --output data/outputs/diagnostics.json \
     --strict  # Exit non-zero if any gate fails
 ```
 
 ### Output
 
 ```
-=== Diagnostic Report ===
-Run: 2026-01-03_production
-Dialogues: 2,090 (MDD: 912, Control: 1,178)
+# Run Diagnostics: outputs
 
-RELIABILITY
-  Krippendorff α: 0.73 ✓ (threshold: 0.67)
+- Computed at: 2026-01-03T00:00:00+00:00
+- Dialogues: 2,090 (mdd=912, control=1,178)
 
-CONSISTENCY
-  Cronbach α: 0.82 ✓ (threshold: 0.70)
-
-SEPARATION
-  MDD mean: 12.4 | Control mean: 4.8
-  Cohen's d: 1.23 ✓
-
-ARBITRATION
-  Rate: 23% ✓ (threshold: 30%)
-
-All gates passed. Export ready.
+## Gates
+- Reliability (Krippendorff alpha >= 0.67): PASS (alpha=0.730)
+- Consistency (Cronbach alpha >= 0.70): PASS (alpha=0.820)
+- Separation (MDD > control, p<0.01, d>=0.5): PASS (mdd_mean=12.40, control_mean=4.80, d=1.23, p=1e-06)
+- Arbitration (rate < 0.30): PASS (rate=0.230)
 ```
 
 ---

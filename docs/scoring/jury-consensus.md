@@ -30,7 +30,7 @@ The default jury consists of **6 jurors**:
 | Provider | Model | Runs | Purpose |
 |----------|-------|------|---------|
 | OpenAI | `gpt-5.2` | 2 | Frontier reasoning |
-| Anthropic | `claude-sonnet-4-5` | 2 | Clinical nuance |
+| Anthropic | `claude-sonnet-4-5-20250929` | 2 | Clinical nuance |
 | Google | `gemini-3-pro-preview` | 2 | Cross-validation |
 
 **Why 2 runs per model?**
@@ -59,15 +59,21 @@ Each juror independently:
 │                                                                │
 │  Dialogue Text (client_qa view)                                │
 │         │                                                      │
-│         ├──────────────────────────────────────────────────┐   │
-│         │           │           │           │           │  │   │
-│         ▼           ▼           ▼           ▼           ▼  ▼   │
-│     ┌──────┐   ┌──────┐   ┌──────┐   ┌──────┐   ┌──────┐   │   │
-│     │GPT-1 │   │GPT-2 │   │CLD-1 │   │CLD-2 │   │GEM-1 │ ...   │
-│     └──┬───┘   └──┬───┘   └──┬───┘   └──┬───┘   └──┬───┘       │
-│        │          │          │          │          │           │
-│        ▼          ▼          ▼          ▼          ▼           │
-│    PHQ8Report PHQ8Report PHQ8Report PHQ8Report PHQ8Report      │
+│         ▼                                                      │
+│     ┌──────┐                                                   │
+│     │GPT-1 │                                                   │
+│     └──┬───┘                                                   │
+│        ▼                                                       │
+│    PHQ8Report                                                  │
+│         │                                                      │
+│         ▼                                                      │
+│     ┌──────┐                                                   │
+│     │GPT-2 │                                                   │
+│     └──┬───┘                                                   │
+│        ▼                                                       │
+│    PHQ8Report                                                  │
+│         │                                                      │
+│        ... (CLD-1, CLD-2, GEM-1, GEM-2)                        │
 │                                                                │
 │    All 6 reports collected → Aggregation                       │
 │                                                                │
@@ -81,9 +87,9 @@ Each juror independently:
 Jurors operate with strict independence:
 
 - **No cross-talk**: Jurors don't see other jurors' outputs
-- **Parallel execution**: All 6 run concurrently (no sequential bias)
+- **Execution order**: Jurors run sequentially per dialogue in the current LangGraph
 - **Identical input**: Same preprocessed text for all jurors
-- **Separate prompts**: Each juror uses its own system prompt
+- **Same system prompt**: All jurors share the same juror system prompt (same `prompt_version` + `view_name`)
 
 This independence ensures votes are truly independent samples, which is mathematically required for valid Bayesian aggregation.
 

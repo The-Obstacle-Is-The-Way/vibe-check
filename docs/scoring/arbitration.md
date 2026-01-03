@@ -123,8 +123,7 @@ The `final_source` field indicates how the final score was determined:
 
 | Source | Meaning |
 |--------|---------|
-| `jury_mode` | Jury consensus (mode of posterior); no arbitration |
-| `jury_expected` | Jury expected value; no arbitration |
+| `jury_mode` | Jury consensus (mode of posterior) |
 | `judge_override` | Judge resolved at least one contested item |
 
 ---
@@ -153,7 +152,7 @@ If jurors' total scores differ by more than 2 points (std), the judge reviews al
 | `arbitration_max_prob_threshold` | `0.60` | Min probability for consensus |
 | `arbitration_entropy_threshold` | `1.2` | Max entropy before arbitration |
 | `arbitration_total_std_threshold` | `2.0` | Max juror total std |
-| `judge_model` | `claude-opus-4-5-20250929` | Model for judge |
+| `judge_model` | `claude-opus-4-5-20251101` | Model for judge |
 
 ---
 
