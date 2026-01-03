@@ -172,4 +172,4 @@ The views include diagnostic flags:
 
 ## Related Concepts
 
-- [Jury Consensus](jury-consensus.md) - How views are used for scoring
+- [Jury Consensus](../scoring/jury-consensus.md) - How views are used for scoring

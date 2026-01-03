@@ -246,5 +246,5 @@ All gates passed. Export ready.
 
 ## Related Concepts
 
-- [Jury Consensus](jury-consensus.md) - What generates the votes
-- [Arbitration](arbitration.md) - What happens when jurors disagree
+- [Jury Consensus](../scoring/jury-consensus.md) - What generates the votes
+- [Arbitration](../scoring/arbitration.md) - What happens when jurors disagree

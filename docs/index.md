@@ -47,18 +47,35 @@ See [Quickstart Guide](guides/quickstart.md) for complete setup instructions.
 
 ## Documentation
 
-### Concepts
+### Scoring
 
-Understand the core ideas behind vibe-check.
+The core scoring pipeline: jurors, aggregation, and arbitration.
 
 | Document | Description |
 |----------|-------------|
-| [Jury Consensus](concepts/jury-consensus.md) | How 6 jurors vote independently |
-| [Bayesian Aggregation](concepts/bayesian-aggregation.md) | Combining votes into distributions |
-| [Arbitration](concepts/arbitration.md) | When and why the judge intervenes |
-| [Dialogue Views](concepts/dialogue-views.md) | Preprocessing for scoring |
-| [Resilience](concepts/resilience.md) | Three-layer retry strategy |
-| [Quality Gates](concepts/quality-gates.md) | Validating scoring runs |
+| [Overview](scoring/index.md) | Scoring pipeline overview |
+| [Jury Consensus](scoring/jury-consensus.md) | How 6 jurors vote independently |
+| [Bayesian Aggregation](scoring/bayesian-aggregation.md) | Combining votes into distributions |
+| [Arbitration](scoring/arbitration.md) | When and why the judge intervenes |
+
+### Preprocessing
+
+How raw dialogues become scoring text.
+
+| Document | Description |
+|----------|-------------|
+| [Overview](preprocessing/index.md) | Preprocessing pipeline overview |
+| [Dialogue Views](preprocessing/dialogue-views.md) | client_qa, client_only, and artifact removal |
+
+### Reliability
+
+Quality assurance and API resilience.
+
+| Document | Description |
+|----------|-------------|
+| [Overview](reliability/index.md) | Reliability overview |
+| [Quality Gates](reliability/quality-gates.md) | Validating scoring runs |
+| [Resilience](reliability/resilience.md) | Three-layer retry strategy |
 
 ### Guides
 
@@ -82,7 +99,7 @@ System design and data flow.
 | [System Overview](architecture/system-overview.md) | High-level pipeline |
 | [Data Flow](architecture/data-flow.md) | Input to output schemas |
 | [LangGraph Workflow](architecture/langgraph-workflow.md) | Single-dialogue graph |
-| [Resilience](architecture/resilience.md) | Three-layer retry and rate-limiting |
+| [Resilience](architecture/resilience.md) | Three-layer implementation details |
 
 ### Agents
 
@@ -178,11 +195,11 @@ A scoring run must pass:
 | Separation | MDD > Control | Clinical validity |
 | Arbitration | Rate < 30% | Juror consensus |
 
-See [Quality Gates](concepts/quality-gates.md) for details.
+See [Quality Gates](reliability/quality-gates.md) for details.
 
 ---
 
 ## Additional Resources
 
 - [Dataset: SQPsychConv](data/dataset-sqpsychconv-all-variants.md)
-- [SPEC-09: Human Alignment](specs/spec-09-human-alignment.md)
+- [SPEC-09: Human Alignment](_specs/spec-09-human-alignment.md)

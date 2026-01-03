@@ -227,5 +227,5 @@ Execution order:
 
 ## Related Concepts
 
-- [Jury Consensus](jury-consensus.md) - How jurors use resilience
-- [Arbitration](arbitration.md) - How the judge uses resilience
+- [Jury Consensus](../scoring/jury-consensus.md) - How jurors use resilience
+- [Arbitration](../scoring/arbitration.md) - How the judge uses resilience

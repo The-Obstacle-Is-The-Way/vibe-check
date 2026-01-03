@@ -125,7 +125,7 @@ This allows both:
 
 ## Resilience
 
-Each juror implements the [three-layer resilience strategy](resilience.md):
+Each juror implements the [three-layer resilience strategy](../reliability/resilience.md):
 
 1. **Layer 1**: PydanticAI validation retries (malformed JSON)
 2. **Layer 2**: Tenacity transient retry (429, 5xx, network errors)
@@ -152,4 +152,4 @@ Jury composition is configured via `Settings`:
 
 - [Bayesian Aggregation](bayesian-aggregation.md) - How votes become posteriors
 - [Arbitration](arbitration.md) - What happens when jurors disagree
-- [Resilience](resilience.md) - How jurors handle API failures
+- [Resilience](../reliability/resilience.md) - How jurors handle API failures
