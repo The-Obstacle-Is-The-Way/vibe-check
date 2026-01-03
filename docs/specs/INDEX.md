@@ -2,6 +2,12 @@
 
 This directory contains the vertical slice specifications for vibe-check. Each spec defines a focused deliverable with clear acceptance criteria.
 
+## Scope Reminder
+
+> **vibe-check's ONLY job: Score SQPsychConv → Export PHQ-8 labels for ai-psychiatrist.**
+>
+> See [SCOPE-CLARITY.md](../research/SCOPE-CLARITY.md) before adding new specs.
+
 ## Master Specification
 
 The comprehensive system design lives in the research directory:
@@ -10,7 +16,7 @@ The comprehensive system design lives in the research directory:
 
 ---
 
-## Implementation Specs
+## Core Specs (Required for Definition of Done)
 
 | ID | Title | Status | Scope |
 |----|-------|--------|-------|
@@ -22,9 +28,18 @@ The comprehensive system design lives in the research directory:
 | SPEC-06 | [Batch Runner & Export](SPEC-06-batch-runner-and-export.md) | IMPLEMENTED | Batch processing, checkpointing |
 | SPEC-07 | [Run Diagnostics](SPEC-07-run-diagnostics.md) | IMPLEMENTED | Quality metrics, gates |
 | SPEC-08 | [Export Contract](SPEC-08-export-contract.md) | IMPLEMENTED | Public label format |
-| SPEC-09 | [Human Alignment](SPEC-09-human-alignment.md) | PLANNED | Calibration, golden set, Kappa metrics |
-| SPEC-10 | [Adversarial Robustness](SPEC-10-adversarial-robustness.md) | PLANNED | Chaos testing, prompt injection, resilience |
-| SPEC-11 | [Interactive Inspector](SPEC-11-interactive-inspector.md) | PLANNED | TUI, visualization, explainability |
+
+**All core specs are implemented. Ready to run production batch.**
+
+---
+
+## Conditional/Deferred Specs
+
+| ID | Title | Status | Rationale |
+|----|-------|--------|-----------|
+| SPEC-09 | [Human Alignment](SPEC-09-human-alignment.md) | CONDITIONAL | Only implement if SPEC-07 diagnostics fail quality gates |
+| SPEC-10 | [Adversarial Robustness](SPEC-10-adversarial-robustness.md) | DEFERRED | Nice-to-have for production systems; vibe-check is a one-shot labeling job |
+| SPEC-11 | [Interactive Inspector](SPEC-11-interactive-inspector.md) | DEFERRED | Nice-to-have; can inspect JSONL with standard tools |
 
 ---
 
@@ -32,25 +47,21 @@ The comprehensive system design lives in the research directory:
 
 - **IMPLEMENTED**: Spec has been fully implemented and tested
 - **IN PROGRESS**: Spec is currently being implemented
-- **PLANNED**: Spec is approved but not yet started
-- **DRAFT**: Spec is still being designed
+- **CONDITIONAL**: Implement only if specific conditions are met
+- **DEFERRED**: Not needed for Definition of Done; may implement later
 
 ---
 
 ## Statistics
 
-- **Total specs**: 11
-- **Implemented**: 8
-- **In Progress**: 0
-- **Planned**: 3
+- **Core specs**: 8 (all IMPLEMENTED)
+- **Conditional/Deferred**: 3
+- **Ready for production run**: ✅ YES
 
 ---
 
 ## Adding New Specs
 
-When creating a new specification:
+Before adding new specs, ask: **Does this help us label SQPsychConv?**
 
-1. Use the next available number (currently: **SPEC-12**)
-2. Follow the naming convention: `SPEC-XX-short-description.md`
-3. Include: Status, Dependencies, Deliverables, Acceptance Criteria
-4. Update this index after creating the spec file
+If the answer is no, don't add it. See [SCOPE-CLARITY.md](../research/SCOPE-CLARITY.md).

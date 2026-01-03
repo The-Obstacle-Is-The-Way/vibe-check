@@ -1,9 +1,13 @@
 # SPEC-09: Human-in-the-Loop Calibration (Golden Set)
 
-**Status**: PLANNED
+**Status**: CONDITIONAL
 **Slice Type**: Vertical (Validation Pipeline)
 **Dependencies**: SPEC-07 (Run Diagnostics), SPEC-08 (Export)
-**Priority**: CRITICAL (Scientific Validity)
+**Priority**: CONDITIONAL (Only if SPEC-07 diagnostics fail)
+
+> **Scope Check**: This spec is CONDITIONAL. Only implement if SPEC-07 quality gates fail
+> (Krippendorff α < 0.70, arbitration rate > 30%, or other diagnostic failures).
+> See [SCOPE-CLARITY.md](../research/SCOPE-CLARITY.md).
 
 ---
 
