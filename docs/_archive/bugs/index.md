@@ -50,13 +50,14 @@ All bugs in this directory have been **resolved**. Bug numbers are permanent ide
 | BUG-040 | [Missing PHQ-8 clinical rubric in prompts](bug-040-missing-phq8-rubric-in-prompts.md) | P0 | RESOLVED |
 | BUG-041 | [Unused embedding_dialogue_view setting](bug-041-unused-embedding-dialogue-view-setting.md) | P3 | RESOLVED |
 | BUG-042 | [Silent utterance truncation in preprocessing](bug-042-silent-utterance-truncation.md) | P2 | RESOLVED |
+| BUG-047 | [Bare pass statement in runner](bug-047-runner-bare-pass-statement.md) | P5 | RESOLVED |
 
 ---
 
 ## Statistics
 
-- **Total bugs**: 42
-- **Resolved/Fixed**: 42
+- **Total bugs**: 43
+- **Resolved/Fixed**: 43
 - **Open**: 0
 
 ---

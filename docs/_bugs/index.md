@@ -8,6 +8,9 @@
 | BUG-044 | P4 | open | [Over-Parameterized `score_corpus_async()` Function](BUG-044-over-parameterized-score-corpus.md) |
 | BUG-045 | P4 | open | [Synchronous Judge Function in Async Graph](BUG-045-sync-judge-in-async-graph.md) |
 | BUG-046 | P3 | open | [No Maximum Iteration Limit on LangGraph](BUG-046-no-graph-iteration-limit.md) |
+| BUG-048 | P1 | open | [No Temperature Control for LLM Calls](BUG-048-no-temperature-control-for-llm-calls.md) |
+| BUG-049 | P3 | open | [Hardcoded Diagnostic Thresholds](BUG-049-hardcoded-diagnostic-thresholds.md) |
+| BUG-050 | P4 | open | [Remaining Magic Numbers in Codebase](BUG-050-remaining-magic-numbers.md) |
 
 ---
 
@@ -55,7 +58,7 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 
 ## Filing New Bugs
 
-1. Use the next available number: **BUG-048**
+1. Use the next available number: **BUG-051**
 2. Create file in this directory: `BUG-NNN-short-description.md`
 3. Include: Severity, Status, Date, Summary, Root Cause, Fix
 4. When resolved, move to `docs/_archive/bugs/`
