@@ -4,8 +4,7 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
-| BUG-040 | P0 | open | [Missing PHQ-8 Clinical Rubric in System Prompts](BUG-040-missing-phq8-rubric-in-prompts.md) |
-| BUG-041 | P3 | open | [Unused `embedding_dialogue_view` Setting (Dead Code)](BUG-041-unused-embedding-dialogue-view-setting.md) |
+| _none_ | - | - | - |
 
 ---
 
@@ -13,6 +12,8 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
+| BUG-041 | P3 | resolved | [Unused `embedding_dialogue_view` Setting (Dead Code)](../_archive/bugs/bug-041-unused-embedding-dialogue-view-setting.md) |
+| BUG-040 | P0 | resolved | [Missing PHQ-8 Clinical Rubric in System Prompts](../_archive/bugs/bug-040-missing-phq8-rubric-in-prompts.md) |
 | BUG-035 | P2 | resolved | [Sequential juror execution limits throughput](../_archive/bugs/bug-035-sequential-juror-execution.md) |
 | BUG-027 | P1 | resolved | [CLI `--prompt-version` / `--dialogue-view` can desync from live agent prompts](../_archive/bugs/bug-027-cli-prompt-version-view-mismatch.md) |
 | BUG-028 | P1 | resolved | [Live Gemini jurors env var mismatch](../_archive/bugs/bug-028-google-gla-env-var-mismatch.md) |
@@ -39,8 +40,9 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 | BUG-014 to BUG-026 | 13 | Post-implementation bug hunt |
 | BUG-027 to BUG-034 | 8 | CI/run/export hardening |
 | BUG-035 to BUG-039 | 5 | Validation and configuration hardening |
+| BUG-040 to BUG-041 | 2 | PHQ-8 rubric + config cleanup |
 
-**Total resolved**: 39 bugs
+**Total resolved**: 41 bugs
 
 ---
 

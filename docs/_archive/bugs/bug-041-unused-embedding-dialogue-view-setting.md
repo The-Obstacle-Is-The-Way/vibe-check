@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | P3 (Low - Dead Code) |
-| **Status** | open |
+| **Status** | resolved |
 | **Date** | 2026-01-04 |
 | **Component** | `settings.py` |
 | **Impact** | Code hygiene, confusion for maintainers |
@@ -43,7 +43,7 @@ And:
 
 ### 2. Setting Exists But Is Unused
 
-`settings.py:43-45`:
+At time of filing, `settings.py` contained:
 ```python
 embedding_dialogue_view: Literal["client_qa", "client_contextualized", "client_only"] = (
     "client_qa"
@@ -129,3 +129,10 @@ If embeddings might be added later, rename to make status clear:
 
 - [SPEC-11: PHQ-8 Rubric Embedding](../_specs/SPEC-11-phq8-rubric-embedding.md) (documents design decision)
 - [Master Spec](../_archive/research/spec-vibe-check.md) (scope boundary definition)
+
+---
+
+## Resolution (Implemented)
+
+- Removed `embedding_dialogue_view` from `src/vibe_check/settings.py`.
+- Removed `EMBEDDING_DIALOGUE_VIEW` from `.env.example` and `docs/reference/settings.md`.

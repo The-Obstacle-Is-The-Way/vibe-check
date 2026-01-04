@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | P0 (Critical) |
-| **Status** | open |
+| **Status** | resolved |
 | **Date** | 2026-01-04 |
 | **Component** | `scoring/prompting.py`, `judge/prompting.py`, `constants.py` |
 | **Impact** | Reproducibility, cross-model consistency, clinical validity |
@@ -174,6 +174,14 @@ When resolving contested items:
 ## Fix Required
 
 See **SPEC-11: PHQ-8 Rubric Embedding** for implementation details.
+
+---
+
+## Resolution (Implemented)
+
+- Added `PHQ8_RUBRIC`, `PHQ8_SCORE_SCALE`, `PHQ8_TIME_FRAME`, and `phq8_rubric_hash()` in `src/vibe_check/constants.py`.
+- Embedded the rubric + scale + time frame into juror and judge prompts in `src/vibe_check/scoring/prompting.py` and `src/vibe_check/judge/prompting.py`.
+- Recorded `phq8_rubric_hash` into `run_manifest.json` via `src/vibe_check/run/runner.py`.
 
 ### High-Level Changes
 
