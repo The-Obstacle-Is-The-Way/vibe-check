@@ -75,7 +75,7 @@ Each juror independently:
 │         │                                                      │
 │        ... (CLD-1, CLD-2, GEM-1, GEM-2)                        │
 │                                                                │
-│    All 6 reports collected → Aggregation                       │
+│    All juror reports collected → Aggregation                   │
 │                                                                │
 └────────────────────────────────────────────────────────────────┘
 ```

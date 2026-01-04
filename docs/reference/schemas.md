@@ -251,7 +251,7 @@ Final aggregated output.
 | `arbitration_reasons` | `dict[str, str]` | Why each item |
 | `mentions_self_harm` | `bool` | Any juror flagged self-harm |
 | `self_harm_evidence` | `list[str]` | Combined evidence |
-| `juror_reports` | `list[PHQ8Report]` | All 6 reports |
+| `juror_reports` | `list[PHQ8Report]` | All juror reports (default: 6) |
 | `judge_resolution` | `dict \| None` | Judge decisions |
 | `judge_usage` | `TokenUsage \| None` | Aggregated judge token usage |
 | `prompt_version` | `str` | Prompt version |
