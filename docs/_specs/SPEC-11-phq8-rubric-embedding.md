@@ -2,9 +2,9 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | DRAFT |
+| **Status** | IMPLEMENTED |
 | **Priority** | P0 (Critical) |
-| **Fixes** | [BUG-040](../_bugs/BUG-040-missing-phq8-rubric-in-prompts.md) |
+| **Fixes** | [BUG-040](../_archive/bugs/bug-040-missing-phq8-rubric-in-prompts.md) |
 | **Author** | Claude |
 | **Date** | 2026-01-04 |
 
