@@ -19,7 +19,7 @@ def token_usage_from_run_usage(usage: RunUsage | None) -> TokenUsage | None:
     reasoning_tokens = getattr(usage, "reasoning_tokens", None)
     total_tokens = getattr(usage, "total_tokens", None)
     if total_tokens is None and (input_tokens is not None or output_tokens is not None):
-        total_tokens = (input_tokens or 0) + (output_tokens or 0)
+        total_tokens = (input_tokens or 0) + (output_tokens or 0) + (reasoning_tokens or 0)
     return TokenUsage(
         input_tokens=input_tokens,
         output_tokens=output_tokens,

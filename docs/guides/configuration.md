@@ -25,7 +25,7 @@ GOOGLE_API_KEY=...
 |----------|----------|-------------|
 | `OPENAI_API_KEY` | For `--live` | OpenAI API key |
 | `ANTHROPIC_API_KEY` | For `--live` | Anthropic API key |
-| `GOOGLE_API_KEY` | For `--live` | Google AI API key |
+| `GOOGLE_API_KEY` | For `--live` | Google AI API key (or use `GEMINI_API_KEY`) |
 
 ### Model Selection
 

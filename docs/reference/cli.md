@@ -168,7 +168,7 @@ vibe-check export \
 
 | File | Description |
 |------|-------------|
-| `vibe_check_labels.jsonl` | JSONL export (if format includes jsonl) |
+| `vibe_check_labels.jsonl` | JSONL export (always written) |
 | `vibe_check_labels.csv` | CSV export (if format includes csv) |
 
 ---

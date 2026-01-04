@@ -146,5 +146,7 @@ def test_cli_export_csv_only_does_not_crash(tmp_path: Path) -> None:
         ]
     )
     assert exit_code == 0
+    # JSONL is always written (canonical contract), even when --format csv
+    assert (export_dir / "vibe_check_labels.jsonl").exists()
     assert (export_dir / "vibe_check_labels.csv").exists()
     assert (export_dir / "validation_report.json").exists()

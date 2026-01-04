@@ -26,7 +26,7 @@ Required for `--live` mode (real LLM API calls).
 |-------|--------------|------|---------|-------------|
 | `openai_api_key` | `OPENAI_API_KEY` | `str \| None` | `None` | OpenAI API key |
 | `anthropic_api_key` | `ANTHROPIC_API_KEY` | `str \| None` | `None` | Anthropic API key |
-| `google_api_key` | `GOOGLE_API_KEY` | `str \| None` | `None` | Google AI API key |
+| `google_api_key` | `GOOGLE_API_KEY` or `GEMINI_API_KEY` | `str \| None` | `None` | Google AI API key (accepts both aliases) |
 
 **Example**:
 
@@ -69,7 +69,7 @@ Controls juror behavior and aggregation.
 
 | Field | Env Variable | Type | Default | Description |
 |-------|--------------|------|---------|-------------|
-| `runs_per_model` | `RUNS_PER_MODEL` | `int` | `2` | How many times each model scores |
+| `runs_per_model` | `RUNS_PER_MODEL` | `int` | `2` | How many times each model scores (range: 1–2) |
 | `disagreement_range_threshold` | `DISAGREEMENT_RANGE_THRESHOLD` | `int` | `2` | Vote range that triggers arbitration |
 | `arbitration_total_std_threshold` | `ARBITRATION_TOTAL_STD_THRESHOLD` | `float` | `2.0` | Max juror total std before arbitration |
 | `arbitration_max_prob_threshold` | `ARBITRATION_MAX_PROB_THRESHOLD` | `float` | `0.60` | Min posterior max probability for consensus |
