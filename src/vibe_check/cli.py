@@ -97,6 +97,32 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate_export = sub.add_parser("validate-export", help="Validate a public export JSONL file.")
     validate_export.add_argument("--input", required=True, help="Path to vibe_check_labels.jsonl.")
+
+    calibration = sub.add_parser("calibration", help="Human-in-the-loop calibration tools.")
+    calibration_sub = calibration.add_subparsers(dest="calibration_command", required=True)
+
+    sample = calibration_sub.add_parser(
+        "sample",
+        help="Sample dialogues from scored.jsonl for human annotation.",
+    )
+    sample.add_argument("--scored", required=True, help="Path to scored.jsonl.")
+    sample.add_argument("--n", type=int, required=True, help="Number of dialogues to sample.")
+    sample.add_argument(
+        "--strategy",
+        choices=["hybrid"],
+        default="hybrid",
+        help="Sampling strategy (currently only hybrid is supported).",
+    )
+    sample.add_argument("--seed", type=int, default=0, help="Seed for deterministic sampling.")
+    sample.add_argument("--output", required=True, help="Path to write the CSV template.")
+
+    evaluate = calibration_sub.add_parser(
+        "evaluate",
+        help="Evaluate system outputs against a human-labeled golden set CSV.",
+    )
+    evaluate.add_argument("--system", required=True, help="Path to system scored.jsonl.")
+    evaluate.add_argument("--human", required=True, help="Path to human-labeled golden_set.csv.")
+    evaluate.add_argument("--output", required=True, help="Path to write calibration_report.json.")
     return parser
 
 
@@ -207,6 +233,42 @@ def main(argv: list[str] | None = None) -> int:
             encoding="utf-8",
         )
         return 0 if validation_report.is_valid else 2
+
+    if args.command == "calibration":
+        from vibe_check.calibration.evaluate import (
+            evaluate_golden_set,
+            render_confusion_matrix_table,
+        )
+        from vibe_check.calibration.sample import sample_for_annotation
+
+        if args.calibration_command == "sample":
+            sample_for_annotation(
+                scored_jsonl=args.scored,
+                n=int(args.n),
+                output_csv=args.output,
+                strategy=str(args.strategy),
+                seed=int(args.seed),
+            )
+            return 0
+
+        if args.calibration_command == "evaluate":
+            calibration_report = evaluate_golden_set(
+                system_scored_jsonl=args.system,
+                human_csv=args.human,
+            )
+            Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+            Path(args.output).write_text(
+                calibration_report.model_dump_json(indent=2) + "\n",
+                encoding="utf-8",
+            )
+            print(render_confusion_matrix_table(calibration_report))
+
+            # Safety gate: if we have any human positives, missing any is a hard failure.
+            if calibration_report.self_harm_recall < 1.0:
+                return 2
+            return 0
+
+        raise AssertionError(f"Unknown calibration command: {args.calibration_command}")
 
     raise AssertionError(f"Unknown command: {args.command}")
 
