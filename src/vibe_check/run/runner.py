@@ -291,6 +291,7 @@ async def score_corpus_async(
                     row["computed_split"] = dialogue.computed_split
                     row["dialogue_view"] = dialogue_view
                     row["scoring_text"] = scoring_text
+                    row["truncated_utterance_count"] = int(views.truncated_utterance_count)
                     write_row(output_dir, row)
 
                     ledger.mark_done(dialogue.file_id, token_usage=job_tokens)

@@ -69,6 +69,7 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
     assert "file_id" in row
     assert "final_total_score" in row
     assert "final_item_scores" in row
+    assert row["truncated_utterance_count"] == 0
     assert row["triggered_arbitration"] is True
 
     with JobLedger(output_dir / "ledger.sqlite") as ledger:
