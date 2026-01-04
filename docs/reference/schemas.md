@@ -287,6 +287,37 @@ Judge decision for one item.
 
 ---
 
+### JudgeItemReport
+
+Judge decision with token usage metadata.
+
+**File**: `judge/schema.py`
+
+Extends `JudgeItemResolution` with:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `usage` | `TokenUsage \| None` | Token counts for this judge call |
+
+**Example**:
+
+```json
+{
+  "item": "anhedonia",
+  "final_score": 2,
+  "confidence": 0.85,
+  "rationale": "Client explicitly states lack of enjoyment in multiple activities.",
+  "usage": {
+    "input_tokens": 2500,
+    "output_tokens": 150,
+    "reasoning_tokens": null,
+    "total_tokens": 2650
+  }
+}
+```
+
+---
+
 ## Export Schemas
 
 ### ScoredDialogueExport
