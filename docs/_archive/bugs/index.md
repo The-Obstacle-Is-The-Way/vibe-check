@@ -42,19 +42,23 @@ All bugs in this directory have been **resolved**. Bug numbers are permanent ide
 | BUG-032 | [Judge token usage missing](bug-032-judge-token-usage-missing.md) | P3 | RESOLVED |
 | BUG-033 | [Resume run config mismatch](bug-033-resume-run-config-mismatch.md) | P3 | RESOLVED |
 | BUG-034 | [.env.example missing arbitration keys](bug-034-env-example-missing-arbitration-thresholds.md) | P4 | RESOLVED |
+| BUG-036 | [JudgeItemResolution.item not validated](bug-036-judge-item-name-not-validated.md) | P3 | RESOLVED |
+| BUG-037 | [Hardcoded arbitration parameters](bug-037-hardcoded-arbitration-params.md) | P4 | RESOLVED |
+| BUG-038 | [No API key validation before live run](bug-038-no-api-key-validation-before-live-run.md) | P4 | RESOLVED |
+| BUG-039 | [max_concurrency misleading for jurors](bug-039-max-concurrency-misleading-for-jurors.md) | P4 | RESOLVED |
 
 ---
 
 ## Statistics
 
-- **Total bugs**: 34
-- **Resolved/Fixed**: 34
+- **Total bugs**: 38
+- **Resolved/Fixed**: 38
 - **Open**: 0
 
 ---
 
 ## Next Bug Number
 
-When filing new bugs, use: **BUG-035**
+When filing new bugs, use: **BUG-040**
 
 Place new bugs in `docs/_bugs/` (not `_archive`). Move to archive when resolved.

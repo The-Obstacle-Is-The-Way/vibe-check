@@ -1,7 +1,8 @@
 ---
 severity: P4
-status: open
+status: resolved
 opened_date: 2026-01-03
+resolved_date: 2026-01-04
 ---
 
 # BUG-039: `max_concurrency` Parameter Misleading for Intra-Dialogue Parallelism

@@ -1,7 +1,8 @@
 ---
 severity: P3
-status: open
+status: resolved
 opened_date: 2026-01-03
+resolved_date: 2026-01-04
 ---
 
 # BUG-036: JudgeItemResolution.item Not Validated Against PHQ8_ITEMS

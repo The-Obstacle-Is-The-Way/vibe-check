@@ -5,10 +5,6 @@
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
 | BUG-035 | P2 | open | [Sequential juror execution limits throughput](BUG-035-sequential-juror-execution.md) |
-| BUG-036 | P3 | open | [JudgeItemResolution.item not validated against PHQ8_ITEMS](BUG-036-judge-item-name-not-validated.md) |
-| BUG-037 | P4 | open | [Arbitration parameters hardcoded in disagreement.py](BUG-037-hardcoded-arbitration-params.md) |
-| BUG-038 | P4 | open | [No API key validation before live run](BUG-038-no-api-key-validation-before-live-run.md) |
-| BUG-039 | P4 | open | [max_concurrency parameter misleading for jurors](BUG-039-max-concurrency-misleading-for-jurors.md) |
 
 ---
 
@@ -24,6 +20,10 @@
 | BUG-032 | P3 | resolved | [Token usage totals omit judge calls](../_archive/bugs/bug-032-judge-token-usage-missing.md) |
 | BUG-033 | P3 | resolved | [Resume can silently mix runs](../_archive/bugs/bug-033-resume-run-config-mismatch.md) |
 | BUG-034 | P4 | resolved | [`.env.example` missing arbitration threshold keys](../_archive/bugs/bug-034-env-example-missing-arbitration-thresholds.md) |
+| BUG-036 | P3 | resolved | [JudgeItemResolution.item not validated against PHQ8_ITEMS](../_archive/bugs/bug-036-judge-item-name-not-validated.md) |
+| BUG-037 | P4 | resolved | [Arbitration parameters hardcoded in disagreement.py](../_archive/bugs/bug-037-hardcoded-arbitration-params.md) |
+| BUG-038 | P4 | resolved | [No API key validation before live run](../_archive/bugs/bug-038-no-api-key-validation-before-live-run.md) |
+| BUG-039 | P4 | resolved | [max_concurrency parameter misleading for jurors](../_archive/bugs/bug-039-max-concurrency-misleading-for-jurors.md) |
 
 ---
 
@@ -36,8 +36,9 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 | BUG-001 to BUG-013 | 13 | Initial development bugs |
 | BUG-014 to BUG-026 | 13 | Post-implementation bug hunt |
 | BUG-027 to BUG-034 | 8 | CI/run/export hardening |
+| BUG-036 to BUG-039 | 4 | Validation and configuration hardening |
 
-**Total resolved**: 34 bugs
+**Total resolved**: 38 bugs
 
 ---
 

@@ -68,7 +68,7 @@ H = -Σ p(x) × ln(p(x))
 ### clinical_ambiguity_band
 
 **Default**: `(0.4, 0.6)`
-**Setting**: Not configurable via environment
+**Setting**: `CLINICAL_AMBIGUITY_BAND_LOW` and `CLINICAL_AMBIGUITY_BAND_HIGH`
 
 Triggers arbitration when clinical probability (P(score ≥ 2)) falls in the ambiguous range.
 
@@ -102,7 +102,7 @@ Maximum vote range (max - min) before arbitration.
 ### insufficient_evidence_threshold
 
 **Default**: `2`
-**Setting**: Not configurable via environment
+**Setting**: `INSUFFICIENT_EVIDENCE_THRESHOLD`
 
 How many jurors must flag `insufficient_evidence: true` to trigger arbitration.
 
@@ -275,9 +275,9 @@ DISAGREEMENT_RANGE_THRESHOLD=1
 |-----------|---------|---------|---------|
 | `max_prob_threshold` | 0.60 | `ARBITRATION_MAX_PROB_THRESHOLD` | Min posterior peak |
 | `entropy_threshold` | 1.2 | `ARBITRATION_ENTROPY_THRESHOLD` | Max uncertainty |
-| `clinical_ambiguity_band` | (0.4, 0.6) | — | Clinical boundary ambiguity |
+| `clinical_ambiguity_band` | (0.4, 0.6) | `CLINICAL_AMBIGUITY_BAND_LOW` / `CLINICAL_AMBIGUITY_BAND_HIGH` | Clinical boundary ambiguity |
 | `range_threshold` | 2 | `DISAGREEMENT_RANGE_THRESHOLD` | Max vote spread |
-| `insufficient_evidence_threshold` | 2 | — | Min uncertain jurors |
+| `insufficient_evidence_threshold` | 2 | `INSUFFICIENT_EVIDENCE_THRESHOLD` | Min uncertain jurors |
 | `total_std_threshold` | 2.0 | `ARBITRATION_TOTAL_STD_THRESHOLD` | Max total score std |
 | Krippendorff α gate | 0.67 | — | Min inter-rater agreement |
 | Cronbach α gate | 0.70 | — | Min internal consistency |

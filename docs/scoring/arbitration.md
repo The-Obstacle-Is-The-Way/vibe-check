@@ -152,6 +152,9 @@ If jurors' total scores differ by more than 2 points (std), the judge reviews al
 | `arbitration_max_prob_threshold` | `0.60` | Min probability for consensus |
 | `arbitration_entropy_threshold` | `1.2` | Max entropy before arbitration |
 | `arbitration_total_std_threshold` | `2.0` | Max juror total std |
+| `clinical_ambiguity_band_low` | `0.4` | Lower bound for clinical ambiguity trigger (`P(score ≥ 2)`) |
+| `clinical_ambiguity_band_high` | `0.6` | Upper bound for clinical ambiguity trigger (`P(score ≥ 2)`) |
+| `insufficient_evidence_threshold` | `2` | Min juror count flagged insufficient evidence to trigger arbitration |
 | `judge_model` | `claude-opus-4-5-20251101` | Model for judge |
 
 ---
