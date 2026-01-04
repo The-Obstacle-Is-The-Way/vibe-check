@@ -29,5 +29,27 @@ class DialogueViews(BaseModel):
         description="Count of very short client responses (<5 words)",
     )
 
+    truncated_utterance_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of utterances truncated by preprocessing caps",
+    )
+
+    meta_text_removed_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of utterances where meta text was removed (noise filtering)",
+    )
+    unknown_speaker_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of lines with speaker labels other than Therapist/Client",
+    )
+    orphan_line_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of non-empty lines without an active speaker",
+    )
+
     has_empty_client_text: bool = False
     has_unknown_speaker: bool = False

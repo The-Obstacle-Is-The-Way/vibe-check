@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Literal, cast
 
+from vibe_check.constants import MAX_ERROR_MESSAGE_CHARS, SQLITE_TIMEOUT
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -45,7 +47,7 @@ class JobLedger:
         self._conn: sqlite3.Connection | None = None
 
     def __enter__(self) -> JobLedger:
-        self._conn = sqlite3.connect(self._path, timeout=30.0)
+        self._conn = sqlite3.connect(self._path, timeout=SQLITE_TIMEOUT)
         # Enable WAL mode for better concurrency/durability
         self._conn.execute("PRAGMA journal_mode=WAL;")
         self._conn.execute("PRAGMA synchronous=NORMAL;")
@@ -214,7 +216,7 @@ class JobLedger:
                     updated_at = ?
                 WHERE file_id = ?
                 """,
-                (error_code, error_message[:500], _utc_now_iso(), file_id),
+                (error_code, error_message[:MAX_ERROR_MESSAGE_CHARS], _utc_now_iso(), file_id),
             )
 
     def get_aggregated_tokens(self) -> dict[str, int]:

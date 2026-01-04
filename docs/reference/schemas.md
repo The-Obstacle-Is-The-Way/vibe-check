@@ -51,8 +51,12 @@ Preprocessed dialogue views.
 | `client_utterance_count` | `int` | Number of client turns |
 | `therapist_utterance_count` | `int` | Number of therapist turns |
 | `short_answer_count` | `int` | Client responses < 5 words |
+| `truncated_utterance_count` | `int` | Utterances truncated by caps |
+| `meta_text_removed_count` | `int` | Utterances with meta/noise removed |
+| `unknown_speaker_count` | `int` | Lines with non-(Therapist/Client) speaker labels |
+| `orphan_line_count` | `int` | Non-empty lines without an active speaker |
 | `has_empty_client_text` | `bool` | True if no client text |
-| `has_unknown_speaker` | `bool` | True if unknown speakers found |
+| `has_unknown_speaker` | `bool` | True if unknown speaker labels or orphan lines found |
 
 **Example**:
 
@@ -65,6 +69,10 @@ Preprocessed dialogue views.
   "client_utterance_count": 8,
   "therapist_utterance_count": 9,
   "short_answer_count": 2,
+  "truncated_utterance_count": 0,
+  "meta_text_removed_count": 0,
+  "unknown_speaker_count": 0,
+  "orphan_line_count": 0,
   "has_empty_client_text": false,
   "has_unknown_speaker": false
 }

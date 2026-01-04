@@ -21,6 +21,8 @@ from tenacity import (
     wait_exponential_jitter,
 )
 
+from vibe_check.constants import DEFAULT_RPM_FALLBACK
+
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
 
@@ -182,7 +184,7 @@ class ProviderRateLimiters:
             return self._rpm["anthropic"]
         if "gemini" in model_lower or model_lower.startswith("google"):
             return self._rpm["google"]
-        return 60  # Conservative default
+        return DEFAULT_RPM_FALLBACK  # Conservative default
 
 
 # Singleton instance for fake mode (no-op limiter)

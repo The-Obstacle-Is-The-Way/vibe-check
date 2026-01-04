@@ -1,6 +1,6 @@
 # SPEC-09: Human-in-the-Loop Calibration (Golden Set)
 
-**Status**: CONDITIONAL
+**Status**: IMPLEMENTED (Optional)
 **Slice Type**: Vertical (Validation Pipeline)
 **Dependencies**: SPEC-07 (Run Diagnostics), SPEC-08 (Export)
 **Priority**: CONDITIONAL (Only if SPEC-07 diagnostics fail)

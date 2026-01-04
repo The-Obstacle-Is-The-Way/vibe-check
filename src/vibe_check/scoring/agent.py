@@ -11,6 +11,7 @@ from vibe_check.scoring.prompting import build_juror_system_prompt
 
 if TYPE_CHECKING:
     from pydantic_ai.models import KnownModelName, Model
+    from pydantic_ai.settings import ModelSettings
 
 
 def build_juror_agent(
@@ -19,6 +20,7 @@ def build_juror_agent(
     prompt_version: str,
     view_name: str = "client_qa",
     instructions: str | None = None,
+    model_settings: ModelSettings | None = None,
     retries: int = 2,
 ) -> Agent[None, PHQ8Assessment]:
     """Build a PydanticAI agent configured for PHQ-8 juror scoring.
@@ -41,6 +43,7 @@ def build_juror_agent(
         model=model,
         output_type=PHQ8Assessment,
         retries=retries,
+        model_settings=model_settings,
         system_prompt=build_juror_system_prompt(
             prompt_version=prompt_version,
             view_name=view_name,

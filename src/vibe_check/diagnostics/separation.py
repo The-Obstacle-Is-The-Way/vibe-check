@@ -6,6 +6,8 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict
 from scipy import stats
 
+from vibe_check.constants import COHENS_D_MIN, P_VALUE_MAX
+
 
 class SeparationMetrics(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -52,7 +54,9 @@ def compute_condition_separation(
     cohens_d = (mdd_mean - control_mean) / pooled_std if pooled_std > 0 else 0.0
 
     t_stat, p_value = stats.ttest_ind(mdd_totals, control_totals, equal_var=False)
-    is_valid = (mdd_mean > control_mean) and (float(p_value) < 0.01) and (cohens_d >= 0.5)
+    is_valid = (
+        (mdd_mean > control_mean) and (float(p_value) < P_VALUE_MAX) and (cohens_d >= COHENS_D_MIN)
+    )
 
     return SeparationMetrics(
         mdd_mean=mdd_mean,

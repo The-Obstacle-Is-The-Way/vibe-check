@@ -42,23 +42,35 @@ All bugs in this directory have been **resolved**. Bug numbers are permanent ide
 | BUG-032 | [Judge token usage missing](bug-032-judge-token-usage-missing.md) | P3 | RESOLVED |
 | BUG-033 | [Resume run config mismatch](bug-033-resume-run-config-mismatch.md) | P3 | RESOLVED |
 | BUG-034 | [.env.example missing arbitration keys](bug-034-env-example-missing-arbitration-thresholds.md) | P4 | RESOLVED |
+| BUG-035 | [Sequential juror execution limits throughput](bug-035-sequential-juror-execution.md) | P2 | RESOLVED |
 | BUG-036 | [JudgeItemResolution.item not validated](bug-036-judge-item-name-not-validated.md) | P3 | RESOLVED |
 | BUG-037 | [Hardcoded arbitration parameters](bug-037-hardcoded-arbitration-params.md) | P4 | RESOLVED |
 | BUG-038 | [No API key validation before live run](bug-038-no-api-key-validation-before-live-run.md) | P4 | RESOLVED |
 | BUG-039 | [max_concurrency misleading for jurors](bug-039-max-concurrency-misleading-for-jurors.md) | P4 | RESOLVED |
+| BUG-040 | [Missing PHQ-8 clinical rubric in prompts](bug-040-missing-phq8-rubric-in-prompts.md) | P0 | RESOLVED |
+| BUG-041 | [Unused embedding_dialogue_view setting](bug-041-unused-embedding-dialogue-view-setting.md) | P3 | RESOLVED |
+| BUG-042 | [Silent utterance truncation in preprocessing](bug-042-silent-utterance-truncation.md) | P2 | RESOLVED |
+| BUG-043 | [Flag overloading hides data loss](bug-043-flag-overloading-hides-data-loss.md) | P2 | RESOLVED |
+| BUG-044 | [Over-parameterized score_corpus](bug-044-over-parameterized-score-corpus.md) | P4 | RESOLVED |
+| BUG-045 | [Sync judge in async graph](bug-045-sync-judge-in-async-graph.md) | P4 | RESOLVED |
+| BUG-046 | [No graph recursion limit](bug-046-no-graph-iteration-limit.md) | P3 | RESOLVED |
+| BUG-047 | [Bare pass statement in runner](bug-047-runner-bare-pass-statement.md) | P5 | RESOLVED |
+| BUG-048 | [No temperature control for LLM calls](bug-048-no-temperature-control-for-llm-calls.md) | P1 | RESOLVED |
+| BUG-049 | [Hardcoded diagnostic thresholds](bug-049-hardcoded-diagnostic-thresholds.md) | P3 | RESOLVED |
+| BUG-050 | [Remaining magic numbers](bug-050-remaining-magic-numbers.md) | P4 | RESOLVED |
 
 ---
 
 ## Statistics
 
-- **Total bugs**: 38
-- **Resolved/Fixed**: 38
+- **Total bugs**: 50
+- **Resolved/Fixed**: 50
 - **Open**: 0
 
 ---
 
 ## Next Bug Number
 
-When filing new bugs, use: **BUG-040**
+When filing new bugs, use: **BUG-051**
 
 Place new bugs in `docs/_bugs/` (not `_archive`). Move to archive when resolved.

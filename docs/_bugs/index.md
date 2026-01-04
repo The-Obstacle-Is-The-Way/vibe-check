@@ -4,7 +4,7 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
-| BUG-035 | P2 | open | [Sequential juror execution limits throughput](BUG-035-sequential-juror-execution.md) |
+| — | — | — | No active bugs |
 
 ---
 
@@ -12,6 +12,18 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
+| BUG-050 | P4 | resolved | [Remaining Magic Numbers in Codebase](../_archive/bugs/bug-050-remaining-magic-numbers.md) |
+| BUG-049 | P3 | resolved | [Hardcoded Diagnostic Thresholds](../_archive/bugs/bug-049-hardcoded-diagnostic-thresholds.md) |
+| BUG-048 | P1 | resolved | [No Temperature Control for LLM Calls](../_archive/bugs/bug-048-no-temperature-control-for-llm-calls.md) |
+| BUG-046 | P3 | resolved | [No Maximum Iteration Limit on LangGraph](../_archive/bugs/bug-046-no-graph-iteration-limit.md) |
+| BUG-045 | P4 | resolved | [Synchronous Judge Function in Async Graph](../_archive/bugs/bug-045-sync-judge-in-async-graph.md) |
+| BUG-044 | P4 | resolved | [Over-Parameterized `score_corpus_async()` Function](../_archive/bugs/bug-044-over-parameterized-score-corpus.md) |
+| BUG-043 | P2 | resolved | [Flag Overloading Hides Data Loss](../_archive/bugs/bug-043-flag-overloading-hides-data-loss.md) |
+| BUG-047 | P5 | resolved | [Bare `pass` Statement in Runner](../_archive/bugs/bug-047-runner-bare-pass-statement.md) |
+| BUG-042 | P2 | resolved | [Silent Utterance Truncation in Preprocessing](../_archive/bugs/bug-042-silent-utterance-truncation.md) |
+| BUG-041 | P3 | resolved | [Unused `embedding_dialogue_view` Setting (Dead Code)](../_archive/bugs/bug-041-unused-embedding-dialogue-view-setting.md) |
+| BUG-040 | P0 | resolved | [Missing PHQ-8 Clinical Rubric in System Prompts](../_archive/bugs/bug-040-missing-phq8-rubric-in-prompts.md) |
+| BUG-035 | P2 | resolved | [Sequential juror execution limits throughput](../_archive/bugs/bug-035-sequential-juror-execution.md) |
 | BUG-027 | P1 | resolved | [CLI `--prompt-version` / `--dialogue-view` can desync from live agent prompts](../_archive/bugs/bug-027-cli-prompt-version-view-mismatch.md) |
 | BUG-028 | P1 | resolved | [Live Gemini jurors env var mismatch](../_archive/bugs/bug-028-google-gla-env-var-mismatch.md) |
 | BUG-029 | P2 | resolved | [`vibe-check export --format csv` fails](../_archive/bugs/bug-029-export-csv-only-fails.md) |
@@ -36,15 +48,18 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 | BUG-001 to BUG-013 | 13 | Initial development bugs |
 | BUG-014 to BUG-026 | 13 | Post-implementation bug hunt |
 | BUG-027 to BUG-034 | 8 | CI/run/export hardening |
-| BUG-036 to BUG-039 | 4 | Validation and configuration hardening |
+| BUG-035 to BUG-039 | 5 | Validation and configuration hardening |
+| BUG-040 to BUG-041 | 2 | PHQ-8 rubric + config cleanup |
+| BUG-042 to BUG-042 | 1 | Preprocessing truncation audit |
+| BUG-043 to BUG-050 | 8 | Reproducibility + diagnostics + hygiene |
 
-**Total resolved**: 38 bugs
+**Total resolved**: 50 bugs
 
 ---
 
 ## Filing New Bugs
 
-1. Use the next available number: **BUG-040**
+1. Use the next available number: **BUG-051**
 2. Create file in this directory: `BUG-NNN-short-description.md`
 3. Include: Severity, Status, Date, Summary, Root Cause, Fix
 4. When resolved, move to `docs/_archive/bugs/`

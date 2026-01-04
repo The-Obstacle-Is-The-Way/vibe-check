@@ -21,6 +21,9 @@ def test_run_config_defaults_and_frozen(tmp_path: Path) -> None:
     assert cfg.dialogue_view == "client_qa"
     assert cfg.limit is None
     assert cfg.max_concurrency == 1
+    assert cfg.fail_fast is False
+    assert cfg.force is False
+    assert cfg.graph_recursion_limit == 25
 
     with pytest.raises(FrozenInstanceError):
         cast("Any", cfg).prompt_version = "v2"

@@ -129,7 +129,7 @@ Technical specifications and lookup tables.
 ```
 ┌─────────────┐     ┌─────────────────┐     ┌─────────────┐
 │  SQPsychConv│────▶│  Preprocessing  │────▶│    Jurors  │
-│   Corpus    │     │  (DialogueViews)│     │ (sequential)│
+│   Corpus    │     │  (DialogueViews)│     │  (parallel) │
 └─────────────┘     └─────────────────┘     └──────┬──────┘
                                                    │
                                                    ▼

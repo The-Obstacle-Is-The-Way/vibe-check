@@ -70,7 +70,7 @@ class DeterministicFakeJuror:
         return self.score(scoring_text)
 
 
-def deterministic_fake_judge_item(
+async def deterministic_fake_judge_item(
     scoring_text: str,
     item: str,
     juror_reports: list[PHQ8Report],

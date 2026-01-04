@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+if TYPE_CHECKING:
+    from pydantic_ai.settings import ModelSettings
 
 
 class Settings(BaseSettings):
@@ -27,6 +30,13 @@ class Settings(BaseSettings):
     juror_gemini_model: str = "gemini-3-pro-preview"
     judge_model: str = "claude-opus-4-5-20251101"
 
+    # LLM Inference Settings (research reproducibility)
+    llm_temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    llm_top_p: float = Field(default=1.0, ge=0.0, le=1.0)
+    llm_max_tokens: int = Field(default=2000, ge=1)
+    llm_timeout: float = Field(default=60.0, gt=0.0)
+    llm_seed: int | None = Field(default=None, ge=0)
+
     # Scoring Configuration
     runs_per_model: int = Field(default=2, ge=1, le=2)
     disagreement_range_threshold: int = 2
@@ -40,9 +50,6 @@ class Settings(BaseSettings):
 
     # Preprocessing
     scoring_dialogue_view: Literal["client_qa", "client_only"] = "client_qa"
-    embedding_dialogue_view: Literal["client_qa", "client_contextualized", "client_only"] = (
-        "client_qa"
-    )
 
     # Concurrency
     max_concurrent_dialogues: int = 50
@@ -59,12 +66,27 @@ class Settings(BaseSettings):
     retry_jitter: float = 5.0
     validation_retries: int = 2
 
+    # LangGraph Execution
+    graph_recursion_limit: int = Field(default=25, ge=1)
+
     # Checkpointing
     checkpoint_db: str = "sqlite:///data/checkpoints/vibe_check.db"
 
     # Output
     output_dir: str = "./data/outputs"
     prompt_version: str = "v1.0.0"
+
+    def pydantic_ai_model_settings(self) -> ModelSettings:
+        """Return PydanticAI ModelSettings for all LLM calls."""
+        model_settings: ModelSettings = {
+            "temperature": float(self.llm_temperature),
+            "top_p": float(self.llm_top_p),
+            "max_tokens": int(self.llm_max_tokens),
+            "timeout": float(self.llm_timeout),
+        }
+        if self.llm_seed is not None:
+            model_settings["seed"] = int(self.llm_seed)
+        return model_settings
 
     @model_validator(mode="after")
     def _validate_clinical_ambiguity_band(self) -> Settings:

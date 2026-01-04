@@ -222,6 +222,55 @@ vibe-check validate-export \
 
 ---
 
+### calibration
+
+Human-in-the-loop calibration utilities (optional; see SPEC-09).
+
+#### calibration sample
+
+Sample dialogue IDs from a completed run for manual annotation.
+
+```bash
+vibe-check calibration sample \
+    --scored <path> \
+    --n <int> \
+    --seed <int> \
+    --output <path>
+```
+
+| Argument | Description |
+|----------|-------------|
+| `--scored` | Path to `scored.jsonl` |
+| `--n` | Number of dialogues to sample |
+| `--seed` | Deterministic sampling seed |
+| `--output` | Path to write the CSV template |
+
+#### calibration evaluate
+
+Compute agreement metrics between system outputs and a filled human CSV.
+
+```bash
+vibe-check calibration evaluate \
+    --system <path> \
+    --human <path> \
+    --output <path>
+```
+
+| Argument | Description |
+|----------|-------------|
+| `--system` | Path to system `scored.jsonl` |
+| `--human` | Path to filled `golden_set.csv` |
+| `--output` | Path to write `calibration_report.json` |
+
+**Exit Codes**
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 2 | Safety gate failure (e.g., self-harm recall < 1.0 when evaluable) |
+
+---
+
 ## Global Exit Codes
 
 | Code | Meaning |

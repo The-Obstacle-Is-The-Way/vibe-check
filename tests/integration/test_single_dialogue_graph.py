@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING
 
 import pytest
@@ -54,7 +55,7 @@ async def test_graph_arbitration_branch_overrides_final_scores(tmp_path: Path) -
     reports = [create_mock_report(i, force_disagreement="sleep") for i in range(6)]
     jurors = [FakeJuror(r) for r in reports]
 
-    def judge(
+    async def judge(
         scoring_text: str,
         item: str,
         juror_reports: list[PHQ8Report],
@@ -82,7 +83,7 @@ async def test_graph_arbitration_branch_overrides_final_scores(tmp_path: Path) -
             checkpointer=saver,
             initial_state=_base_state(),
             thread_id="active82",
-            max_concurrency=1,
+            graph_max_concurrency=len(jurors),
         )
 
     final = out["final_output"]
@@ -109,7 +110,7 @@ async def test_graph_uses_async_juror_path(tmp_path: Path) -> None:
 
     jurors = [AsyncJuror(create_mock_report(i)) for i in range(6)]
 
-    def judge(
+    async def judge(
         _scoring_text: str,
         _item: str,
         _juror_reports: list[PHQ8Report],
@@ -127,7 +128,7 @@ async def test_graph_uses_async_juror_path(tmp_path: Path) -> None:
             checkpointer=saver,
             initial_state=_base_state(file_id="async1"),
             thread_id="async1",
-            max_concurrency=1,
+            graph_max_concurrency=len(jurors),
         )
 
     assert [j.calls for j in jurors] == [1, 1, 1, 1, 1, 1]
@@ -135,7 +136,92 @@ async def test_graph_uses_async_juror_path(tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_checkpoint_resume_does_not_repeat_completed_jurors(tmp_path: Path) -> None:
+async def test_graph_runs_jurors_in_parallel(tmp_path: Path) -> None:
+    class _Stats:
+        def __init__(self) -> None:
+            self.in_flight = 0
+            self.max_in_flight = 0
+
+    class BlockingJuror:
+        def __init__(
+            self,
+            report: PHQ8Report,
+            *,
+            started: asyncio.Event,
+            proceed: asyncio.Event,
+            stats: _Stats,
+        ) -> None:
+            self._report = report
+            self._started = started
+            self._proceed = proceed
+            self._stats = stats
+
+        def score(self, _text: str) -> PHQ8Report:
+            raise AssertionError("sync score() should not be called")
+
+        async def ascore(self, _text: str) -> PHQ8Report:
+            self._stats.in_flight += 1
+            self._stats.max_in_flight = max(self._stats.max_in_flight, self._stats.in_flight)
+            try:
+                self._started.set()
+                await self._proceed.wait()
+                return self._report
+            finally:
+                self._stats.in_flight -= 1
+
+    started_events = [asyncio.Event() for _ in range(6)]
+    proceed = asyncio.Event()
+    stats = _Stats()
+    reports = [create_mock_report(i) for i in range(6)]
+    jurors = [
+        BlockingJuror(r, started=started_events[idx], proceed=proceed, stats=stats)
+        for idx, r in enumerate(reports)
+    ]
+
+    async def judge(
+        _scoring_text: str,
+        _item: str,
+        _juror_reports: list[PHQ8Report],
+        _prompt_version: str,
+    ) -> JudgeItemReport:
+        raise AssertionError("judge should not be called for unanimous reports")
+
+    graph = build_single_dialogue_graph(jurors=jurors, judge_item=judge)
+    checkpoint_path = tmp_path / "parallel.sqlite"
+
+    async with open_async_sqlite_saver(checkpoint_path) as saver:
+        app = graph.compile(checkpointer=saver)
+        task = asyncio.create_task(
+            invoke_with_checkpoint_resume(
+                app,
+                checkpointer=saver,
+                initial_state=_base_state(file_id="parallel1"),
+                thread_id="parallel1",
+                graph_max_concurrency=len(jurors),
+            )
+        )
+
+        try:
+            await asyncio.wait_for(
+                asyncio.gather(*(ev.wait() for ev in started_events)),
+                timeout=2.0,
+            )
+        except TimeoutError:
+            task.cancel()
+            proceed.set()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+            raise
+        else:
+            proceed.set()
+            out = await task
+
+    assert stats.max_in_flight == 6
+    assert out["final_output"] is not None
+
+
+@pytest.mark.asyncio
+async def test_checkpoint_resume_does_not_duplicate_reports(tmp_path: Path) -> None:
     reports = [create_mock_report(i) for i in range(6)]
     jurors = [
         FakeJuror(reports[0]),
@@ -146,7 +232,7 @@ async def test_checkpoint_resume_does_not_repeat_completed_jurors(tmp_path: Path
         FakeJuror(reports[5]),
     ]
 
-    def judge(
+    async def judge(
         _scoring_text: str,
         _item: str,
         _juror_reports: list[PHQ8Report],
@@ -165,7 +251,7 @@ async def test_checkpoint_resume_does_not_repeat_completed_jurors(tmp_path: Path
                 checkpointer=saver,
                 initial_state=_base_state(file_id="resume1"),
                 thread_id="resume1",
-                max_concurrency=1,
+                graph_max_concurrency=len(jurors),
             )
 
         out = await invoke_with_checkpoint_resume(
@@ -173,8 +259,9 @@ async def test_checkpoint_resume_does_not_repeat_completed_jurors(tmp_path: Path
             checkpointer=saver,
             initial_state=_base_state(file_id="resume1"),
             thread_id="resume1",
-            max_concurrency=1,
+            graph_max_concurrency=len(jurors),
         )
 
     assert out["final_output"] is not None
-    assert [j.calls for j in jurors] == [1, 1, 2, 1, 1, 1]
+    assert len(out["jury_results"]) == 6
+    assert jurors[2].calls == 2

@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
+from vibe_check.run.config import RunConfig
 from vibe_check.run.factory import (
     build_fake_judge_item,
     build_fake_jury,
@@ -14,6 +16,9 @@ from vibe_check.run.factory import (
 )
 from vibe_check.run.runner import score_corpus
 from vibe_check.settings import Settings
+
+if TYPE_CHECKING:
+    from vibe_check.graph.single_dialogue import DialogueViewName
 
 
 def export_provider_api_keys(settings: Settings) -> None:
@@ -61,7 +66,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help=(
-            "Max concurrent dialogues to process (jurors run sequentially within each dialogue; "
+            "Max concurrent dialogues to process (jurors run in parallel within each dialogue; "
             "defaults to Settings.max_concurrent_dialogues)."
         ),
     )
@@ -97,6 +102,32 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate_export = sub.add_parser("validate-export", help="Validate a public export JSONL file.")
     validate_export.add_argument("--input", required=True, help="Path to vibe_check_labels.jsonl.")
+
+    calibration = sub.add_parser("calibration", help="Human-in-the-loop calibration tools.")
+    calibration_sub = calibration.add_subparsers(dest="calibration_command", required=True)
+
+    sample = calibration_sub.add_parser(
+        "sample",
+        help="Sample dialogues from scored.jsonl for human annotation.",
+    )
+    sample.add_argument("--scored", required=True, help="Path to scored.jsonl.")
+    sample.add_argument("--n", type=int, required=True, help="Number of dialogues to sample.")
+    sample.add_argument(
+        "--strategy",
+        choices=["hybrid"],
+        default="hybrid",
+        help="Sampling strategy (currently only hybrid is supported).",
+    )
+    sample.add_argument("--seed", type=int, default=0, help="Seed for deterministic sampling.")
+    sample.add_argument("--output", required=True, help="Path to write the CSV template.")
+
+    evaluate = calibration_sub.add_parser(
+        "evaluate",
+        help="Evaluate system outputs against a human-labeled golden set CSV.",
+    )
+    evaluate.add_argument("--system", required=True, help="Path to system scored.jsonl.")
+    evaluate.add_argument("--human", required=True, help="Path to human-labeled golden_set.csv.")
+    evaluate.add_argument("--output", required=True, help="Path to write calibration_report.json.")
     return parser
 
 
@@ -140,26 +171,31 @@ def main(argv: list[str] | None = None) -> int:
             jurors = build_fake_jury()
             judge_item = build_fake_judge_item()
 
-        score_corpus(
-            input_path=args.input,
+        run_config = RunConfig(
+            input_path=Path(args.input),
             output_dir=Path(args.output),
-            checkpoint_db=args.checkpoint,
-            jurors=jurors,
-            judge_item=judge_item,
+            checkpoint_db=str(args.checkpoint),
+            prompt_version=str(args.prompt_version),
+            dialogue_view=cast("DialogueViewName", args.dialogue_view),
             limit=args.limit,
-            prompt_version=args.prompt_version,
-            dialogue_view=args.dialogue_view,
             max_concurrency=max_concurrency,
-            force=args.force,
-            dirichlet_alpha=settings.dirichlet_alpha,
-            arbitration_total_std_threshold=settings.arbitration_total_std_threshold,
-            arbitration_max_prob_threshold=settings.arbitration_max_prob_threshold,
-            arbitration_entropy_threshold=settings.arbitration_entropy_threshold,
-            disagreement_range_threshold=settings.disagreement_range_threshold,
-            clinical_ambiguity_band_low=settings.clinical_ambiguity_band_low,
-            clinical_ambiguity_band_high=settings.clinical_ambiguity_band_high,
-            insufficient_evidence_threshold=settings.insufficient_evidence_threshold,
+            force=bool(args.force),
+            graph_recursion_limit=int(settings.graph_recursion_limit),
+            dirichlet_alpha=float(settings.dirichlet_alpha),
+            disagreement_range_threshold=int(settings.disagreement_range_threshold),
+            arbitration_total_std_threshold=float(settings.arbitration_total_std_threshold),
+            arbitration_max_prob_threshold=float(settings.arbitration_max_prob_threshold),
+            arbitration_entropy_threshold=float(settings.arbitration_entropy_threshold),
+            clinical_ambiguity_band_low=float(settings.clinical_ambiguity_band_low),
+            clinical_ambiguity_band_high=float(settings.clinical_ambiguity_band_high),
+            insufficient_evidence_threshold=int(settings.insufficient_evidence_threshold),
+            llm_temperature=float(settings.llm_temperature),
+            llm_top_p=float(settings.llm_top_p),
+            llm_max_tokens=int(settings.llm_max_tokens),
+            llm_timeout=float(settings.llm_timeout),
+            llm_seed=(int(settings.llm_seed) if settings.llm_seed is not None else None),
         )
+        score_corpus(config=run_config, jurors=jurors, judge_item=judge_item)
         return 0
 
     if args.command == "diagnostics":
@@ -207,6 +243,42 @@ def main(argv: list[str] | None = None) -> int:
             encoding="utf-8",
         )
         return 0 if validation_report.is_valid else 2
+
+    if args.command == "calibration":
+        from vibe_check.calibration.evaluate import (
+            evaluate_golden_set,
+            render_confusion_matrix_table,
+        )
+        from vibe_check.calibration.sample import sample_for_annotation
+
+        if args.calibration_command == "sample":
+            sample_for_annotation(
+                scored_jsonl=args.scored,
+                n=int(args.n),
+                output_csv=args.output,
+                strategy=str(args.strategy),
+                seed=int(args.seed),
+            )
+            return 0
+
+        if args.calibration_command == "evaluate":
+            calibration_report = evaluate_golden_set(
+                system_scored_jsonl=args.system,
+                human_csv=args.human,
+            )
+            Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+            Path(args.output).write_text(
+                calibration_report.model_dump_json(indent=2) + "\n",
+                encoding="utf-8",
+            )
+            print(render_confusion_matrix_table(calibration_report))
+
+            # Safety gate: if we have any human positives, missing any is a hard failure.
+            if calibration_report.self_harm_recall < 1.0:
+                return 2
+            return 0
+
+        raise AssertionError(f"Unknown calibration command: {args.calibration_command}")
 
     raise AssertionError(f"Unknown command: {args.command}")
 
