@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from vibe_check.constants import MAX_UTTERANCE_CHARS, MAX_UTTERANCE_WORDS
 from vibe_check.preprocessing.extractor import parse_utterances, preprocess_dialogue
 from vibe_check.schemas.input import SQPsychConvDialogue
 
@@ -96,3 +97,33 @@ def test_doublequote_meta_suffix_is_trimmed() -> None:
     views = preprocess_dialogue(dialogue)
     assert views.has_unknown_speaker is True
     assert views.client_only_text == "Hello?"
+
+
+def test_long_utterance_is_truncated_not_dropped() -> None:
+    too_many_words = "word " * (MAX_UTTERANCE_WORDS + 5)
+    dialogue = SQPsychConvDialogue(
+        file_id="test",
+        condition="mdd",
+        client_model="test",
+        therapist_model="test",
+        dialogue=f"Client: {too_many_words}",
+    )
+    views = preprocess_dialogue(dialogue)
+    assert views.client_utterance_count == 1
+    assert views.truncated_utterance_count == 1
+    assert 0 < len(views.client_only_text.split()) <= MAX_UTTERANCE_WORDS
+
+
+def test_long_utterance_char_cap_is_applied() -> None:
+    too_many_chars = "x" * (MAX_UTTERANCE_CHARS + 10)
+    dialogue = SQPsychConvDialogue(
+        file_id="test",
+        condition="mdd",
+        client_model="test",
+        therapist_model="test",
+        dialogue=f"Client: {too_many_chars}",
+    )
+    views = preprocess_dialogue(dialogue)
+    assert views.client_utterance_count == 1
+    assert views.truncated_utterance_count == 1
+    assert 0 < len(views.client_only_text) <= MAX_UTTERANCE_CHARS
