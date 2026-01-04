@@ -121,6 +121,7 @@ async def score_corpus_async(
         "dataset_fingerprint": dataset_fingerprint,
         "limit": limit,
         "prompt_version": prompt_version,
+        "phq8_rubric_hash": __import__("vibe_check.constants").constants.phq8_rubric_hash(),
         "dialogue_view": dialogue_view,
         "max_concurrency": max_concurrency,
         "dirichlet_alpha": dirichlet_alpha,
