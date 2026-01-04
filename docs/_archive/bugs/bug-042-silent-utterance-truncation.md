@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | P2 (Medium - Data Loss Risk) |
-| **Status** | open |
+| **Status** | resolved |
 | **Date** | 2026-01-04 |
 | **Component** | `preprocessing/extractor.py` |
 | **Impact** | Undetected data loss, scoring on incomplete dialogues |
@@ -12,17 +12,17 @@
 
 ## Summary
 
-The `_sanitize_utterance_text()` function silently drops utterances that exceed length thresholds (>4000 chars or >200 words). This data loss is hidden behind a generic `had_unknown` flag that conflates multiple unrelated conditions.
+The `_sanitize_utterance_text()` function previously dropped utterances that exceeded preprocessing caps (>4000 chars or >200 words). This resulted in silent data loss and scoring on incomplete text.
 
 ---
 
 ## Code Location
 
-`src/vibe_check/preprocessing/extractor.py:88-89`:
+Previous behavior (now fixed):
 
 ```python
-if len(cleaned) > 4000 or _word_count(cleaned) > 200:
-    return "", True  # ← Silently drops entire utterance
+if len(cleaned) > MAX_UTTERANCE_CHARS or _word_count(cleaned) > MAX_UTTERANCE_WORDS:
+    return "", True  # ← Dropped utterance (old behavior)
 ```
 
 ---
@@ -131,6 +131,12 @@ if len(cleaned) > MAX_UTTERANCE_CHARS:
 ```
 
 ---
+
+## Resolution (Implemented)
+
+- Introduced `MAX_UTTERANCE_CHARS` / `MAX_UTTERANCE_WORDS` constants.
+- Truncate over-limit utterances instead of dropping them.
+- Track `truncated_utterance_count` in `DialogueViews` and persist it in internal scoring outputs (`scored.jsonl` rows).
 
 ## Recommendation
 

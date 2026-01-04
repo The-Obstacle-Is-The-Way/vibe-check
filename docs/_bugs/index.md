@@ -4,7 +4,6 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
-| BUG-042 | P2 | open | [Silent Utterance Truncation in Preprocessing](BUG-042-silent-utterance-truncation.md) |
 | BUG-043 | P2 | open | [Flag Overloading Hides Data Loss](BUG-043-flag-overloading-hides-data-loss.md) |
 | BUG-044 | P4 | open | [Over-Parameterized `score_corpus_async()` Function](BUG-044-over-parameterized-score-corpus.md) |
 | BUG-045 | P4 | open | [Synchronous Judge Function in Async Graph](BUG-045-sync-judge-in-async-graph.md) |
@@ -17,6 +16,7 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
+| BUG-042 | P2 | resolved | [Silent Utterance Truncation in Preprocessing](../_archive/bugs/bug-042-silent-utterance-truncation.md) |
 | BUG-041 | P3 | resolved | [Unused `embedding_dialogue_view` Setting (Dead Code)](../_archive/bugs/bug-041-unused-embedding-dialogue-view-setting.md) |
 | BUG-040 | P0 | resolved | [Missing PHQ-8 Clinical Rubric in System Prompts](../_archive/bugs/bug-040-missing-phq8-rubric-in-prompts.md) |
 | BUG-035 | P2 | resolved | [Sequential juror execution limits throughput](../_archive/bugs/bug-035-sequential-juror-execution.md) |
@@ -46,8 +46,9 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 | BUG-027 to BUG-034 | 8 | CI/run/export hardening |
 | BUG-035 to BUG-039 | 5 | Validation and configuration hardening |
 | BUG-040 to BUG-041 | 2 | PHQ-8 rubric + config cleanup |
+| BUG-042 to BUG-042 | 1 | Preprocessing truncation audit |
 
-**Total resolved**: 41 bugs
+**Total resolved**: 42 bugs
 
 ---
 
