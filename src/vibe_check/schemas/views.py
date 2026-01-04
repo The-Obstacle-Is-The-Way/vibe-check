@@ -29,5 +29,11 @@ class DialogueViews(BaseModel):
         description="Count of very short client responses (<5 words)",
     )
 
+    truncated_utterance_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of utterances truncated by preprocessing caps",
+    )
+
     has_empty_client_text: bool = False
     has_unknown_speaker: bool = False

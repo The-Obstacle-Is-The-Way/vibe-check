@@ -47,7 +47,7 @@ class CorpusIntegrityReport(BaseModel):
 def _content_hashes(dialogues: Iterable[SQPsychConvDialogue]) -> dict[str, set[str]]:
     by_hash: dict[str, set[str]] = defaultdict(set)
     for d in dialogues:
-        utterances, _had_unknown = parse_utterances_with_diagnostics(d.dialogue)
+        utterances, _had_unknown, _truncated = parse_utterances_with_diagnostics(d.dialogue)
         clean = "\n".join(
             f"{speaker.title()}: {text}" for speaker, text in utterances if text.strip()
         ).strip()
@@ -78,7 +78,7 @@ def validate_corpus(dialogues: list[SQPsychConvDialogue]) -> CorpusIntegrityRepo
         split_counts[split] += 1
         condition_counts[d.condition] += 1
 
-        _utterances, had_unknown = parse_utterances_with_diagnostics(d.dialogue)
+        _utterances, had_unknown, _truncated = parse_utterances_with_diagnostics(d.dialogue)
         if had_unknown:
             unknown_speaker_count += 1
 

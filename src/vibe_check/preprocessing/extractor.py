@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Literal
 
+from vibe_check.constants import MAX_UTTERANCE_CHARS, MAX_UTTERANCE_WORDS
 from vibe_check.schemas.views import DialogueViews
 
 if TYPE_CHECKING:
@@ -17,21 +18,25 @@ _META_DOUBLEQUOTE_SUFFIX_RE = re.compile(
     re.IGNORECASE,
 )
 _BRACKETED_RE = re.compile(r"\[(?P<inner>[^\[\]]+)\]")
+_WORD_RE = re.compile(r"\S+")
 
 Speaker = Literal["therapist", "client"]
 
 
 def parse_utterances(dialogue_text: str) -> list[tuple[Speaker, str]]:
     """Parse dialogue into (speaker, text) tuples."""
-    utterances, _had_unknown = parse_utterances_with_diagnostics(dialogue_text)
+    utterances, _had_unknown, _truncated = parse_utterances_with_diagnostics(dialogue_text)
     return utterances
 
 
-def parse_utterances_with_diagnostics(dialogue_text: str) -> tuple[list[tuple[Speaker, str]], bool]:
+def parse_utterances_with_diagnostics(
+    dialogue_text: str,
+) -> tuple[list[tuple[Speaker, str]], bool, int]:
     utterances: list[tuple[Speaker, str]] = []
     current_speaker: Speaker | None = None
     current_lines: list[str] = []
     had_unknown = False
+    truncated_utterance_count = 0
 
     def _strip_bracketed_meta(text: str) -> tuple[str, bool]:
         """Remove long bracketed meta instructions while preserving short stage directions."""
@@ -73,33 +78,55 @@ def parse_utterances_with_diagnostics(dialogue_text: str) -> tuple[list[tuple[Sp
             return True
         return "conversation history" in lowered or "the user" in lowered
 
-    def _sanitize_utterance_text(text: str) -> tuple[str, bool]:
+    def _truncate_to_max_words(text: str, max_words: int) -> tuple[str, bool]:
+        if max_words < 1:
+            return "", True
+        matches = list(_WORD_RE.finditer(text))
+        if len(matches) <= max_words:
+            return text, False
+        end = matches[max_words - 1].end()
+        return text[:end].rstrip(), True
+
+    def _truncate_to_max_chars(text: str, max_chars: int) -> tuple[str, bool]:
+        if max_chars < 1:
+            return "", True
+        if len(text) <= max_chars:
+            return text, False
+        return text[:max_chars].rstrip(), True
+
+    def _sanitize_utterance_text(text: str) -> tuple[str, bool, bool]:
         """Strip obvious generation artifacts from speaker-labeled utterances."""
         cleaned, had_meta = _strip_bracketed_meta(text.strip())
         cleaned, truncated = _truncate_doublequote_suffix(cleaned)
         had_meta = had_meta or truncated
         cleaned = cleaned.strip()
         if not cleaned:
-            return "", had_meta
+            return "", had_meta, False
 
         if _looks_like_meta(cleaned):
-            return "", True
+            return "", True, False
 
-        if len(cleaned) > 4000 or _word_count(cleaned) > 200:
-            return "", True
+        word_truncated = False
+        char_truncated = False
+        if len(cleaned) > MAX_UTTERANCE_CHARS or _word_count(cleaned) > MAX_UTTERANCE_WORDS:
+            cleaned, word_truncated = _truncate_to_max_words(cleaned, MAX_UTTERANCE_WORDS)
+            cleaned, char_truncated = _truncate_to_max_chars(cleaned, MAX_UTTERANCE_CHARS)
+            had_meta = True
 
-        return cleaned, had_meta
+        return cleaned, had_meta, word_truncated or char_truncated
 
     def flush() -> None:
-        nonlocal current_speaker, current_lines, had_unknown
+        nonlocal current_speaker, current_lines, had_unknown, truncated_utterance_count
         if current_speaker is None:
             current_lines = []
             return
         text = "\n".join(current_lines).strip()
         if text:
-            cleaned, had_meta = _sanitize_utterance_text(text)
+            cleaned, had_meta, was_truncated = _sanitize_utterance_text(text)
             if had_meta:
                 had_unknown = True
+            if was_truncated:
+                truncated_utterance_count += 1
             if cleaned:
                 utterances.append((current_speaker, cleaned))
         current_speaker = None
@@ -132,7 +159,7 @@ def parse_utterances_with_diagnostics(dialogue_text: str) -> tuple[list[tuple[Sp
         current_lines.append(raw_line.strip())
 
     flush()
-    return utterances, had_unknown
+    return utterances, had_unknown, truncated_utterance_count
 
 
 def _word_count(text: str) -> int:
@@ -141,7 +168,9 @@ def _word_count(text: str) -> int:
 
 def preprocess_dialogue(dialogue: SQPsychConvDialogue) -> DialogueViews:
     """Extract all deterministic text views from a dialogue."""
-    utterances, had_unknown = parse_utterances_with_diagnostics(dialogue.dialogue)
+    utterances, had_unknown, truncated_utterance_count = parse_utterances_with_diagnostics(
+        dialogue.dialogue
+    )
 
     dialogue_clean_lines = [f"{speaker.title()}: {text}" for speaker, text in utterances]
     dialogue_clean = "\n".join(dialogue_clean_lines).strip()
@@ -177,6 +206,7 @@ def preprocess_dialogue(dialogue: SQPsychConvDialogue) -> DialogueViews:
         client_utterance_count=len(client_texts),
         therapist_utterance_count=len(therapist_texts),
         short_answer_count=short_answer_count,
+        truncated_utterance_count=truncated_utterance_count,
         has_empty_client_text=(len(client_texts) == 0 or not client_only_text),
         has_unknown_speaker=had_unknown,
     )

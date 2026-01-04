@@ -32,6 +32,10 @@ MAX_EVIDENCE_SNIPPET_WORDS = 50
 MAX_EVIDENCE_SNIPPET_CHARS = 400
 MAX_JUDGE_EVIDENCE_SNIPPETS = 10
 
+# Preprocessing caps (defensive against pathological utterances).
+MAX_UTTERANCE_WORDS = 200
+MAX_UTTERANCE_CHARS = 4000
+
 # PHQ-8 Clinical Rubric (for prompt embedding; see SPEC-11)
 PHQ8_TIME_FRAME: str = "Over the last 2 weeks"
 
