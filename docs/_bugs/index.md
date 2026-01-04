@@ -8,7 +8,6 @@
 | BUG-044 | P4 | open | [Over-Parameterized `score_corpus_async()` Function](BUG-044-over-parameterized-score-corpus.md) |
 | BUG-045 | P4 | open | [Synchronous Judge Function in Async Graph](BUG-045-sync-judge-in-async-graph.md) |
 | BUG-046 | P3 | open | [No Maximum Iteration Limit on LangGraph](BUG-046-no-graph-iteration-limit.md) |
-| BUG-047 | P5 | open | [Bare `pass` Statement in Runner](BUG-047-runner-bare-pass-statement.md) |
 
 ---
 
@@ -16,6 +15,7 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
+| BUG-047 | P5 | resolved | [Bare `pass` Statement in Runner](../_archive/bugs/bug-047-runner-bare-pass-statement.md) |
 | BUG-042 | P2 | resolved | [Silent Utterance Truncation in Preprocessing](../_archive/bugs/bug-042-silent-utterance-truncation.md) |
 | BUG-041 | P3 | resolved | [Unused `embedding_dialogue_view` Setting (Dead Code)](../_archive/bugs/bug-041-unused-embedding-dialogue-view-setting.md) |
 | BUG-040 | P0 | resolved | [Missing PHQ-8 Clinical Rubric in System Prompts](../_archive/bugs/bug-040-missing-phq8-rubric-in-prompts.md) |
@@ -47,8 +47,9 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 | BUG-035 to BUG-039 | 5 | Validation and configuration hardening |
 | BUG-040 to BUG-041 | 2 | PHQ-8 rubric + config cleanup |
 | BUG-042 to BUG-042 | 1 | Preprocessing truncation audit |
+| BUG-047 to BUG-047 | 1 | Runner hygiene |
 
-**Total resolved**: 42 bugs
+**Total resolved**: 43 bugs
 
 ---
 
