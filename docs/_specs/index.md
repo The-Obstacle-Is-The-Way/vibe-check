@@ -16,7 +16,7 @@
 
 | ID | Title | Status | Notes |
 |----|-------|--------|-------|
-| SPEC-09 | [Human Alignment](spec-09-human-alignment.md) | CONDITIONAL | Only if diagnostics fail |
+| SPEC-09 | [Human Alignment](spec-09-human-alignment.md) | IMPLEMENTED (Optional) | Use if diagnostics fail |
 | SPEC-10 | [Parallel Juror Execution](SPEC-10-parallel-juror-execution.md) | IMPLEMENTED | Performance (BUG-035) |
 | SPEC-11 | [PHQ-8 Rubric Embedding](SPEC-11-phq8-rubric-embedding.md) | IMPLEMENTED | Reproducibility + audit hash (BUG-040) |
 
