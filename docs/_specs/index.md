@@ -14,17 +14,13 @@
 
 ## Active Specs
 
-| ID | Title | Status | Notes |
-|----|-------|--------|-------|
-| SPEC-09 | [Human Alignment](spec-09-human-alignment.md) | IMPLEMENTED (Optional) | Use if diagnostics fail |
-| SPEC-10 | [Parallel Juror Execution](SPEC-10-parallel-juror-execution.md) | IMPLEMENTED | Performance (BUG-035) |
-| SPEC-11 | [PHQ-8 Rubric Embedding](SPEC-11-phq8-rubric-embedding.md) | IMPLEMENTED | Reproducibility + audit hash (BUG-040) |
+_No active specs. All specifications have been implemented and archived._
 
 ---
 
 ## Archived Specs (Implemented)
 
-All core specs are implemented and archived in [`../_archive/specs/`](../_archive/specs/).
+All specs are implemented and archived in [`../_archive/specs/`](../_archive/specs/).
 
 | ID | Title | Scope |
 |----|-------|-------|
@@ -36,12 +32,14 @@ All core specs are implemented and archived in [`../_archive/specs/`](../_archiv
 | SPEC-06 | [Batch Runner & Export](../_archive/specs/spec-06-batch-runner-and-export.md) | Batch processing, checkpointing |
 | SPEC-07 | [Run Diagnostics](../_archive/specs/spec-07-run-diagnostics.md) | Quality metrics, gates |
 | SPEC-08 | [Export Contract](../_archive/specs/spec-08-export-contract.md) | Public label format |
+| SPEC-09 | [Human Alignment](../_archive/specs/spec-09-human-alignment.md) | Calibration (conditional, if diagnostics fail) |
+| SPEC-10 | [Parallel Juror Execution](../_archive/specs/SPEC-10-parallel-juror-execution.md) | Performance optimization (BUG-035) |
+| SPEC-11 | [PHQ-8 Rubric Embedding](../_archive/specs/SPEC-11-phq8-rubric-embedding.md) | Clinical rubric in prompts (BUG-040) |
 
 ---
 
 ## Status
 
-- **Implemented (archived)**: 8 core specs
-- **Implemented (active)**: 1 (SPEC-10)
-- **Conditional**: 1 (SPEC-09)
-- **Ready for production run**: ✅ YES
+- **Total specs**: 11
+- **All implemented**: ✅ YES
+- **Ready for production run**: ⚠️ BLOCKED by [BUG-048](../_bugs/BUG-048-no-temperature-control-for-llm-calls.md) (temperature control)
