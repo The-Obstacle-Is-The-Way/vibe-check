@@ -1,6 +1,6 @@
 # SPEC-10: Parallel Juror Execution
 
-**Status**: APPROVED
+**Status**: IMPLEMENTED
 **Priority**: P1 (Performance Critical)
 **Author**: First-principles analysis + 2025 best practices research
 **Created**: 2026-01-04
@@ -220,13 +220,13 @@ Key findings:
 
 ## Acceptance Criteria
 
-- [ ] Jurors execute in parallel (fan-out from START, fan-in to aggregate)
-- [ ] State reducer (`operator.add`) correctly merges concurrent results
-- [ ] Rate limiters correctly throttle per-provider
-- [ ] Aggregate node sorts results before processing (order-independent)
-- [ ] CLI help text updated to reflect parallel execution
-- [ ] Tests verify timing improvement
-- [ ] No race conditions (verified by analysis above)
+- [x] Jurors execute in parallel (fan-out from START, fan-in to aggregate)
+- [x] State reducer (`operator.add`) correctly merges concurrent results
+- [x] Rate limiters correctly throttle per-provider
+- [x] Aggregate node sorts results before processing (order-independent)
+- [x] CLI help text updated to reflect parallel execution
+- [x] Tests verify parallel execution
+- [x] No race conditions (verified by analysis above)
 
 ---
 

@@ -1,7 +1,8 @@
 ---
 severity: P2
-status: open
+status: resolved
 opened_date: 2026-01-03
+resolved_date: 2026-01-04
 ---
 
 # BUG-035: Sequential Juror Execution Limits Throughput

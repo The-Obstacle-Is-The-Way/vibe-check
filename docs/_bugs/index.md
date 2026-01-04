@@ -4,7 +4,6 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
-| BUG-035 | P2 | open | [Sequential juror execution limits throughput](BUG-035-sequential-juror-execution.md) |
 
 ---
 
@@ -12,6 +11,7 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
+| BUG-035 | P2 | resolved | [Sequential juror execution limits throughput](../_archive/bugs/bug-035-sequential-juror-execution.md) |
 | BUG-027 | P1 | resolved | [CLI `--prompt-version` / `--dialogue-view` can desync from live agent prompts](../_archive/bugs/bug-027-cli-prompt-version-view-mismatch.md) |
 | BUG-028 | P1 | resolved | [Live Gemini jurors env var mismatch](../_archive/bugs/bug-028-google-gla-env-var-mismatch.md) |
 | BUG-029 | P2 | resolved | [`vibe-check export --format csv` fails](../_archive/bugs/bug-029-export-csv-only-fails.md) |
@@ -36,9 +36,9 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 | BUG-001 to BUG-013 | 13 | Initial development bugs |
 | BUG-014 to BUG-026 | 13 | Post-implementation bug hunt |
 | BUG-027 to BUG-034 | 8 | CI/run/export hardening |
-| BUG-036 to BUG-039 | 4 | Validation and configuration hardening |
+| BUG-035 to BUG-039 | 5 | Validation and configuration hardening |
 
-**Total resolved**: 38 bugs
+**Total resolved**: 39 bugs
 
 ---
 

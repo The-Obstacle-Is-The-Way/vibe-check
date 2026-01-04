@@ -17,6 +17,7 @@
 | ID | Title | Status | Notes |
 |----|-------|--------|-------|
 | SPEC-09 | [Human Alignment](spec-09-human-alignment.md) | CONDITIONAL | Only if diagnostics fail |
+| SPEC-10 | [Parallel Juror Execution](SPEC-10-parallel-juror-execution.md) | IMPLEMENTED | Performance (BUG-035) |
 
 ---
 
@@ -40,5 +41,6 @@ All core specs are implemented and archived in [`../_archive/specs/`](../_archiv
 ## Status
 
 - **Implemented (archived)**: 8 core specs
+- **Implemented (active)**: 1 (SPEC-10)
 - **Conditional**: 1 (SPEC-09)
 - **Ready for production run**: ✅ YES

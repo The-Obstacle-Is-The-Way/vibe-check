@@ -42,6 +42,7 @@ All bugs in this directory have been **resolved**. Bug numbers are permanent ide
 | BUG-032 | [Judge token usage missing](bug-032-judge-token-usage-missing.md) | P3 | RESOLVED |
 | BUG-033 | [Resume run config mismatch](bug-033-resume-run-config-mismatch.md) | P3 | RESOLVED |
 | BUG-034 | [.env.example missing arbitration keys](bug-034-env-example-missing-arbitration-thresholds.md) | P4 | RESOLVED |
+| BUG-035 | [Sequential juror execution limits throughput](bug-035-sequential-juror-execution.md) | P2 | RESOLVED |
 | BUG-036 | [JudgeItemResolution.item not validated](bug-036-judge-item-name-not-validated.md) | P3 | RESOLVED |
 | BUG-037 | [Hardcoded arbitration parameters](bug-037-hardcoded-arbitration-params.md) | P4 | RESOLVED |
 | BUG-038 | [No API key validation before live run](bug-038-no-api-key-validation-before-live-run.md) | P4 | RESOLVED |
@@ -51,8 +52,8 @@ All bugs in this directory have been **resolved**. Bug numbers are permanent ide
 
 ## Statistics
 
-- **Total bugs**: 38
-- **Resolved/Fixed**: 38
+- **Total bugs**: 39
+- **Resolved/Fixed**: 39
 - **Open**: 0
 
 ---
