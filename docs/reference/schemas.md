@@ -253,6 +253,7 @@ Final aggregated output.
 | `self_harm_evidence` | `list[str]` | Combined evidence |
 | `juror_reports` | `list[PHQ8Report]` | All 6 reports |
 | `judge_resolution` | `dict \| None` | Judge decisions |
+| `judge_usage` | `TokenUsage \| None` | Aggregated judge token usage |
 | `prompt_version` | `str` | Prompt version |
 | `scored_at` | `datetime` | Timestamp |
 
