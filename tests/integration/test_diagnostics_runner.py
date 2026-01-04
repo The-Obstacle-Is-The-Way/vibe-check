@@ -88,3 +88,55 @@ def test_run_diagnostics_compute_passes_on_clean_synthetic_run(tmp_path: Path) -
     assert report.cronbach_alpha >= 0.70
     assert report.mdd_mean_total > report.control_mean_total
     assert report.arbitration_rate < 0.30
+
+
+def test_run_diagnostics_raises_on_empty_scored_jsonl(tmp_path: Path) -> None:
+    scored_path = tmp_path / "scored.jsonl"
+    scored_path.write_text("\n", encoding="utf-8")
+
+    diagnostics = RunDiagnostics(scored_jsonl=scored_path)
+    try:
+        diagnostics.compute()
+    except ValueError as e:
+        assert "contains no rows" in str(e)
+    else:
+        raise AssertionError("expected ValueError for empty scored_jsonl")
+
+
+def test_run_diagnostics_raises_on_inconsistent_juror_count(tmp_path: Path) -> None:
+    scored_path = tmp_path / "scored.jsonl"
+
+    model_ids = [
+        ("gpt-5.2", 1),
+        ("gpt-5.2", 2),
+        ("claude-sonnet-4-5-20250929", 1),
+        ("claude-sonnet-4-5-20250929", 2),
+        ("gemini-3-pro-preview", 1),
+        ("gemini-3-pro-preview", 2),
+    ]
+
+    reports = [
+        _make_uniform_report(model_id=model_id, run_number=run_number, score=1)
+        for model_id, run_number in model_ids
+    ]
+
+    row_a = aggregate_reports(
+        reports,
+        file_id="dialogue_0001",
+        condition="control",
+        prompt_version="v1",
+    )
+    row_b = row_a.model_copy(update={"file_id": "dialogue_0002", "juror_reports": reports[:-1]})
+
+    rows = [row_a.model_dump(mode="json"), row_b.model_dump(mode="json")]
+    scored_path.write_text(
+        "\n".join(json.dumps(r, sort_keys=True) for r in rows) + "\n", encoding="utf-8"
+    )
+
+    diagnostics = RunDiagnostics(scored_jsonl=scored_path)
+    try:
+        diagnostics.compute()
+    except ValueError as e:
+        assert "inconsistent juror count" in str(e)
+    else:
+        raise AssertionError("expected ValueError for inconsistent juror count")

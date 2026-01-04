@@ -38,3 +38,15 @@ def test_ledger_attempts_increment_on_each_run(tmp_path: Path) -> None:
         ledger.mark_failed("x", error_code="boom", error_message="x")
         ledger.mark_running("x")
         assert ledger.get_attempts("x") == 2
+
+
+def test_ledger_reset_running_items_reverts_to_pending(tmp_path: Path) -> None:
+    db_path = tmp_path / "ledger.sqlite"
+    with JobLedger(db_path) as ledger:
+        ledger.initialize(["a"])
+        ledger.mark_running("a")
+        assert ledger.get_status("a") == "running"
+
+    with JobLedger(db_path) as ledger:
+        assert ledger.reset_running_items() == 1
+        assert ledger.get_status("a") == "pending"
