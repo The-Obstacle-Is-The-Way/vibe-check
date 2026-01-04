@@ -38,7 +38,9 @@ def test_juror_scorer_end_to_end_with_testmodel() -> None:
 
 
 @pytest.mark.asyncio
-async def test_juror_scorer_ascore_retries_transient_errors_and_rate_limits() -> None:
+async def test_juror_scorer_ascore_retries_transient_errors_and_rate_limits(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     fixture_path = Path("tests/fixtures/juror_outputs/juror_ok.json")
     raw = json.loads(fixture_path.read_text(encoding="utf-8"))
 
@@ -90,12 +92,8 @@ async def test_juror_scorer_ascore_retries_transient_errors_and_rate_limits() ->
             raise TimeoutError("transient")
         return await original_run(scoring_text)
 
-    monkeypatch = pytest.MonkeyPatch()
     monkeypatch.setattr(agent, "run", flaky_run)
-    try:
-        report = await scorer.ascore("Client: I'm tired.\nTherapist: Tell me more.")
-    finally:
-        monkeypatch.undo()
+    report = await scorer.ascore("Client: I'm tired.\nTherapist: Tell me more.")
 
     assert calls == 2
     assert limiter.entered == 1

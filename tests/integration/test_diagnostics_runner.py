@@ -4,6 +4,8 @@ import json
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Literal
 
+import pytest
+
 from vibe_check.aggregation.aggregate import aggregate_reports
 from vibe_check.constants import PHQ8_ITEMS
 from vibe_check.diagnostics import RunDiagnostics
@@ -95,12 +97,8 @@ def test_run_diagnostics_raises_on_empty_scored_jsonl(tmp_path: Path) -> None:
     scored_path.write_text("\n", encoding="utf-8")
 
     diagnostics = RunDiagnostics(scored_jsonl=scored_path)
-    try:
+    with pytest.raises(ValueError, match="contains no rows"):
         diagnostics.compute()
-    except ValueError as e:
-        assert "contains no rows" in str(e)
-    else:
-        raise AssertionError("expected ValueError for empty scored_jsonl")
 
 
 def test_run_diagnostics_raises_on_inconsistent_juror_count(tmp_path: Path) -> None:
@@ -134,9 +132,5 @@ def test_run_diagnostics_raises_on_inconsistent_juror_count(tmp_path: Path) -> N
     )
 
     diagnostics = RunDiagnostics(scored_jsonl=scored_path)
-    try:
+    with pytest.raises(ValueError, match="inconsistent juror count"):
         diagnostics.compute()
-    except ValueError as e:
-        assert "inconsistent juror count" in str(e)
-    else:
-        raise AssertionError("expected ValueError for inconsistent juror count")
