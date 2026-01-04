@@ -195,6 +195,19 @@ See **SPEC-11: PHQ-8 Rubric Embedding** for implementation details.
 
 ---
 
+## Terminology Note
+
+**"Embedding" in this bug refers to prompt embedding** (including text directly in the prompt), NOT vector embeddings (numerical ML representations for RAG).
+
+Vector embeddings are unnecessary for the PHQ-8 rubric because:
+- Only 8 fixed items (~200 tokens)
+- Static content that never changes
+- Direct inclusion guarantees 100% accuracy (no retrieval errors)
+
+See SPEC-11 for full design decision rationale and future vector embedding recommendations.
+
+---
+
 ## Related
 
 - [SPEC-11: PHQ-8 Rubric Embedding](../_specs/SPEC-11-phq8-rubric-embedding.md)

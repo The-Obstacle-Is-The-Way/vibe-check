@@ -393,6 +393,85 @@ This is a **prompt version change**. After implementation:
 
 ---
 
+## Design Decision: Prompt Embedding vs Vector Embeddings
+
+### Clarification of Terminology
+
+- **"Prompt embedding"** = Including text directly in the LLM prompt (what this spec proposes)
+- **"Vector embeddings"** = Numerical ML representations for semantic search/RAG
+
+### Why Prompt Embedding (Not Vector RAG)?
+
+For the PHQ-8 rubric specifically, **direct prompt embedding is the correct choice**:
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **Direct Prompt Embedding ✓** | 100% deterministic, no retrieval errors, simple | Slightly larger prompts (~200 tokens) |
+| **Vector RAG** | Good for large/dynamic knowledge bases | Overkill for 8 fixed items, adds complexity |
+
+**Decision**: The PHQ-8 rubric is small (8 items, ~200 tokens) and static. Direct prompt embedding guarantees the rubric is always correctly provided to the LLM with no retrieval failures.
+
+### Where Vector Embeddings ARE Useful (Future)
+
+Vector embeddings may be valuable for other vibe-check use cases (future scope):
+
+| Use Case | Embedding Model Recommendation (2025) |
+|----------|---------------------------------------|
+| Dialogue similarity search | **Voyage-3-large** (best retrieval, $0.06-0.18/M tokens) |
+| Evidence clustering | **text-embedding-3-large** (OpenAI, $0.13/M tokens) |
+| Multilingual sessions | **Gemini Embedding** (100+ languages, free tier) |
+
+### Current State: `embedding_dialogue_view` Setting
+
+The codebase has a placeholder setting in `settings.py`:
+
+```python
+embedding_dialogue_view: Literal["client_qa", "client_contextualized", "client_only"] = "client_qa"
+```
+
+**Status**: Setting exists but NO implementation code. This is a **future enhancement**, not a critical gap.
+
+**Current flow** (no vector embeddings):
+```
+Dialogue → Preprocess → Full view to LLM → PHQ-8 scores
+```
+
+**Future flow** (with vector embeddings):
+```
+Dialogue → Preprocess → Embed → Store in vector DB
+                    ↓
+Query → Retrieve similar → Compare/analyze
+```
+
+### When to Implement Dialogue Embeddings (Future SPEC)
+
+Implement if ANY of these become true:
+
+1. **Corpus scale**: >10,000 dialogues needing similarity search
+2. **Long dialogues**: Sessions >4000 tokens where RAG would help jurors find evidence
+3. **Research needs**: Finding similar cases, clustering by symptom patterns
+4. **Multi-session tracking**: Same client over time needs embedding-based continuity
+
+**Recommendation**: Create a separate SPEC-12 when these needs arise. For now, focus on BUG-040 (critical).
+
+#### Best Embedding APIs (2025-2026 Research)
+
+| Provider | Model | MTEB Score | Cost | Notes |
+|----------|-------|-----------|------|-------|
+| **Voyage AI** | voyage-3-large | Top-tier | $0.06-0.18/M | Anthropic recommended partner |
+| **Mistral** | mistral-embed | 77.8% acc | Moderate | Best raw accuracy |
+| **OpenAI** | text-embedding-3-large | Good | $0.13/M | 3072 dimensions |
+| **Google** | gemini-embedding-001 | Good | Free tier | Best value for small teams |
+| **NVIDIA** | NV-Embed | 69.32 MTEB | Enterprise | Best for on-prem |
+
+**Sources**:
+- [Embedding Models: OpenAI vs Gemini vs Cohere 2026](https://research.aimultiple.com/embedding-models/)
+- [Top Embedding Models 2026](https://artsmart.ai/blog/top-embedding-models-in-2025/)
+- [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard)
+- [Google Gemini Embedding](https://techcrunch.com/2025/03/07/google-debuts-a-new-gemini-based-text-embedding-model/)
+
+---
+
 ## Related
 
 - [BUG-040: Missing PHQ-8 Rubric in Prompts](../_bugs/BUG-040-missing-phq8-rubric-in-prompts.md)
