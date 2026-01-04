@@ -177,7 +177,7 @@ cat data/outputs/run_manifest.json | python -m json.tool
 
 ### Limit Concurrency
 
-The `--max-concurrency` flag controls how many dialogues are processed concurrently. Within each dialogue, jurors run sequentially (default: 6 jurors = 6 sequential API calls per dialogue).
+The `--max-concurrency` flag controls how many dialogues are processed concurrently. Within each dialogue, jurors run in parallel (default: 6 jurors = up to 6 concurrent API calls per dialogue, rate-limited per provider).
 
 ```bash
 uv run vibe-check score-corpus \

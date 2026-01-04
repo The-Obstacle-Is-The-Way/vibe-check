@@ -59,21 +59,12 @@ Each juror independently:
 │                                                                │
 │  Dialogue Text (client_qa view)                                │
 │         │                                                      │
-│         ▼                                                      │
-│     ┌──────┐                                                   │
-│     │GPT-1 │                                                   │
-│     └──┬───┘                                                   │
-│        ▼                                                       │
-│    PHQ8Report                                                  │
-│         │                                                      │
-│         ▼                                                      │
-│     ┌──────┐                                                   │
-│     │GPT-2 │                                                   │
-│     └──┬───┘                                                   │
-│        ▼                                                       │
-│    PHQ8Report                                                  │
-│         │                                                      │
-│        ... (CLD-1, CLD-2, GEM-1, GEM-2)                        │
+│         ├──────▶ GPT-1 ───▶ PHQ8Report                          │
+│         ├──────▶ GPT-2 ───▶ PHQ8Report                          │
+│         ├──────▶ CLD-1 ───▶ PHQ8Report                          │
+│         ├──────▶ CLD-2 ───▶ PHQ8Report                          │
+│         ├──────▶ GEM-1 ───▶ PHQ8Report                          │
+│         └──────▶ GEM-2 ───▶ PHQ8Report                          │
 │                                                                │
 │    All juror reports collected → Aggregation                   │
 │                                                                │
@@ -87,7 +78,7 @@ Each juror independently:
 Jurors operate with strict independence:
 
 - **No cross-talk**: Jurors don't see other jurors' outputs
-- **Execution order**: Jurors run sequentially per dialogue in the current LangGraph
+- **Execution order**: Jurors run in parallel per dialogue in the current LangGraph
 - **Identical input**: Same preprocessed text for all jurors
 - **Same system prompt**: All jurors share the same juror system prompt (same `prompt_version` + `view_name`)
 

@@ -162,4 +162,4 @@ def test_cli_score_corpus_help_clarifies_max_concurrency_scope(
     help_text = capsys.readouterr().out
     assert "--max-concurrency" in help_text
     normalized = " ".join(help_text.lower().split())
-    assert "jurors run sequentially" in normalized
+    assert "jurors run in parallel" in normalized

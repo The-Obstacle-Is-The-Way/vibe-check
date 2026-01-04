@@ -31,7 +31,7 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 │  │     │       │       │       │       │       │           │    │
 │  │     └───────┴───────┴───┬───┴───────┴───────┘           │    │
 │  │                         │                               │    │
-│  │              N PHQ8Reports (sequential)                 │    │
+│  │               N PHQ8Reports (parallel)                  │    │
 │  │                                                         │    │
 │  │  Each juror independently scores all 8 PHQ-8 items      │    │
 │  │  with confidence ratings and evidence extraction        │    │

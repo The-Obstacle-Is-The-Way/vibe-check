@@ -12,37 +12,13 @@ vibe-check uses LangGraph to orchestrate the single-dialogue scoring workflow. T
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  START                                                      │
-│    │                                                        │
-│    ▼                                                        │
-│  ┌────────────┐                                             │
-│  │ juror_1    │──▶ PHQ8Report → jury_results               │
-│  └────────────┘                                             │
-│    │                                                        │
-│    ▼                                                        │
-│  ┌────────────┐                                             │
-│  │ juror_2    │──▶ PHQ8Report → jury_results               │
-│  └────────────┘                                             │
-│    │                                                        │
-│    ▼                                                        │
-│  ┌────────────┐                                             │
-│  │ juror_3    │──▶ PHQ8Report → jury_results               │
-│  └────────────┘                                             │
-│    │                                                        │
-│    ▼                                                        │
-│  ┌────────────┐                                             │
-│  │ juror_4    │──▶ PHQ8Report → jury_results               │
-│  └────────────┘                                             │
-│    │                                                        │
-│    ▼                                                        │
-│  ┌────────────┐                                             │
-│  │ juror_5    │──▶ PHQ8Report → jury_results               │
-│  └────────────┘                                             │
-│    │                                                        │
-│    ▼                                                        │
-│  ┌────────────┐                                             │
-│  │ juror_6    │──▶ PHQ8Report → jury_results               │
-│  └────────────┘                                             │
-│    │                                                        │
+│    ├──────────────▶ juror_1 ─┐                               │
+│    ├──────────────▶ juror_2 ─┤                               │
+│    ├──────────────▶ juror_3 ─┤                               │
+│    ├──────────────▶ juror_4 ─┤──▶ (PHQ8Report → jury_results) │
+│    ├──────────────▶ juror_5 ─┤                               │
+│    └──────────────▶ juror_6 ─┘                               │
+│                                                             │
 │    ▼                                                        │
 │  ┌────────────┐                                             │
 │  │ aggregate  │──▶ AggregatedPHQ8 + needs_arbitration       │
@@ -249,7 +225,7 @@ async with open_async_sqlite_saver(checkpoint_path) as saver:
 Each dialogue uses its `file_id` as the thread ID:
 
 ```python
-config = {"configurable": {"thread_id": file_id}, "max_concurrency": max_concurrency}
+config = {"configurable": {"thread_id": file_id}}
 ```
 
 This ensures:

@@ -61,7 +61,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help=(
-            "Max concurrent dialogues to process (jurors run sequentially within each dialogue; "
+            "Max concurrent dialogues to process (jurors run in parallel within each dialogue; "
             "defaults to Settings.max_concurrent_dialogues)."
         ),
     )
