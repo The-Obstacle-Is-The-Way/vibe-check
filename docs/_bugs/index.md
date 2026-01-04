@@ -2,7 +2,13 @@
 
 ## Active Bugs
 
-No open bugs.
+| ID | Severity | Status | Title |
+|----|----------|--------|-------|
+| BUG-035 | P2 | open | [Sequential juror execution limits throughput](BUG-035-sequential-juror-execution.md) |
+| BUG-036 | P3 | open | [JudgeItemResolution.item not validated against PHQ8_ITEMS](BUG-036-judge-item-name-not-validated.md) |
+| BUG-037 | P4 | open | [Arbitration parameters hardcoded in disagreement.py](BUG-037-hardcoded-arbitration-params.md) |
+| BUG-038 | P4 | open | [No API key validation before live run](BUG-038-no-api-key-validation-before-live-run.md) |
+| BUG-039 | P4 | open | [max_concurrency parameter misleading for jurors](BUG-039-max-concurrency-misleading-for-jurors.md) |
 
 ---
 
@@ -37,7 +43,7 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 
 ## Filing New Bugs
 
-1. Use the next available number: **BUG-035**
+1. Use the next available number: **BUG-040**
 2. Create file in this directory: `BUG-NNN-short-description.md`
 3. Include: Severity, Status, Date, Summary, Root Cause, Fix
 4. When resolved, move to `docs/_archive/bugs/`
