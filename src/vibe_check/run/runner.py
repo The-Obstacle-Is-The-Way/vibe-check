@@ -217,11 +217,7 @@ async def score_corpus_async(
 
     with JobLedger(ledger_path) as ledger:
         ledger.initialize([d.file_id for d in corpus])
-        reset_count = ledger.reset_running_items()
-        if reset_count > 0:
-            # We don't have a logger here yet, but it's fine.
-            # Could print or just rely on the fact it's handled.
-            pass
+        ledger.reset_running_items()
 
         async with open_async_sqlite_saver(checkpoint_path) as saver:
             app = graph.compile(checkpointer=saver)

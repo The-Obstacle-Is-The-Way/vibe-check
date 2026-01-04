@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | P5 (Trivial - Code Smell) |
-| **Status** | open |
+| **Status** | resolved |
 | **Date** | 2026-01-04 |
 | **Component** | `run/runner.py` |
 | **Impact** | Code clarity, maintainability |
@@ -87,3 +87,9 @@ manifest["reset_from_previous_run"] = reset_count
 1. Add logger to `runner.py`
 2. Replace `pass` with `logger.info()`
 3. Verify log message appears when resuming interrupted run
+
+---
+
+## Resolution (Implemented)
+
+Removed the `if reset_count > 0: ... pass` block and always call `ledger.reset_running_items()` directly.
