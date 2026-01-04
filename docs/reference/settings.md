@@ -90,7 +90,6 @@ How dialogues are prepared for scoring.
 | Field | Env Variable | Type | Default | Description |
 |-------|--------------|------|---------|-------------|
 | `scoring_dialogue_view` | `SCORING_DIALOGUE_VIEW` | `Literal["client_qa", "client_only"]` | `client_qa` | View for PHQ-8 scoring |
-| `embedding_dialogue_view` | `EMBEDDING_DIALOGUE_VIEW` | `Literal["client_qa", "client_contextualized", "client_only"]` | `client_qa` | View for embeddings |
 
 **Options**:
 
@@ -98,7 +97,6 @@ How dialogues are prepared for scoring.
 |------|-------------|
 | `client_qa` | Client text + therapist questions (recommended) |
 | `client_only` | Client text only |
-| `client_contextualized` | Client text with surrounding context |
 
 ---
 

@@ -35,7 +35,6 @@ def _clear_settings_env(monkeypatch: MonkeyPatch) -> None:
         "INSUFFICIENT_EVIDENCE_THRESHOLD",
         "DIRICHLET_ALPHA",
         "SCORING_DIALOGUE_VIEW",
-        "EMBEDDING_DIALOGUE_VIEW",
         "MAX_CONCURRENT_DIALOGUES",
         "OPENAI_RPM",
         "ANTHROPIC_RPM",

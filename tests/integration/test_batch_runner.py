@@ -8,6 +8,7 @@ import pytest
 from tests.fixtures.hf_disk_dataset import write_sqpsychconv_like_dataset
 from tests.fixtures.sample_votes import create_mock_report
 
+from vibe_check.constants import phq8_rubric_hash
 from vibe_check.run.factory import build_fake_judge_item
 from vibe_check.run.ledger import JobLedger
 from vibe_check.run.runner import score_corpus
@@ -74,6 +75,9 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
         attempts_before = {file_id: ledger.get_attempts(file_id) for file_id in ledger.list_all()}
 
     manifest_1 = json.loads(manifest_path.read_text(encoding="utf-8"))
+    expected_hash = phq8_rubric_hash()
+    assert manifest_1["phq8_rubric_hash"] == expected_hash
+    assert manifest_1["run_config"]["phq8_rubric_hash"] == expected_hash
     assert manifest_1["arbitration_rate"] > 0.0
 
     score_corpus(

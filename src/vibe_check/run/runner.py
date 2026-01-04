@@ -9,6 +9,7 @@ import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from vibe_check.constants import phq8_rubric_hash
 from vibe_check.data import load_corpus, preprocess_dialogue
 from vibe_check.graph.single_dialogue import (
     build_single_dialogue_graph,
@@ -121,7 +122,7 @@ async def score_corpus_async(
         "dataset_fingerprint": dataset_fingerprint,
         "limit": limit,
         "prompt_version": prompt_version,
-        "phq8_rubric_hash": __import__("vibe_check.constants").constants.phq8_rubric_hash(),
+        "phq8_rubric_hash": phq8_rubric_hash(),
         "dialogue_view": dialogue_view,
         "max_concurrency": max_concurrency,
         "dirichlet_alpha": dirichlet_alpha,
@@ -343,6 +344,7 @@ async def score_corpus_async(
                 "counts_by_split": split_counts,
                 "token_usage_totals": aggregated_tokens,
                 "run_fingerprint": run_fingerprint,
+                "phq8_rubric_hash": run_config["phq8_rubric_hash"],
                 "run_config": run_config,
             }
             write_run_manifest(output_dir, manifest)

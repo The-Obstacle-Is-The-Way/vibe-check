@@ -40,9 +40,6 @@ class Settings(BaseSettings):
 
     # Preprocessing
     scoring_dialogue_view: Literal["client_qa", "client_only"] = "client_qa"
-    embedding_dialogue_view: Literal["client_qa", "client_contextualized", "client_only"] = (
-        "client_qa"
-    )
 
     # Concurrency
     max_concurrent_dialogues: int = 50
