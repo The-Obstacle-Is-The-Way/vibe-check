@@ -127,12 +127,12 @@ class PHQ8ItemScore(BaseModel):
 
 ## Stage 4: Aggregation
 
-**Input**: `list[PHQ8Report]` (6 reports)
+**Input**: `list[PHQ8Report]` (default: 6 reports)
 
 **Output**: `AggregatedPHQ8`
 
 ```
-6 × PHQ8Report
+N × PHQ8Report (default: 6)
       │
       ▼
 aggregate_reports()
