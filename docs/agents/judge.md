@@ -150,6 +150,13 @@ class JudgeItemResolution(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
     rationale: str = Field(min_length=1)
 
+    @field_validator("item")
+    @classmethod
+    def _validate_item_name(cls, v: str) -> str:
+        if v not in PHQ8_ITEMS:
+            raise ValueError(f"item must be one of {PHQ8_ITEMS}, got {v!r}")
+        return v
+
 
 class JudgeItemReport(JudgeItemResolution):
     """Judge decision plus token usage metadata."""
@@ -160,6 +167,7 @@ class JudgeItemReport(JudgeItemResolution):
 Key constraints:
 
 - `extra="forbid"` - No extra fields allowed
+- `item` - Must be a valid PHQ-8 item name (validated against `PHQ8_ITEMS`)
 - `final_score` - Must be exactly 0, 1, 2, or 3
 - `confidence` - Must be between 0.0 and 1.0
 - `rationale` - Must be non-empty (requires explanation)

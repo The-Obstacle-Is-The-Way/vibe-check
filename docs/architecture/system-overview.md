@@ -90,7 +90,7 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 │  │    • final_total_score: 15                              │    │
 │  │    • final_severity_bucket: "15-19"                     │    │
 │  │    • triggered_arbitration: true/false                  │    │
-│  │    • juror_reports: [PHQ8Report × 6]                    │    │
+│  │    • juror_reports: List[PHQ8Report]                    │    │
 │  │    • judge_resolution: {...} (if arbitrated)            │    │
 │  └─────────────────────────────────────────────────────────┘    │
 │         │                                                       │
