@@ -42,4 +42,4 @@ All specs are implemented and archived in [`../_archive/specs/`](../_archive/spe
 
 - **Total specs**: 11
 - **All implemented**: ✅ YES
-- **Ready for production run**: ⚠️ BLOCKED by [BUG-048](../_bugs/BUG-048-no-temperature-control-for-llm-calls.md) (temperature control)
+- **Ready for production run**: ✅ YES (BUG-048 resolved)
