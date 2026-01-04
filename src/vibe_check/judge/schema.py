@@ -6,6 +6,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from vibe_check.schemas.scoring import TokenUsage  # noqa: TC001
+
 
 class JudgeItemResolution(BaseModel):
     """Judge decision for a single contested PHQ-8 item."""
@@ -16,3 +18,9 @@ class JudgeItemResolution(BaseModel):
     final_score: Literal[0, 1, 2, 3]
     confidence: float = Field(ge=0.0, le=1.0)
     rationale: str = Field(min_length=1)
+
+
+class JudgeItemReport(JudgeItemResolution):
+    """Judge decision plus token usage metadata."""
+
+    usage: TokenUsage | None = None

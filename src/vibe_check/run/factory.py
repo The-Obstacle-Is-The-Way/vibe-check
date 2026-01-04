@@ -11,28 +11,40 @@ from vibe_check.resilience import ProviderRateLimiters
 from vibe_check.scoring.agent import build_juror_agent
 from vibe_check.scoring.fakes import DeterministicFakeJuror, deterministic_fake_judge_item
 from vibe_check.scoring.juror import JurorScorer
+from vibe_check.scoring.usage import token_usage_from_run_usage
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from vibe_check.judge.schema import JudgeItemResolution
+    from vibe_check.judge.schema import JudgeItemReport, JudgeItemResolution
     from vibe_check.schemas.scoring import PHQ8Report
     from vibe_check.settings import Settings
 
 
 class Juror(Protocol):
-    def score(self, scoring_text: str) -> PHQ8Report: ...
-    async def ascore(self, scoring_text: str) -> PHQ8Report: ...
+    """Protocol for PHQ-8 scoring agents."""
+
+    def score(self, scoring_text: str) -> PHQ8Report:
+        """Synchronous scoring (for simple use cases)."""
+        ...
+
+    async def ascore(self, scoring_text: str) -> PHQ8Report:
+        """Async scoring with full resilience (for production)."""
+        ...
 
 
 class JudgeItemFn(Protocol):
+    """Protocol for judge arbitration functions."""
+
     def __call__(
         self,
         scoring_text: str,
         item: str,
         juror_reports: list[PHQ8Report],
         prompt_version: str,
-    ) -> JudgeItemResolution: ...
+    ) -> JudgeItemReport:
+        """Resolve a single contested item."""
+        ...
 
 
 def build_fake_jury(
@@ -54,13 +66,26 @@ def build_fake_judge_item() -> JudgeItemFn:
     return deterministic_fake_judge_item
 
 
-def build_real_jury(settings: Settings) -> Sequence[Juror]:
-    """Build a list of real PydanticAI-backed jurors using settings.
+def build_real_jury(
+    settings: Settings,
+    *,
+    prompt_version: str,
+    dialogue_view: str,
+) -> Sequence[Juror]:
+    """Build a list of real PydanticAI-backed jurors.
+
+    Args:
+        settings: Configuration for models, rate limits, and retry behavior.
+        prompt_version: Prompt version to embed in agent system prompts (from CLI).
+        dialogue_view: Dialogue view name for scoring context (from CLI).
 
     Wires up ADR-001's three-layer resilience strategy:
     - Layer 1: PydanticAI validation retries (via settings.validation_retries)
     - Layer 2: Tenacity transient retry (via settings.max_retries, etc.)
     - Layer 3: Aiolimiter rate limiting (via per-provider RPM settings)
+
+    Note (BUG-027 fix): prompt_version and dialogue_view are now explicit params
+    to ensure CLI args flow through to agent prompts, not Settings defaults.
     """
     # PydanticAI provider prefixes: openai, anthropic, google-gla (not "google")
     configs = [
@@ -79,20 +104,20 @@ def build_real_jury(settings: Settings) -> Sequence[Juror]:
         full_model_name = f"{provider}:{model_id}"
 
         # Get the rate limiter for this provider
-        limiter = rate_limiters.get_limiter(model_id)
+        limiter = rate_limiters.get_limiter(full_model_name)
 
         for run_no in range(1, settings.runs_per_model + 1):
             agent = build_juror_agent(
                 model=full_model_name,
-                prompt_version=settings.prompt_version,
-                view_name=settings.scoring_dialogue_view,
+                prompt_version=prompt_version,
+                view_name=dialogue_view,
                 retries=settings.validation_retries,
             )
             scorer = JurorScorer(
                 agent=agent,
                 model_id=model_id,
                 run_number=run_no,
-                prompt_version=settings.prompt_version,
+                prompt_version=prompt_version,
                 rate_limiter=limiter,
                 max_retries=settings.max_retries,
                 retry_initial_wait=settings.retry_initial_wait,
@@ -104,17 +129,28 @@ def build_real_jury(settings: Settings) -> Sequence[Juror]:
     return jurors
 
 
-def build_real_judge_item(settings: Settings) -> JudgeItemFn:
+def build_real_judge_item(
+    settings: Settings,
+    *,
+    prompt_version: str,
+) -> JudgeItemFn:
     """Build a real judge function backed by an Agent.
+
+    Args:
+        settings: Configuration for model, retry behavior.
+        prompt_version: Prompt version to embed in agent system prompt (from CLI).
 
     Wires up ADR-001's resilience strategy:
     - Layer 1: PydanticAI validation retries (via settings.validation_retries)
     - Layer 2: Tenacity transient retry (via settings.max_retries, etc.)
 
     Note: Layer 3 (rate limiting) is omitted for the judge because:
-    - Judge calls are infrequent (only on arbitration, ~30% of dialogues)
+    - Judge calls are infrequent relative to juror calls (only on arbitration)
     - The judge is called synchronously, making async rate limiting complex
     - Transient retry (Layer 2) handles 429s when they occur
+
+    Note (BUG-027 fix): prompt_version is now an explicit param to ensure CLI args
+    flow through to agent prompts, not Settings defaults.
     """
     from typing import cast
 
@@ -122,6 +158,7 @@ def build_real_judge_item(settings: Settings) -> JudgeItemFn:
 
     from vibe_check.judge.agent import build_judge_agent
     from vibe_check.judge.prompting import build_judge_item_prompt
+    from vibe_check.judge.schema import JudgeItemReport
     from vibe_check.resilience import _is_transient_error
 
     full_model_name = f"anthropic:{settings.judge_model}"
@@ -129,7 +166,7 @@ def build_real_judge_item(settings: Settings) -> JudgeItemFn:
     # Layer 1: PydanticAI validation retries
     agent = build_judge_agent(
         model=full_model_name,
-        prompt_version=settings.prompt_version,
+        prompt_version=prompt_version,
         retries=settings.validation_retries,
     )
 
@@ -144,7 +181,7 @@ def build_real_judge_item(settings: Settings) -> JudgeItemFn:
         item: str,
         juror_reports: list[PHQ8Report],
         prompt_version: str,
-    ) -> JudgeItemResolution:
+    ) -> JudgeItemReport:
         _ = prompt_version
         evidence_pool: list[str] = []
         votes: list[int] = []
@@ -171,11 +208,13 @@ def build_real_judge_item(settings: Settings) -> JudgeItemFn:
             retry=retry_if_exception(_is_transient_error),
             reraise=True,
         )
-        def _call_with_retry() -> JudgeItemResolution:
+        def _call_with_retry() -> JudgeItemReport:
             result = agent.run_sync(prompt)
             # PydanticAI v1+ puts structured output in .data
             output = getattr(result, "data", getattr(result, "output", None))
-            return cast("JudgeItemResolution", output)
+            resolution = cast("JudgeItemResolution", output)
+            usage = token_usage_from_run_usage(result.usage())
+            return JudgeItemReport(**resolution.model_dump(), usage=usage)
 
         return _call_with_retry()
 

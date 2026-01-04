@@ -13,30 +13,13 @@ from typing import TYPE_CHECKING, Any
 
 from vibe_check.resilience import NO_OP_LIMITER, with_retry
 from vibe_check.schemas.scoring import PHQ8Assessment, PHQ8Report, TokenUsage
+from vibe_check.scoring.usage import token_usage_from_run_usage
 
 if TYPE_CHECKING:
     from aiolimiter import AsyncLimiter
     from pydantic_ai import Agent
-    from pydantic_ai.usage import RunUsage
 
 logger = logging.getLogger(__name__)
-
-
-def _token_usage_from_run_usage(usage: RunUsage | None) -> TokenUsage | None:
-    if usage is None:
-        return None
-    input_tokens = getattr(usage, "input_tokens", None)
-    output_tokens = getattr(usage, "output_tokens", None)
-    reasoning_tokens = getattr(usage, "reasoning_tokens", None)
-    total_tokens = getattr(usage, "total_tokens", None)
-    if total_tokens is None and (input_tokens is not None or output_tokens is not None):
-        total_tokens = (input_tokens or 0) + (output_tokens or 0)
-    return TokenUsage(
-        input_tokens=input_tokens,
-        output_tokens=output_tokens,
-        reasoning_tokens=reasoning_tokens,
-        total_tokens=total_tokens,
-    )
 
 
 class JurorScorer:
@@ -112,7 +95,7 @@ class JurorScorer:
 
         output_data = result.data if hasattr(result, "data") else result.output
 
-        usage = _token_usage_from_run_usage(result.usage())
+        usage = token_usage_from_run_usage(result.usage())
         report = self._to_report(output_data, usage)
 
         logger.debug(
@@ -154,7 +137,7 @@ class JurorScorer:
 
         output_data = result.data if hasattr(result, "data") else result.output
 
-        usage = _token_usage_from_run_usage(result.usage())
+        usage = token_usage_from_run_usage(result.usage())
         report = self._to_report(output_data, usage)
 
         logger.debug(

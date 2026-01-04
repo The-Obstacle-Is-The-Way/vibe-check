@@ -2,13 +2,13 @@
 
 > **vibe-check's ONLY job: Score SQPsychConv → Export PHQ-8 labels for ai-psychiatrist.**
 >
-> See [scope-clarity.md](../research/scope-clarity.md).
+> See [scope-clarity.md](../_archive/research/scope-clarity.md).
 
 ---
 
 ## Master Specification
 
-- **[spec-vibe-check.md](../research/spec-vibe-check.md)** - Master specification (SSOT)
+- **[spec-vibe-check.md](../_archive/research/spec-vibe-check.md)** - Master specification (SSOT)
 
 ---
 

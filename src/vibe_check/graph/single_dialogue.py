@@ -12,8 +12,8 @@ from vibe_check.aggregation.aggregate import aggregate_reports, get_severity_buc
 from vibe_check.constants import PHQ8_ITEMS
 from vibe_check.data import load_corpus, preprocess_dialogue
 from vibe_check.graph.state import ScoringState
-from vibe_check.judge.schema import JudgeItemResolution
-from vibe_check.schemas.scoring import PHQ8Report
+from vibe_check.judge.schema import JudgeItemReport
+from vibe_check.schemas.scoring import PHQ8Report, TokenUsage
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -26,7 +26,7 @@ class Juror(Protocol):
     async def ascore(self, scoring_text: str) -> PHQ8Report: ...
 
 
-JudgeItemFn = Callable[[str, str, list[PHQ8Report], str], JudgeItemResolution]
+JudgeItemFn = Callable[[str, str, list[PHQ8Report], str], JudgeItemReport]
 
 DialogueViewName = Literal["client_qa", "client_only"]
 
@@ -36,6 +36,7 @@ def build_single_dialogue_graph(
     jurors: Sequence[Juror],
     judge_item: JudgeItemFn,
     dirichlet_alpha: float = 0.5,
+    disagreement_range_threshold: int = 2,
     arbitration_total_std_threshold: float = 2.0,
     arbitration_max_prob_threshold: float = 0.60,
     arbitration_entropy_threshold: float = 1.2,
@@ -68,6 +69,7 @@ def build_single_dialogue_graph(
             condition=state["condition"],
             prompt_version=state["prompt_version"],
             dirichlet_alpha=dirichlet_alpha,
+            disagreement_range_threshold=disagreement_range_threshold,
             arbitration_total_std_threshold=arbitration_total_std_threshold,
             arbitration_max_prob_threshold=arbitration_max_prob_threshold,
             arbitration_entropy_threshold=arbitration_entropy_threshold,
@@ -92,7 +94,7 @@ def build_single_dialogue_graph(
         if not contested:
             return {"final_output": agg, "needs_arbitration": False}
 
-        resolutions: dict[str, JudgeItemResolution] = {}
+        resolutions: dict[str, JudgeItemReport] = {}
         for item in contested:
             resolutions[item] = judge_item(
                 state["scoring_text"],
@@ -100,6 +102,27 @@ def build_single_dialogue_graph(
                 agg.juror_reports,
                 state["prompt_version"],
             )
+
+        t_input = 0
+        t_output = 0
+        t_reasoning = 0
+        t_total = 0
+        for resolution in resolutions.values():
+            if resolution.usage:
+                t_input += resolution.usage.input_tokens or 0
+                t_output += resolution.usage.output_tokens or 0
+                t_reasoning += resolution.usage.reasoning_tokens or 0
+                t_total += resolution.usage.total_tokens or 0
+        judge_usage = (
+            TokenUsage(
+                input_tokens=t_input,
+                output_tokens=t_output,
+                reasoning_tokens=t_reasoning,
+                total_tokens=t_total,
+            )
+            if (t_input or t_output or t_reasoning or t_total)
+            else None
+        )
 
         final_item_scores = dict(agg.final_item_scores)
         for item, resolution in resolutions.items():
@@ -113,6 +136,7 @@ def build_single_dialogue_graph(
                 "final_severity_bucket": get_severity_bucket(final_total_score),
                 "final_source": "judge_override",
                 "judge_resolution": {k: v.model_dump() for k, v in resolutions.items()},
+                "judge_usage": judge_usage,
             }
         )
         return {"final_output": updated, "needs_arbitration": False}

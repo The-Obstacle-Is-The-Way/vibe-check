@@ -4,18 +4,22 @@ from __future__ import annotations
 
 from typing import Literal
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Environment-based configuration (SSOT Section 11.2)."""
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", populate_by_name=True)
 
     # API Keys
     openai_api_key: str | None = None
     anthropic_api_key: str | None = None
-    google_api_key: str | None = None
+    google_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("GOOGLE_API_KEY", "GEMINI_API_KEY"),
+    )
 
     # Model Selection (January 2026 Frontier)
     juror_gpt_model: str = "gpt-5.2"
@@ -24,7 +28,7 @@ class Settings(BaseSettings):
     judge_model: str = "claude-opus-4-5-20251101"
 
     # Scoring Configuration
-    runs_per_model: int = 2
+    runs_per_model: int = Field(default=2, ge=1, le=2)
     disagreement_range_threshold: int = 2
     arbitration_total_std_threshold: float = 2.0
     arbitration_max_prob_threshold: float = 0.60

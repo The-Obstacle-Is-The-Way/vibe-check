@@ -9,7 +9,8 @@ from vibe_check.graph.single_dialogue import (
     build_single_dialogue_graph,
     invoke_with_checkpoint_resume,
 )
-from vibe_check.judge.schema import JudgeItemResolution
+from vibe_check.judge.schema import JudgeItemReport
+from vibe_check.schemas.scoring import TokenUsage
 from vibe_check.sqlite import open_async_sqlite_saver
 
 if TYPE_CHECKING:
@@ -58,16 +59,17 @@ async def test_graph_arbitration_branch_overrides_final_scores(tmp_path: Path) -
         item: str,
         juror_reports: list[PHQ8Report],
         prompt_version: str,
-    ) -> JudgeItemResolution:
+    ) -> JudgeItemReport:
         assert scoring_text
         assert prompt_version == "v1"
         assert item == "sleep"
         assert len(juror_reports) == 6
-        return JudgeItemResolution(
+        return JudgeItemReport(
             item=item,
             final_score=2,
             confidence=0.9,
             rationale="Judge override for test.",
+            usage=TokenUsage(input_tokens=7, output_tokens=3, reasoning_tokens=2, total_tokens=12),
         )
 
     graph = build_single_dialogue_graph(jurors=jurors, judge_item=judge)
@@ -87,6 +89,8 @@ async def test_graph_arbitration_branch_overrides_final_scores(tmp_path: Path) -
     assert final is not None
     assert final.final_source == "judge_override"
     assert final.final_item_scores["sleep"] == 2
+    assert final.judge_usage is not None
+    assert final.judge_usage.total_tokens == 12
 
 
 @pytest.mark.asyncio
@@ -110,7 +114,7 @@ async def test_graph_uses_async_juror_path(tmp_path: Path) -> None:
         _item: str,
         _juror_reports: list[PHQ8Report],
         _prompt_version: str,
-    ) -> JudgeItemResolution:
+    ) -> JudgeItemReport:
         raise AssertionError("judge should not be called for unanimous reports")
 
     graph = build_single_dialogue_graph(jurors=jurors, judge_item=judge)
@@ -147,7 +151,7 @@ async def test_checkpoint_resume_does_not_repeat_completed_jurors(tmp_path: Path
         _item: str,
         _juror_reports: list[PHQ8Report],
         _prompt_version: str,
-    ) -> JudgeItemResolution:
+    ) -> JudgeItemReport:
         raise AssertionError("judge should not be called for unanimous reports")
 
     graph = build_single_dialogue_graph(jurors=jurors, judge_item=judge)

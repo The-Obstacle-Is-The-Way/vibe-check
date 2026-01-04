@@ -4,6 +4,7 @@ import pytest
 from tests.fixtures.sample_votes import create_mock_report
 
 from vibe_check.aggregation.aggregate import aggregate_reports, aggregate_votes
+from vibe_check.constants import PHQ8_ITEMS
 
 
 def test_aggregate_six_reports() -> None:
@@ -117,3 +118,14 @@ def test_aggregate_votes_raises_on_missing_items() -> None:
 def test_aggregate_reports_raises_on_empty_reports() -> None:
     with pytest.raises(ValueError, match="non-empty"):
         aggregate_reports([], file_id="x", condition="mdd", prompt_version="v1")
+
+
+def test_aggregate_votes_respects_range_threshold_parameter() -> None:
+    votes = {item: [0, 0, 0, 0, 0, 0] for item in PHQ8_ITEMS}
+    votes["sleep"] = [0, 0, 0, 0, 0, 1]
+
+    _, _, arbitration_items_default, _ = aggregate_votes(votes, range_threshold=2)
+    assert "sleep" not in arbitration_items_default
+
+    _, _, arbitration_items_low, _ = aggregate_votes(votes, range_threshold=1)
+    assert "sleep" in arbitration_items_low

@@ -34,19 +34,27 @@ All bugs in this directory have been **resolved**. Bug numbers are permanent ide
 | BUG-024 | [Krippendorff alpha constraint too restrictive](bug-024-krippendorff-alpha-constraint-too-restrictive.md) | P2 | RESOLVED |
 | BUG-025 | [Arbitration sensitivity hardcoded](bug-025-arbitration-sensitivity-hardcoded.md) | P3 | RESOLVED |
 | BUG-026 | [Judge evidence truncation hardcoded](bug-026-judge-evidence-truncation-hardcoded.md) | P3 | RESOLVED |
+| BUG-027 | [CLI prompt/version/view mismatch](bug-027-cli-prompt-version-view-mismatch.md) | P1 | RESOLVED |
+| BUG-028 | [Google Gemini env var mismatch](bug-028-google-gla-env-var-mismatch.md) | P1 | RESOLVED |
+| BUG-029 | [Export csv-only fails](bug-029-export-csv-only-fails.md) | P2 | RESOLVED |
+| BUG-030 | [RUNS_PER_MODEL schema constraint mismatch](bug-030-runs-per-model-schema-constraint.md) | P2 | RESOLVED |
+| BUG-031 | [DISAGREEMENT_RANGE_THRESHOLD unused](bug-031-disagreement-range-threshold-unused.md) | P2 | RESOLVED |
+| BUG-032 | [Judge token usage missing](bug-032-judge-token-usage-missing.md) | P3 | RESOLVED |
+| BUG-033 | [Resume run config mismatch](bug-033-resume-run-config-mismatch.md) | P3 | RESOLVED |
+| BUG-034 | [.env.example missing arbitration keys](bug-034-env-example-missing-arbitration-thresholds.md) | P4 | RESOLVED |
 
 ---
 
 ## Statistics
 
-- **Total bugs**: 26
-- **Resolved/Fixed**: 26
+- **Total bugs**: 34
+- **Resolved/Fixed**: 34
 - **Open**: 0
 
 ---
 
 ## Next Bug Number
 
-When filing new bugs, use: **BUG-027**
+When filing new bugs, use: **BUG-035**
 
-Place new bugs in `docs/bugs/` (not `_archive`). Move to archive when resolved.
+Place new bugs in `docs/_bugs/` (not `_archive`). Move to archive when resolved.
