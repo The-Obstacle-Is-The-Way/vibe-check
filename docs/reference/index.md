@@ -33,6 +33,6 @@ Technical reference documentation for vibe-check.
 
 ### Key Settings
 
-- API keys: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`
+- API keys: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY` (or `GEMINI_API_KEY`)
 - Models: `JUROR_GPT_MODEL`, `JUDGE_MODEL`
 - Thresholds: `ARBITRATION_*`

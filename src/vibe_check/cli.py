@@ -60,7 +60,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--max-concurrency",
         type=int,
         default=None,
-        help="Max concurrency for graph execution (defaults to Settings.max_concurrent_dialogues).",
+        help=(
+            "Max concurrent dialogues to process (jurors run sequentially within each dialogue; "
+            "defaults to Settings.max_concurrent_dialogues)."
+        ),
     )
     score.add_argument(
         "--force",
@@ -110,6 +113,17 @@ def main(argv: list[str] | None = None) -> int:
         )
 
         if args.live:
+            missing: list[str] = []
+            if not settings.openai_api_key:
+                missing.append("OPENAI_API_KEY")
+            if not settings.anthropic_api_key:
+                missing.append("ANTHROPIC_API_KEY")
+            if not settings.google_api_key:
+                missing.append("GOOGLE_API_KEY (or GEMINI_API_KEY)")
+
+            if missing:
+                parser.error(f"--live requires API keys: {', '.join(missing)}")
+
             export_provider_api_keys(settings)
 
             # BUG-027 fix: Pass CLI args to factory functions, not Settings defaults
@@ -142,6 +156,9 @@ def main(argv: list[str] | None = None) -> int:
             arbitration_max_prob_threshold=settings.arbitration_max_prob_threshold,
             arbitration_entropy_threshold=settings.arbitration_entropy_threshold,
             disagreement_range_threshold=settings.disagreement_range_threshold,
+            clinical_ambiguity_band_low=settings.clinical_ambiguity_band_low,
+            clinical_ambiguity_band_high=settings.clinical_ambiguity_band_high,
+            insufficient_evidence_threshold=settings.insufficient_evidence_threshold,
         )
         return 0
 

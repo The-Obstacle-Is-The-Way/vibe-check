@@ -74,6 +74,9 @@ Controls juror behavior and aggregation.
 | `arbitration_total_std_threshold` | `ARBITRATION_TOTAL_STD_THRESHOLD` | `float` | `2.0` | Max juror total std before arbitration |
 | `arbitration_max_prob_threshold` | `ARBITRATION_MAX_PROB_THRESHOLD` | `float` | `0.60` | Min posterior max probability for consensus |
 | `arbitration_entropy_threshold` | `ARBITRATION_ENTROPY_THRESHOLD` | `float` | `1.2` | Max entropy before arbitration |
+| `clinical_ambiguity_band_low` | `CLINICAL_AMBIGUITY_BAND_LOW` | `float` | `0.4` | Lower bound for clinical ambiguity trigger (`P(score ≥ 2)`) |
+| `clinical_ambiguity_band_high` | `CLINICAL_AMBIGUITY_BAND_HIGH` | `float` | `0.6` | Upper bound for clinical ambiguity trigger (`P(score ≥ 2)`) |
+| `insufficient_evidence_threshold` | `INSUFFICIENT_EVIDENCE_THRESHOLD` | `int` | `2` | Min juror count flagged as insufficient evidence to trigger arbitration |
 | `dirichlet_alpha` | `DIRICHLET_ALPHA` | `float` | `0.5` | Bayesian smoothing parameter |
 
 **See**: [Thresholds Reference](thresholds.md) for detailed explanations.
@@ -203,9 +206,13 @@ RUNS_PER_MODEL=2
 DIRICHLET_ALPHA=0.5
 
 # Arbitration Thresholds
+ARBITRATION_TOTAL_STD_THRESHOLD=2.0
 ARBITRATION_MAX_PROB_THRESHOLD=0.60
 ARBITRATION_ENTROPY_THRESHOLD=1.2
 DISAGREEMENT_RANGE_THRESHOLD=2
+CLINICAL_AMBIGUITY_BAND_LOW=0.4
+CLINICAL_AMBIGUITY_BAND_HIGH=0.6
+INSUFFICIENT_EVIDENCE_THRESHOLD=2
 
 # Preprocessing
 SCORING_DIALOGUE_VIEW=client_qa
@@ -248,6 +255,8 @@ print(settings.judge_model)          # "claude-opus-4-5-20251101"
 # Get thresholds
 print(settings.arbitration_entropy_threshold)  # 1.2
 print(settings.dirichlet_alpha)                # 0.5
+print(settings.clinical_ambiguity_band_low)    # 0.4
+print(settings.insufficient_evidence_threshold)  # 2
 ```
 
 ---

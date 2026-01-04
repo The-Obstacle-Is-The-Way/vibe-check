@@ -52,6 +52,9 @@ GOOGLE_API_KEY=...
 | `ARBITRATION_ENTROPY_THRESHOLD` | `1.2` | Max entropy before arbitration |
 | `ARBITRATION_TOTAL_STD_THRESHOLD` | `2.0` | Max juror total std |
 | `DISAGREEMENT_RANGE_THRESHOLD` | `2` | Vote range trigger |
+| `CLINICAL_AMBIGUITY_BAND_LOW` | `0.4` | Lower bound for clinical ambiguity trigger (`P(score ≥ 2)`) |
+| `CLINICAL_AMBIGUITY_BAND_HIGH` | `0.6` | Upper bound for clinical ambiguity trigger (`P(score ≥ 2)`) |
+| `INSUFFICIENT_EVIDENCE_THRESHOLD` | `2` | Min juror count flagged insufficient evidence to trigger arbitration |
 
 ### Rate Limiting
 
@@ -111,6 +114,9 @@ RETRY_INITIAL_WAIT=2.0
 # Arbitration Tuning (optional)
 ARBITRATION_ENTROPY_THRESHOLD=1.5
 DIRICHLET_ALPHA=1.0
+CLINICAL_AMBIGUITY_BAND_LOW=0.35
+CLINICAL_AMBIGUITY_BAND_HIGH=0.65
+INSUFFICIENT_EVIDENCE_THRESHOLD=3
 ```
 
 ---

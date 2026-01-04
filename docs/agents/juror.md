@@ -404,8 +404,12 @@ These limits prevent:
 ```python
 from vibe_check.run.factory import build_real_jury
 
-jurors = build_real_jury(settings)
-# Returns 6 JurorScorer instances: 3 models × 2 runs
+jurors = build_real_jury(
+    settings,
+    prompt_version=settings.prompt_version,
+    dialogue_view=settings.scoring_dialogue_view,
+)
+# Returns 3×RUNS_PER_MODEL JurorScorer instances (default: 6; 3 models × 2 runs)
 
 # Each juror is wired with:
 # - PydanticAI agent with validation retries
@@ -418,7 +422,7 @@ jurors = build_real_jury(settings)
 1. Creates rate limiters for OpenAI, Anthropic, Google
 2. For each provider, builds PydanticAI agents with proper model prefix
 3. Wraps each agent in `JurorScorer` with resilience settings
-4. Returns 6 jurors (3 models × 2 runs each)
+4. Returns 3×RUNS_PER_MODEL jurors (default: 6; 3 models × 2 runs each)
 
 ### Fake Jurors (Testing)
 
@@ -426,7 +430,7 @@ jurors = build_real_jury(settings)
 from vibe_check.run.factory import build_fake_jury
 
 jurors = build_fake_jury()
-# Returns 6 DeterministicFakeJuror instances
+# Returns 3×RUNS_PER_MODEL DeterministicFakeJuror instances (default: 6)
 ```
 
 **How fake jurors score:**

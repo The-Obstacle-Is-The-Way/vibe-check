@@ -40,6 +40,8 @@ def build_single_dialogue_graph(
     arbitration_total_std_threshold: float = 2.0,
     arbitration_max_prob_threshold: float = 0.60,
     arbitration_entropy_threshold: float = 1.2,
+    clinical_ambiguity_band: tuple[float, float] = (0.4, 0.6),
+    insufficient_evidence_threshold: int = 2,
 ) -> StateGraph[ScoringState, None, ScoringState, ScoringState]:
     """Build the single-dialogue jury→aggregate→(optional)judge graph."""
     graph: StateGraph[ScoringState, None, ScoringState, ScoringState] = StateGraph(ScoringState)
@@ -63,8 +65,9 @@ def build_single_dialogue_graph(
         previous = node_name
 
     def aggregate_node(state: ScoringState) -> dict[str, Any]:
+        reports = sorted(state["jury_results"], key=lambda r: (r.model_id, r.run_number))
         agg = aggregate_reports(
-            state["jury_results"],
+            reports,
             file_id=state["file_id"],
             condition=state["condition"],
             prompt_version=state["prompt_version"],
@@ -73,6 +76,8 @@ def build_single_dialogue_graph(
             arbitration_total_std_threshold=arbitration_total_std_threshold,
             arbitration_max_prob_threshold=arbitration_max_prob_threshold,
             arbitration_entropy_threshold=arbitration_entropy_threshold,
+            clinical_ambiguity_band=clinical_ambiguity_band,
+            insufficient_evidence_threshold=insufficient_evidence_threshold,
         )
         return {"final_output": agg, "needs_arbitration": agg.triggered_arbitration}
 

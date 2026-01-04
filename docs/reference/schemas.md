@@ -251,8 +251,9 @@ Final aggregated output.
 | `arbitration_reasons` | `dict[str, str]` | Why each item |
 | `mentions_self_harm` | `bool` | Any juror flagged self-harm |
 | `self_harm_evidence` | `list[str]` | Combined evidence |
-| `juror_reports` | `list[PHQ8Report]` | All 6 reports |
+| `juror_reports` | `list[PHQ8Report]` | All juror reports (default: 6) |
 | `judge_resolution` | `dict \| None` | Judge decisions |
+| `judge_usage` | `TokenUsage \| None` | Aggregated judge token usage |
 | `prompt_version` | `str` | Prompt version |
 | `scored_at` | `datetime` | Timestamp |
 
@@ -281,6 +282,37 @@ Judge decision for one item.
   "final_score": 2,
   "confidence": 0.85,
   "rationale": "Client explicitly states lack of enjoyment in multiple activities."
+}
+```
+
+---
+
+### JudgeItemReport
+
+Judge decision with token usage metadata.
+
+**File**: `judge/schema.py`
+
+Extends `JudgeItemResolution` with:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `usage` | `TokenUsage \| None` | Token counts for this judge call |
+
+**Example**:
+
+```json
+{
+  "item": "anhedonia",
+  "final_score": 2,
+  "confidence": 0.85,
+  "rationale": "Client explicitly states lack of enjoyment in multiple activities.",
+  "usage": {
+    "input_tokens": 2500,
+    "output_tokens": 150,
+    "reasoning_tokens": null,
+    "total_tokens": 2650
+  }
 }
 ```
 

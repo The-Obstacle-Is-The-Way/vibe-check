@@ -49,6 +49,9 @@ def score_corpus(
     arbitration_total_std_threshold: float = 2.0,
     arbitration_max_prob_threshold: float = 0.60,
     arbitration_entropy_threshold: float = 1.2,
+    clinical_ambiguity_band_low: float = 0.4,
+    clinical_ambiguity_band_high: float = 0.6,
+    insufficient_evidence_threshold: int = 2,
 ) -> None:
     """Score a corpus and write outputs to disk, safe to resume."""
     asyncio.run(
@@ -69,6 +72,9 @@ def score_corpus(
             arbitration_total_std_threshold=arbitration_total_std_threshold,
             arbitration_max_prob_threshold=arbitration_max_prob_threshold,
             arbitration_entropy_threshold=arbitration_entropy_threshold,
+            clinical_ambiguity_band_low=clinical_ambiguity_band_low,
+            clinical_ambiguity_band_high=clinical_ambiguity_band_high,
+            insufficient_evidence_threshold=insufficient_evidence_threshold,
         )
     )
 
@@ -91,6 +97,9 @@ async def score_corpus_async(
     arbitration_total_std_threshold: float = 2.0,
     arbitration_max_prob_threshold: float = 0.60,
     arbitration_entropy_threshold: float = 1.2,
+    clinical_ambiguity_band_low: float = 0.4,
+    clinical_ambiguity_band_high: float = 0.6,
+    insufficient_evidence_threshold: int = 2,
 ) -> None:
     """Async batch runner implementation for corpus-scale scoring."""
     if max_concurrency < 1:
@@ -119,6 +128,9 @@ async def score_corpus_async(
         "arbitration_total_std_threshold": arbitration_total_std_threshold,
         "arbitration_max_prob_threshold": arbitration_max_prob_threshold,
         "arbitration_entropy_threshold": arbitration_entropy_threshold,
+        "clinical_ambiguity_band_low": clinical_ambiguity_band_low,
+        "clinical_ambiguity_band_high": clinical_ambiguity_band_high,
+        "insufficient_evidence_threshold": insufficient_evidence_threshold,
         "jurors": [
             {
                 "class": j.__class__.__name__,
@@ -145,6 +157,8 @@ async def score_corpus_async(
         arbitration_total_std_threshold=arbitration_total_std_threshold,
         arbitration_max_prob_threshold=arbitration_max_prob_threshold,
         arbitration_entropy_threshold=arbitration_entropy_threshold,
+        clinical_ambiguity_band=(clinical_ambiguity_band_low, clinical_ambiguity_band_high),
+        insufficient_evidence_threshold=insufficient_evidence_threshold,
     )
 
     checkpoint_path = sqlite_path_from_conn_string(checkpoint_db)

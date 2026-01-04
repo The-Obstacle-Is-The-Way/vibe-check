@@ -43,6 +43,19 @@ vibe-check score-corpus \
 | `--prompt-version` | `v1.0.0` | Prompt version label embedded in outputs |
 | `--dialogue-view` | `client_qa` | View to use: `client_qa` or `client_only` |
 | `--max-concurrency` | 50 | Max concurrent dialogue processing |
+| `--force` | False | Reset existing run if config differs (see below) |
+
+#### Config Mismatch Protection
+
+When resuming a run, vibe-check validates that the current configuration matches the original run (via SHA256 fingerprint stored in `ledger.sqlite`). If configurations differ, the run fails with:
+
+```
+ValueError: run configuration mismatch (use a new --output/--checkpoint or pass --force to reset)
+```
+
+**Options:**
+- Use a different `--output` and `--checkpoint` path for the new config
+- Pass `--force` to reset the existing run directory and start fresh
 
 #### Examples
 

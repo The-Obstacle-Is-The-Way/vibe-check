@@ -29,7 +29,7 @@ vibe-check is a multi-agent PHQ-8 scoring system built on:
 
 ### 1. Multi-Agent Jury + Judge
 
-Instead of single-model scoring, vibe-check uses 6 jurors (3 models × 2 runs) plus a judge for arbitration. This provides:
+Instead of single-model scoring, vibe-check by default uses 6 jurors (3 models × 2 runs) plus a judge for arbitration. This provides:
 - Cross-model validation
 - Uncertainty quantification
 - Higher reliability than single-model approaches

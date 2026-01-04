@@ -122,7 +122,7 @@ def make_juror_node(juror: Juror):
 ### Aggregate Node
 
 After all jurors complete:
-1. Calls `aggregate_reports()` with all 6 reports
+1. Calls `aggregate_reports()` with all juror reports (default: 6)
 2. Computes posteriors, entropy, arbitration triggers
 3. Returns `AggregatedPHQ8` and `needs_arbitration` flag
 
@@ -263,7 +263,7 @@ This ensures:
 
 ```python
 graph = build_single_dialogue_graph(
-    jurors=jurors,                           # 6 jurors
+    jurors=jurors,                           # 3×RUNS_PER_MODEL jurors (default: 6)
     judge_item=judge_item,                   # Judge function
     dirichlet_alpha=0.5,                     # Bayesian smoothing
     arbitration_total_std_threshold=2.0,     # Total score variance trigger

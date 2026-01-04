@@ -87,7 +87,7 @@ class JudgeItemFn(Protocol):
         item: str,
         juror_reports: list[PHQ8Report],
         prompt_version: str,
-    ) -> JudgeItemResolution:
+    ) -> JudgeItemReport:
         """Resolve a single contested item."""
         ...
 ```
@@ -152,8 +152,12 @@ Use live LLM APIs with ADR-001 resilience (jurors: 3 layers; judge: 2 layers):
 ```python
 from vibe_check.run.factory import build_real_jury, build_real_judge_item
 
-jurors = build_real_jury(settings)  # 6 JurorScorer instances
-judge = build_real_judge_item(settings)  # Closure with Agent
+jurors = build_real_jury(
+    settings,
+    prompt_version=settings.prompt_version,
+    dialogue_view=settings.scoring_dialogue_view,
+)  # 3*RUNS_PER_MODEL JurorScorer instances (default: 6)
+judge = build_real_judge_item(settings, prompt_version=settings.prompt_version)  # Closure with Agent
 ```
 
 Resilience layers:
@@ -168,7 +172,7 @@ Deterministic fakes for testing/dry-runs:
 ```python
 from vibe_check.run.factory import build_fake_jury, build_fake_judge_item
 
-jurors = build_fake_jury()  # 6 DeterministicFakeJuror instances
+jurors = build_fake_jury()  # 3*RUNS_PER_MODEL DeterministicFakeJuror instances (default: 6)
 judge = build_fake_judge_item()  # deterministic_fake_judge_item function
 ```
 
@@ -306,8 +310,8 @@ app = graph.compile(checkpointer=saver)
 | File | Component | Purpose |
 |------|-----------|---------|
 | `run/factory.py` | `Juror`, `JudgeItemFn` | Protocol definitions |
-| `run/factory.py` | `build_real_jury()` | Create 6 real jurors |
-| `run/factory.py` | `build_fake_jury()` | Create 6 fake jurors |
+| `run/factory.py` | `build_real_jury()` | Create 3×RUNS_PER_MODEL real jurors (default: 6) |
+| `run/factory.py` | `build_fake_jury()` | Create 3×RUNS_PER_MODEL fake jurors (default: 6) |
 | `run/factory.py` | `build_real_judge_item()` | Create real judge function |
 | `run/factory.py` | `build_fake_judge_item()` | Create fake judge function |
 | `scoring/agent.py` | `build_juror_agent()` | PydanticAI agent builder |

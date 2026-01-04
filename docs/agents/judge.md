@@ -24,7 +24,7 @@ The judge is called only when arbitration is triggered. See [Arbitration](../sco
 - Clinical ambiguity (P(score >= 2) in [0.4, 0.6])
 - Wide vote range (>= 2)
 - Multiple insufficient_evidence flags
-- High total score std (> 2.0)
+- High total score std (>= 2.0)
 
 ---
 
@@ -60,12 +60,12 @@ The judge is called only when arbitration is triggered. See [Arbitration](../sco
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │ PydanticAI Agent                                    │    │
 │  │ • Model: anthropic:claude-opus-4-5-20251101         │    │
-│  │ • Output: JudgeItemResolution (structured JSON)     │    │
+│  │ • Output: JudgeItemReport (resolution + usage)      │    │
 │  │ • Retries: 2 (validation failures)                  │    │
 │  └─────────────────────────────────────────────────────┘    │
 │         │                                                   │
 │         ▼                                                   │
-│  JudgeItemResolution                                        │
+│  JudgeItemReport                                            │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -129,7 +129,7 @@ Respond with JSON:
 MAX_JUDGE_EVIDENCE_SNIPPETS = 10
 ```
 
-This limit prevents context window overflow when many jurors provide extensive evidence. With 6 jurors each providing up to 3 snippets (18 total), the judge sees at most 10 to keep prompts manageable.
+This limit prevents context window overflow when many jurors provide extensive evidence. With 6 jurors by default each providing up to 3 snippets (18 total), the judge sees at most 10 to keep prompts manageable.
 
 ---
 
@@ -149,11 +149,25 @@ class JudgeItemResolution(BaseModel):
     final_score: Literal[0, 1, 2, 3]
     confidence: float = Field(ge=0.0, le=1.0)
     rationale: str = Field(min_length=1)
+
+    @field_validator("item")
+    @classmethod
+    def _validate_item_name(cls, v: str) -> str:
+        if v not in PHQ8_ITEMS:
+            raise ValueError(f"item must be one of {PHQ8_ITEMS}, got {v!r}")
+        return v
+
+
+class JudgeItemReport(JudgeItemResolution):
+    """Judge decision plus token usage metadata."""
+
+    usage: TokenUsage | None = None
 ```
 
 Key constraints:
 
 - `extra="forbid"` - No extra fields allowed
+- `item` - Must be a valid PHQ-8 item name (validated against `PHQ8_ITEMS`)
 - `final_score` - Must be exactly 0, 1, 2, or 3
 - `confidence` - Must be between 0.0 and 1.0
 - `rationale` - Must be non-empty (requires explanation)
@@ -211,7 +225,7 @@ The judge uses **two layers** of ADR-001's three-layer resilience strategy:
 ```python
 agent = build_judge_agent(
     model=full_model_name,
-    prompt_version=settings.prompt_version,
+    prompt_version=prompt_version,
     retries=settings.validation_retries,  # Default: 2
 )
 ```
@@ -231,9 +245,13 @@ If the LLM returns malformed JSON or fails schema validation, PydanticAI automat
     retry=retry_if_exception(_is_transient_error),
     reraise=True,
 )
-def _call_with_retry() -> JudgeItemResolution:
+def _call_with_retry() -> JudgeItemReport:
     result = agent.run_sync(prompt)
-    return result.data
+    # PydanticAI v1+ puts structured output in .data
+    output = getattr(result, "data", getattr(result, "output", None))
+    resolution = cast("JudgeItemResolution", output)
+    usage = token_usage_from_run_usage(result.usage())
+    return JudgeItemReport(**resolution.model_dump(), usage=usage)
 ```
 
 ### Why No Layer 3 (Rate Limiting)?
@@ -256,7 +274,7 @@ The judge does **not** use Layer 3 rate limiting because:
 ```python
 from vibe_check.run.factory import build_real_judge_item
 
-judge_fn = build_real_judge_item(settings)
+judge_fn = build_real_judge_item(settings, prompt_version=settings.prompt_version)
 ```
 
 **What `build_real_judge_item()` does:**
@@ -267,7 +285,7 @@ judge_fn = build_real_judge_item(settings)
    - Collects votes and evidence from juror reports
    - Builds the item prompt
    - Wraps the API call with tenacity retry
-   - Returns `JudgeItemResolution`
+   - Returns `JudgeItemReport`
 
 ### Fake Judge (Testing)
 
@@ -285,7 +303,8 @@ def deterministic_fake_judge_item(
     item: str,
     juror_reports: list[PHQ8Report],
     prompt_version: str,
-) -> JudgeItemResolution:
+) -> JudgeItemReport:
+    del scoring_text, prompt_version
     # Collect votes from all jurors
     votes = [int(getattr(r, item).score) for r in juror_reports]
 
@@ -293,11 +312,17 @@ def deterministic_fake_judge_item(
     avg = sum(votes) / float(len(votes))
     final = max(0, min(3, round(avg)))
 
-    return JudgeItemResolution(
+    return JudgeItemReport(
         item=item,
         final_score=final,
         confidence=0.7,
         rationale="Deterministic fake judge (mean of juror votes).",
+        usage=TokenUsage(
+            input_tokens=50,
+            output_tokens=25,
+            reasoning_tokens=5,
+            total_tokens=80,
+        ),
     )
 ```
 
@@ -331,7 +356,7 @@ def arbitrate_node(state: ScoringState) -> dict[str, Any]:
         return {"final_output": agg, "needs_arbitration": False}
 
     # Call judge for each contested item
-    resolutions: dict[str, JudgeItemResolution] = {}
+    resolutions: dict[str, JudgeItemReport] = {}
     for item in contested:
         resolutions[item] = judge_item(
             state["scoring_text"],
@@ -339,6 +364,28 @@ def arbitrate_node(state: ScoringState) -> dict[str, Any]:
             agg.juror_reports,
             state["prompt_version"],
         )
+
+    # Aggregate judge token usage across all contested items
+    t_input = 0
+    t_output = 0
+    t_reasoning = 0
+    t_total = 0
+    for resolution in resolutions.values():
+        if resolution.usage:
+            t_input += resolution.usage.input_tokens or 0
+            t_output += resolution.usage.output_tokens or 0
+            t_reasoning += resolution.usage.reasoning_tokens or 0
+            t_total += resolution.usage.total_tokens or 0
+    judge_usage = (
+        TokenUsage(
+            input_tokens=t_input,
+            output_tokens=t_output,
+            reasoning_tokens=t_reasoning,
+            total_tokens=t_total,
+        )
+        if (t_input or t_output or t_reasoning or t_total)
+        else None
+    )
 
     # Update final scores with judge decisions
     final_item_scores = dict(agg.final_item_scores)
@@ -355,6 +402,7 @@ def arbitrate_node(state: ScoringState) -> dict[str, Any]:
             "final_severity_bucket": get_severity_bucket(final_total_score),
             "final_source": "judge_override",
             "judge_resolution": {k: v.model_dump() for k, v in resolutions.items()},
+            "judge_usage": judge_usage,
         }
     )
     return {"final_output": updated, "needs_arbitration": False}
@@ -392,6 +440,7 @@ def arbitrate_node(state: ScoringState) -> dict[str, Any]:
 | `judge/prompting.py` | `build_judge_system_prompt()` | System prompt builder |
 | `judge/prompting.py` | `build_judge_item_prompt()` | Item-specific prompt builder |
 | `judge/schema.py` | `JudgeItemResolution` | Output schema with constraints |
+| `judge/schema.py` | `JudgeItemReport` | Resolution + token usage |
 | `run/factory.py` | `build_real_judge_item()` | Factory with resilience wiring |
 | `run/factory.py` | `build_fake_judge_item()` | Factory for testing |
 | `scoring/fakes.py` | `deterministic_fake_judge_item()` | Mean-based fake |

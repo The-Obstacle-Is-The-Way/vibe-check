@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     arbitration_total_std_threshold: float = 2.0
     arbitration_max_prob_threshold: float = 0.60
     arbitration_entropy_threshold: float = 1.2
+    clinical_ambiguity_band_low: float = Field(default=0.4, ge=0.0, le=1.0)
+    clinical_ambiguity_band_high: float = Field(default=0.6, ge=0.0, le=1.0)
+    insufficient_evidence_threshold: int = Field(default=2, ge=0)
     dirichlet_alpha: float = 0.5
 
     # Preprocessing
@@ -62,3 +65,9 @@ class Settings(BaseSettings):
     # Output
     output_dir: str = "./data/outputs"
     prompt_version: str = "v1.0.0"
+
+    @model_validator(mode="after")
+    def _validate_clinical_ambiguity_band(self) -> Settings:
+        if self.clinical_ambiguity_band_low > self.clinical_ambiguity_band_high:
+            raise ValueError("clinical_ambiguity_band_low must be <= clinical_ambiguity_band_high")
+        return self

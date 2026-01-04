@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+from pydantic import ValidationError
 from pydantic_ai.models.test import TestModel
 
 from vibe_check.judge.agent import build_judge_agent
@@ -48,3 +50,15 @@ def test_judge_agent_end_to_end_with_testmodel() -> None:
     assert isinstance(resolved, JudgeItemResolution)
     assert resolved.item == "sleep"
     assert resolved.final_score == 2
+
+
+def test_judge_item_resolution_rejects_invalid_item_name() -> None:
+    with pytest.raises(ValidationError):
+        JudgeItemResolution.model_validate(
+            {
+                "item": "anxiety",
+                "final_score": 2,
+                "confidence": 0.9,
+                "rationale": "nope",
+            }
+        )
