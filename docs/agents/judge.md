@@ -149,6 +149,12 @@ class JudgeItemResolution(BaseModel):
     final_score: Literal[0, 1, 2, 3]
     confidence: float = Field(ge=0.0, le=1.0)
     rationale: str = Field(min_length=1)
+
+
+class JudgeItemReport(JudgeItemResolution):
+    """Judge decision plus token usage metadata."""
+
+    usage: TokenUsage | None = None
 ```
 
 Key constraints:
@@ -392,6 +398,7 @@ def arbitrate_node(state: ScoringState) -> dict[str, Any]:
 | `judge/prompting.py` | `build_judge_system_prompt()` | System prompt builder |
 | `judge/prompting.py` | `build_judge_item_prompt()` | Item-specific prompt builder |
 | `judge/schema.py` | `JudgeItemResolution` | Output schema with constraints |
+| `judge/schema.py` | `JudgeItemReport` | Resolution + token usage |
 | `run/factory.py` | `build_real_judge_item()` | Factory with resilience wiring |
 | `run/factory.py` | `build_fake_judge_item()` | Factory for testing |
 | `scoring/fakes.py` | `deterministic_fake_judge_item()` | Mean-based fake |

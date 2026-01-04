@@ -140,6 +140,33 @@ Common errors and how to fix them.
 
 ---
 
+### Run Configuration Mismatch
+
+**Symptom**: `ValueError: run configuration mismatch`
+
+**Cause**: Resuming a run with different `--prompt-version`, `--dialogue-view`, or other config.
+
+**Solutions**:
+
+1. Use the original configuration:
+   ```bash
+   # Check what config was used
+   cat data/outputs/run_manifest.json | jq '.run_config'
+   ```
+
+2. Start a fresh run with new paths:
+   ```bash
+   --output data/outputs_v2 \
+   --checkpoint sqlite:///data/outputs_v2/checkpoint.db
+   ```
+
+3. Force reset (loses existing progress):
+   ```bash
+   --force  # Resets ledger and starts fresh
+   ```
+
+---
+
 ## Diagnostics Failures
 
 ### Reliability Gate Failed
