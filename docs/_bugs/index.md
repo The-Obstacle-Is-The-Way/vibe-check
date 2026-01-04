@@ -5,6 +5,7 @@
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
 | BUG-042 | P2 | open | [Silent Utterance Truncation in Preprocessing](BUG-042-silent-utterance-truncation.md) |
+| BUG-043 | P2 | open | [Flag Overloading Hides Data Loss](BUG-043-flag-overloading-hides-data-loss.md) |
 
 ---
 
