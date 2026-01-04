@@ -13,8 +13,9 @@ from vibe_check.diagnostics.separation import SeparationMetrics  # noqa: TC001
 class ReliabilityMetrics(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # Krippendorff's alpha can be negative when agreement is worse than chance
-    krippendorff_alpha: float = Field(ge=-1.0, le=1.0)
+    # Krippendorff's alpha can be negative when agreement is worse than chance.
+    # Some formulations can produce values less than -1.0; do not over-constrain.
+    krippendorff_alpha: float
     krippendorff_alpha_per_item: dict[str, float]
     icc_consistency: float
     icc_agreement: float
@@ -24,8 +25,9 @@ class ReliabilityMetrics(BaseModel):
 class ConsistencyMetrics(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # Cronbach's alpha can be negative when items are negatively correlated
-    cronbach_alpha: float = Field(ge=-1.0, le=1.0)
+    # Cronbach's alpha can be arbitrarily negative for poorly-correlated items.
+    # Do not enforce a lower bound.
+    cronbach_alpha: float
     item_total_correlations: dict[str, float]
 
 

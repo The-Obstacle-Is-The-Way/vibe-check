@@ -11,8 +11,50 @@ from vibe_check.run.ledger import JobLedger
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from _pytest.monkeypatch import MonkeyPatch
 
-def test_cli_score_corpus_end_to_end_fake_mode(tmp_path: Path) -> None:
+
+def _clear_settings_env(monkeypatch: MonkeyPatch) -> None:
+    # Settings reads from env + `.env` by default. Keep this test hermetic.
+    for key in [
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "GOOGLE_API_KEY",
+        "GEMINI_API_KEY",
+        "JUROR_GPT_MODEL",
+        "JUROR_CLAUDE_MODEL",
+        "JUROR_GEMINI_MODEL",
+        "JUDGE_MODEL",
+        "RUNS_PER_MODEL",
+        "DISAGREEMENT_RANGE_THRESHOLD",
+        "ARBITRATION_TOTAL_STD_THRESHOLD",
+        "ARBITRATION_MAX_PROB_THRESHOLD",
+        "ARBITRATION_ENTROPY_THRESHOLD",
+        "CLINICAL_AMBIGUITY_BAND_LOW",
+        "CLINICAL_AMBIGUITY_BAND_HIGH",
+        "INSUFFICIENT_EVIDENCE_THRESHOLD",
+        "DIRICHLET_ALPHA",
+        "SCORING_DIALOGUE_VIEW",
+        "EMBEDDING_DIALOGUE_VIEW",
+        "MAX_CONCURRENT_DIALOGUES",
+        "OPENAI_RPM",
+        "ANTHROPIC_RPM",
+        "GOOGLE_RPM",
+        "MAX_RETRIES",
+        "RETRY_INITIAL_WAIT",
+        "RETRY_MAX_WAIT",
+        "RETRY_JITTER",
+        "VALIDATION_RETRIES",
+        "CHECKPOINT_DB",
+        "OUTPUT_DIR",
+        "PROMPT_VERSION",
+    ]:
+        monkeypatch.delenv(key, raising=False)
+
+
+def test_cli_score_corpus_end_to_end_fake_mode(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    _clear_settings_env(monkeypatch)
     dataset_dir = write_sqpsychconv_like_dataset(tmp_path, n_train=4, n_test=0)
     output_dir = tmp_path / "run"
     checkpoint_db = tmp_path / "checkpoints.sqlite"

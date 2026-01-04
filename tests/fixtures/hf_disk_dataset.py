@@ -32,8 +32,9 @@ def write_sqpsychconv_like_dataset(tmp_path: Path, *, n_train: int = 6, n_test: 
             "client_model": ["test"] * n,
             "therapist_model": ["test"] * n,
             "dialogue": [
-                "Therapist: How are you feeling today?\nClient: I'm feeling down and tired."
-                for _ in range(n)
+                "Therapist: How are you feeling today?\n"
+                f"Client: I'm feeling down and tired. (id={file_id})"
+                for file_id in file_ids
             ],
         }
 

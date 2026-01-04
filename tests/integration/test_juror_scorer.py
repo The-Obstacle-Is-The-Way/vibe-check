@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import pytest
+from aiolimiter import AsyncLimiter
 from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
 
@@ -13,7 +14,7 @@ from vibe_check.scoring.juror import JurorScorer
 from vibe_check.scoring.prompting import build_juror_system_prompt
 
 if TYPE_CHECKING:
-    from aiolimiter import AsyncLimiter
+    from types import TracebackType
 
 
 def test_juror_scorer_end_to_end_with_testmodel() -> None:
@@ -46,17 +47,24 @@ async def test_juror_scorer_ascore_retries_transient_errors_and_rate_limits() ->
         model=model, output_type=PHQ8Assessment, system_prompt=build_juror_system_prompt("v1")
     )
 
-    class CountingLimiter:
+    class CountingLimiter(AsyncLimiter):
         def __init__(self) -> None:
+            super().__init__(1_000_000, 60.0)
             self.entered = 0
             self.exited = 0
 
-        async def __aenter__(self) -> CountingLimiter:
+        async def __aenter__(self) -> None:
             self.entered += 1
-            return self
+            await super().__aenter__()
 
-        async def __aexit__(self, _exc_type: object, _exc: object, _tb: object) -> None:
+        async def __aexit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            tb: TracebackType | None,
+        ) -> None:
             self.exited += 1
+            await super().__aexit__(exc_type, exc, tb)
 
     limiter = CountingLimiter()
 
@@ -65,7 +73,7 @@ async def test_juror_scorer_ascore_retries_transient_errors_and_rate_limits() ->
         model_id="fake-model",
         run_number=1,
         prompt_version="v1",
-        rate_limiter=cast("AsyncLimiter", limiter),
+        rate_limiter=limiter,
         max_retries=2,
         retry_initial_wait=0.0,
         retry_max_wait=0.0,
