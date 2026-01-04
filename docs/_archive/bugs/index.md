@@ -49,19 +49,20 @@ All bugs in this directory have been **resolved**. Bug numbers are permanent ide
 | BUG-039 | [max_concurrency misleading for jurors](bug-039-max-concurrency-misleading-for-jurors.md) | P4 | RESOLVED |
 | BUG-040 | [Missing PHQ-8 clinical rubric in prompts](bug-040-missing-phq8-rubric-in-prompts.md) | P0 | RESOLVED |
 | BUG-041 | [Unused embedding_dialogue_view setting](bug-041-unused-embedding-dialogue-view-setting.md) | P3 | RESOLVED |
+| BUG-042 | [Silent utterance truncation in preprocessing](bug-042-silent-utterance-truncation.md) | P2 | RESOLVED |
 
 ---
 
 ## Statistics
 
-- **Total bugs**: 41
-- **Resolved/Fixed**: 41
+- **Total bugs**: 42
+- **Resolved/Fixed**: 42
 - **Open**: 0
 
 ---
 
 ## Next Bug Number
 
-When filing new bugs, use: **BUG-042**
+When filing new bugs, use: **BUG-048**
 
 Place new bugs in `docs/_bugs/` (not `_archive`). Move to archive when resolved.
