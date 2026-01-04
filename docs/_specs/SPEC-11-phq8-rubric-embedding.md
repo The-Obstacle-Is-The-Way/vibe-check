@@ -411,9 +411,9 @@ For the PHQ-8 rubric specifically, **direct prompt embedding is the correct choi
 
 **Decision**: The PHQ-8 rubric is small (8 items, ~200 tokens) and static. Direct prompt embedding guarantees the rubric is always correctly provided to the LLM with no retrieval failures.
 
-### Where Vector Embeddings ARE Useful (Future)
+### Where Vector Embeddings ARE Useful (Out of Scope)
 
-Vector embeddings may be valuable for other vibe-check use cases (future scope):
+Vector embeddings may be valuable for downstream use cases owned by `ai-psychiatrist` (out of scope for vibe-check):
 
 | Use Case | Embedding Model Recommendation (2025) |
 |----------|---------------------------------------|
@@ -421,29 +421,11 @@ Vector embeddings may be valuable for other vibe-check use cases (future scope):
 | Evidence clustering | **text-embedding-3-large** (OpenAI, $0.13/M tokens) |
 | Multilingual sessions | **Gemini Embedding** (100+ languages, free tier) |
 
-### Current State: `embedding_dialogue_view` Setting
+### Resolution: `embedding_dialogue_view` Removed
 
-The codebase has a placeholder setting in `settings.py`:
+The previously-unused `embedding_dialogue_view` setting was removed as dead code (BUG-041). Vector embedding generation remains out of scope for vibe-check.
 
-```python
-embedding_dialogue_view: Literal["client_qa", "client_contextualized", "client_only"] = "client_qa"
-```
-
-**Status**: Setting exists but NO implementation code. This is a **future enhancement**, not a critical gap.
-
-**Current flow** (no vector embeddings):
-```
-Dialogue → Preprocess → Full view to LLM → PHQ-8 scores
-```
-
-**Future flow** (with vector embeddings):
-```
-Dialogue → Preprocess → Embed → Store in vector DB
-                    ↓
-Query → Retrieve similar → Compare/analyze
-```
-
-### When to Implement Dialogue Embeddings (Future SPEC)
+### When to Implement Dialogue Embeddings (Future ai-psychiatrist SPEC)
 
 Implement if ANY of these become true:
 
@@ -452,7 +434,7 @@ Implement if ANY of these become true:
 3. **Research needs**: Finding similar cases, clustering by symptom patterns
 4. **Multi-session tracking**: Same client over time needs embedding-based continuity
 
-**Recommendation**: Create a separate SPEC-12 when these needs arise. For now, focus on BUG-040 (critical).
+**Recommendation**: Create a separate SPEC in `ai-psychiatrist` when these needs arise. For now, focus on BUG-040 (critical).
 
 #### Best Embedding APIs (2025-2026 Research)
 
@@ -474,7 +456,7 @@ Implement if ANY of these become true:
 
 ## Related
 
-- [BUG-040: Missing PHQ-8 Rubric in Prompts](../_bugs/BUG-040-missing-phq8-rubric-in-prompts.md)
+- [BUG-040: Missing PHQ-8 Rubric in Prompts](../_archive/bugs/bug-040-missing-phq8-rubric-in-prompts.md)
 - [Prompts Reference](../prompts/index.md)
 - [SPEC-04: Juror Scoring Agent](../_archive/specs/spec-04-juror-scoring-agent.md)
 - [SPEC-05: Consensus Orchestration](../_archive/specs/spec-05-consensus-orchestration.md)
