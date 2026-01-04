@@ -24,7 +24,8 @@ Given a corpus of dialogues, vibe-check produces:
 - Optional **judge arbitration** for contested items
 - Run artifacts (`scored.jsonl`, `rows/`, `ledger.sqlite`, `run_manifest.json`) plus public exports (JSONL/CSV)
 
-PHQ-8 is used (not PHQ-9): no self-harm item is scored.
+PHQ-8 is used (8 items × 0–3, total 0–24; not PHQ-9). Self-harm is not scored as an item, but the system does
+propagate a `mentions_self_harm` flag + evidence snippets for safety auditing.
 
 ## Key guarantees
 
