@@ -4,7 +4,7 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
-| _none_ | - | - | - |
+| BUG-042 | P2 | open | [Silent Utterance Truncation in Preprocessing](BUG-042-silent-utterance-truncation.md) |
 
 ---
 
@@ -48,7 +48,7 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 
 ## Filing New Bugs
 
-1. Use the next available number: **BUG-042**
+1. Use the next available number: **BUG-043**
 2. Create file in this directory: `BUG-NNN-short-description.md`
 3. Include: Severity, Status, Date, Summary, Root Cause, Fix
 4. When resolved, move to `docs/_archive/bugs/`
