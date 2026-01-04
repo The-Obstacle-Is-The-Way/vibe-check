@@ -5,6 +5,7 @@
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
 | BUG-040 | P0 | open | [Missing PHQ-8 Clinical Rubric in System Prompts](BUG-040-missing-phq8-rubric-in-prompts.md) |
+| BUG-041 | P3 | open | [Unused `embedding_dialogue_view` Setting (Dead Code)](BUG-041-unused-embedding-dialogue-view-setting.md) |
 
 ---
 
@@ -45,7 +46,7 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 
 ## Filing New Bugs
 
-1. Use the next available number: **BUG-041**
+1. Use the next available number: **BUG-042**
 2. Create file in this directory: `BUG-NNN-short-description.md`
 3. Include: Severity, Status, Date, Summary, Root Cause, Fix
 4. When resolved, move to `docs/_archive/bugs/`
