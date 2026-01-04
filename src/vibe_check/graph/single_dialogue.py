@@ -53,7 +53,7 @@ def build_single_dialogue_graph(
 
         return node
 
-    previous = START
+    juror_node_names: list[str] = []
     for idx, juror in enumerate(jurors, start=1):
         node_name = f"juror_{idx}"
         graph.add_node(
@@ -61,8 +61,8 @@ def build_single_dialogue_graph(
             cast("Any", make_juror_node(juror)),
             input_schema=ScoringState,
         )
-        graph.add_edge(previous, node_name)
-        previous = node_name
+        graph.add_edge(START, node_name)
+        juror_node_names.append(node_name)
 
     def aggregate_node(state: ScoringState) -> dict[str, Any]:
         reports = sorted(state["jury_results"], key=lambda r: (r.model_id, r.run_number))
@@ -82,7 +82,11 @@ def build_single_dialogue_graph(
         return {"final_output": agg, "needs_arbitration": agg.triggered_arbitration}
 
     graph.add_node("aggregate", aggregate_node, input_schema=ScoringState)
-    graph.add_edge(previous, "aggregate")
+    if juror_node_names:
+        for node_name in juror_node_names:
+            graph.add_edge(node_name, "aggregate")
+    else:
+        graph.add_edge(START, "aggregate")
 
     def route_after_aggregate(state: ScoringState) -> str:
         return "arbitrate" if state["needs_arbitration"] else END
@@ -159,13 +163,12 @@ async def invoke_with_checkpoint_resume(
     checkpointer: Any,
     initial_state: ScoringState,
     thread_id: str,
-    max_concurrency: int = 1,
+    graph_max_concurrency: int | None = None,
 ) -> ScoringState:
     """Invoke a compiled LangGraph app asynchronously, resuming from checkpoint when present."""
-    config: dict[str, Any] = {
-        "configurable": {"thread_id": thread_id},
-        "max_concurrency": max_concurrency,
-    }
+    config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
+    if graph_max_concurrency is not None:
+        config["max_concurrency"] = graph_max_concurrency
     has_checkpoint = await checkpointer.aget_tuple(config) is not None
     input_state: Any = None if has_checkpoint else initial_state
     out = await app.ainvoke(input_state, config=config)
@@ -181,7 +184,7 @@ def score_one_dialogue(
     jurors: Sequence[Juror],
     judge_item: JudgeItemFn,
     dialogue_view: DialogueViewName = "client_qa",
-    max_concurrency: int = 1,
+    graph_max_concurrency: int | None = None,
 ) -> AggregatedPHQ8:
     """Score one dialogue end-to-end with checkpoint/resume enabled."""
     return asyncio.run(
@@ -193,7 +196,7 @@ def score_one_dialogue(
             jurors=jurors,
             judge_item=judge_item,
             dialogue_view=dialogue_view,
-            max_concurrency=max_concurrency,
+            graph_max_concurrency=graph_max_concurrency,
         )
     )
 
@@ -207,7 +210,7 @@ async def score_one_dialogue_async(
     jurors: Sequence[Juror],
     judge_item: JudgeItemFn,
     dialogue_view: DialogueViewName = "client_qa",
-    max_concurrency: int = 1,
+    graph_max_concurrency: int | None = None,
 ) -> AggregatedPHQ8:
     """Async scoring for one dialogue with checkpoint/resume enabled."""
     corpus = load_corpus(corpus_dir)
@@ -239,6 +242,10 @@ async def score_one_dialogue_async(
 
     from vibe_check.sqlite import open_async_sqlite_saver
 
+    effective_graph_max_concurrency = graph_max_concurrency
+    if effective_graph_max_concurrency is None:
+        effective_graph_max_concurrency = max(len(jurors), 1)
+
     async with open_async_sqlite_saver(checkpoint_path) as saver:
         app = graph.compile(checkpointer=saver)
         final_state = await invoke_with_checkpoint_resume(
@@ -246,7 +253,7 @@ async def score_one_dialogue_async(
             checkpointer=saver,
             initial_state=initial_state,
             thread_id=file_id,
-            max_concurrency=max_concurrency,
+            graph_max_concurrency=effective_graph_max_concurrency,
         )
 
     final = final_state["final_output"]

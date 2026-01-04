@@ -254,7 +254,7 @@ async def score_corpus_async(
                         checkpointer=saver,
                         initial_state=initial_state,
                         thread_id=dialogue.file_id,
-                        max_concurrency=max_concurrency,
+                        graph_max_concurrency=max(len(jurors), 1),
                     )
                     result = final_state["final_output"]
                     if result is None:
