@@ -14,7 +14,7 @@ Complete walkthrough of running vibe-check on the full SQPsychConv dataset.
 
 ## Estimated Cost
 
-For full 2,090 dialogues with 6 jurors + arbitration (~30%):
+For full 2,090 dialogues with 6 jurors by default + arbitration (~30%):
 
 | Component | Calls | Est. Cost |
 |-----------|-------|-----------|

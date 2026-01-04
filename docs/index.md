@@ -54,7 +54,7 @@ The core scoring pipeline: jurors, aggregation, and arbitration.
 | Document | Description |
 |----------|-------------|
 | [Overview](scoring/index.md) | Scoring pipeline overview |
-| [Jury Consensus](scoring/jury-consensus.md) | How 6 jurors vote independently |
+| [Jury Consensus](scoring/jury-consensus.md) | How jurors vote independently (default: 6) |
 | [Bayesian Aggregation](scoring/bayesian-aggregation.md) | Combining votes into distributions |
 | [Arbitration](scoring/arbitration.md) | When and why the judge intervenes |
 
@@ -128,7 +128,7 @@ Technical specifications and lookup tables.
 
 ```
 ┌─────────────┐     ┌─────────────────┐     ┌─────────────┐
-│  SQPsychConv│────▶│  Preprocessing  │────▶│   6 Jurors  │
+│  SQPsychConv│────▶│  Preprocessing  │────▶│    Jurors  │
 │   Corpus    │     │  (DialogueViews)│     │ (sequential)│
 └─────────────┘     └─────────────────┘     └──────┬──────┘
                                                    │
@@ -141,7 +141,7 @@ Technical specifications and lookup tables.
 
 1. **Input**: SQPsychConv dialogue corpus
 2. **Preprocessing**: Extract client_qa or client_only views
-3. **Jury Phase**: 6 jurors score each dialogue independently
+3. **Jury Phase**: By default, 6 jurors score each dialogue independently
 4. **Aggregation**: Bayesian combination of votes
 5. **Arbitration**: Judge resolves contested items
 6. **Diagnostics**: Quality gate validation

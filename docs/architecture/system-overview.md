@@ -31,7 +31,7 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 │  │     │       │       │       │       │       │           │    │
 │  │     └───────┴───────┴───┬───┴───────┴───────┘           │    │
 │  │                         │                               │    │
-│  │              6 PHQ8Reports (sequential)                 │    │
+│  │              N PHQ8Reports (sequential)                 │    │
 │  │                                                         │    │
 │  │  Each juror independently scores all 8 PHQ-8 items      │    │
 │  │  with confidence ratings and evidence extraction        │    │
@@ -42,7 +42,7 @@ This document provides a high-level view of the vibe-check scoring pipeline.
 │  │                  AGGREGATION PHASE                      │    │
 │  │                                                         │    │
 │  │  For each PHQ-8 item:                                   │    │
-│  │    1. Collect votes from all 6 jurors                   │    │
+│  │    1. Collect votes from all jurors                     │    │
 │  │    2. Compute Dirichlet posterior (0-3 distribution)    │    │
 │  │    3. Calculate entropy and clinical probability        │    │
 │  │    4. Check arbitration triggers                        │    │

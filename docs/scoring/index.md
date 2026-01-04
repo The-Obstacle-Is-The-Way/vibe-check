@@ -8,7 +8,7 @@ This section documents the core PHQ-8 scoring pipeline: how jurors vote, how vot
 
 | Document | Description |
 |----------|-------------|
-| [Jury Consensus](jury-consensus.md) | How 6 independent jurors score each dialogue |
+| [Jury Consensus](jury-consensus.md) | How jurors score each dialogue (default: 6) |
 | [Bayesian Aggregation](bayesian-aggregation.md) | Combining votes into probability distributions |
 | [Arbitration](arbitration.md) | When and why the judge intervenes |
 
@@ -28,8 +28,8 @@ The scoring pipeline works in three phases:
 │         ▼                                                   │
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │ PHASE 1: JURY                                       │    │
-│  │  6 jurors (3 models × 2 runs) score independently   │    │
-│  │  → 6 PHQ8Reports                                    │    │
+│  │  3 models × RUNS_PER_MODEL jurors score independently│    │
+│  │  → N PHQ8Reports                                     │    │
 │  └─────────────────────────────────────────────────────┘    │
 │         │                                                   │
 │         ▼                                                   │
@@ -58,7 +58,7 @@ The scoring pipeline works in three phases:
 
 ### Multi-Model Jury
 
-Instead of trusting a single LLM, vibe-check uses 6 jurors from 3 different providers. This provides:
+Instead of trusting a single LLM, vibe-check by default uses 6 jurors from 3 different providers. This provides:
 - Cross-model validation
 - Uncertainty quantification
 - Detection of model-specific biases
