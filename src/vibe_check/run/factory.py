@@ -14,7 +14,7 @@ from vibe_check.scoring.juror import JurorScorer
 from vibe_check.scoring.usage import token_usage_from_run_usage
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Awaitable, Sequence
 
     from vibe_check.judge.schema import JudgeItemReport, JudgeItemResolution
     from vibe_check.schemas.scoring import PHQ8Report
@@ -42,7 +42,7 @@ class JudgeItemFn(Protocol):
         item: str,
         juror_reports: list[PHQ8Report],
         prompt_version: str,
-    ) -> JudgeItemReport:
+    ) -> Awaitable[JudgeItemReport]:
         """Resolve a single contested item."""
         ...
 
@@ -112,6 +112,7 @@ def build_real_jury(
                 prompt_version=prompt_version,
                 view_name=dialogue_view,
                 retries=settings.validation_retries,
+                model_settings=settings.pydantic_ai_model_settings(),
             )
             scorer = JurorScorer(
                 agent=agent,
@@ -146,7 +147,7 @@ def build_real_judge_item(
 
     Note: Layer 3 (rate limiting) is omitted for the judge because:
     - Judge calls are infrequent relative to juror calls (only on arbitration)
-    - The judge is called synchronously, making async rate limiting complex
+    - Judge items are resolved sequentially by default
     - Transient retry (Layer 2) handles 429s when they occur
 
     Note (BUG-027 fix): prompt_version is now an explicit param to ensure CLI args
@@ -168,6 +169,7 @@ def build_real_judge_item(
         model=full_model_name,
         prompt_version=prompt_version,
         retries=settings.validation_retries,
+        model_settings=settings.pydantic_ai_model_settings(),
     )
 
     # Capture retry settings at build time
@@ -176,7 +178,7 @@ def build_real_judge_item(
     retry_max_wait = settings.retry_max_wait
     retry_jitter = settings.retry_jitter
 
-    def judge_fn(
+    async def judge_fn(
         scoring_text: str,
         item: str,
         juror_reports: list[PHQ8Report],
@@ -208,14 +210,14 @@ def build_real_judge_item(
             retry=retry_if_exception(_is_transient_error),
             reraise=True,
         )
-        def _call_with_retry() -> JudgeItemReport:
-            result = agent.run_sync(prompt)
+        async def _call_with_retry() -> JudgeItemReport:
+            result = await agent.run(prompt)
             # PydanticAI v1+ puts structured output in .data
             output = getattr(result, "data", getattr(result, "output", None))
             resolution = cast("JudgeItemResolution", output)
             usage = token_usage_from_run_usage(result.usage())
             return JudgeItemReport(**resolution.model_dump(), usage=usage)
 
-        return _call_with_retry()
+        return await _call_with_retry()
 
     return judge_fn

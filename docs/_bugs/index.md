@@ -4,13 +4,7 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
-| BUG-043 | P2 | open | [Flag Overloading Hides Data Loss](BUG-043-flag-overloading-hides-data-loss.md) |
-| BUG-044 | P4 | open | [Over-Parameterized `score_corpus_async()` Function](BUG-044-over-parameterized-score-corpus.md) |
-| BUG-045 | P4 | open | [Synchronous Judge Function in Async Graph](BUG-045-sync-judge-in-async-graph.md) |
-| BUG-046 | P3 | open | [No Maximum Iteration Limit on LangGraph](BUG-046-no-graph-iteration-limit.md) |
-| BUG-048 | P1 | open | [No Temperature Control for LLM Calls](BUG-048-no-temperature-control-for-llm-calls.md) |
-| BUG-049 | P3 | open | [Hardcoded Diagnostic Thresholds](BUG-049-hardcoded-diagnostic-thresholds.md) |
-| BUG-050 | P4 | open | [Remaining Magic Numbers in Codebase](BUG-050-remaining-magic-numbers.md) |
+| — | — | — | No active bugs |
 
 ---
 
@@ -18,6 +12,13 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
+| BUG-050 | P4 | resolved | [Remaining Magic Numbers in Codebase](../_archive/bugs/bug-050-remaining-magic-numbers.md) |
+| BUG-049 | P3 | resolved | [Hardcoded Diagnostic Thresholds](../_archive/bugs/bug-049-hardcoded-diagnostic-thresholds.md) |
+| BUG-048 | P1 | resolved | [No Temperature Control for LLM Calls](../_archive/bugs/bug-048-no-temperature-control-for-llm-calls.md) |
+| BUG-046 | P3 | resolved | [No Maximum Iteration Limit on LangGraph](../_archive/bugs/bug-046-no-graph-iteration-limit.md) |
+| BUG-045 | P4 | resolved | [Synchronous Judge Function in Async Graph](../_archive/bugs/bug-045-sync-judge-in-async-graph.md) |
+| BUG-044 | P4 | resolved | [Over-Parameterized `score_corpus_async()` Function](../_archive/bugs/bug-044-over-parameterized-score-corpus.md) |
+| BUG-043 | P2 | resolved | [Flag Overloading Hides Data Loss](../_archive/bugs/bug-043-flag-overloading-hides-data-loss.md) |
 | BUG-047 | P5 | resolved | [Bare `pass` Statement in Runner](../_archive/bugs/bug-047-runner-bare-pass-statement.md) |
 | BUG-042 | P2 | resolved | [Silent Utterance Truncation in Preprocessing](../_archive/bugs/bug-042-silent-utterance-truncation.md) |
 | BUG-041 | P3 | resolved | [Unused `embedding_dialogue_view` Setting (Dead Code)](../_archive/bugs/bug-041-unused-embedding-dialogue-view-setting.md) |
@@ -50,9 +51,9 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 | BUG-035 to BUG-039 | 5 | Validation and configuration hardening |
 | BUG-040 to BUG-041 | 2 | PHQ-8 rubric + config cleanup |
 | BUG-042 to BUG-042 | 1 | Preprocessing truncation audit |
-| BUG-047 to BUG-047 | 1 | Runner hygiene |
+| BUG-043 to BUG-050 | 8 | Reproducibility + diagnostics + hygiene |
 
-**Total resolved**: 43 bugs
+**Total resolved**: 50 bugs
 
 ---
 

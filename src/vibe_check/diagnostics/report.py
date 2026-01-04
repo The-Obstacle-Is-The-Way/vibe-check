@@ -6,6 +6,13 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from vibe_check.constants import (
+    ARBITRATION_RATE_MAX,
+    COHENS_D_MIN,
+    CRONBACH_ALPHA_MIN,
+    KRIPPENDORFF_ALPHA_MIN,
+    P_VALUE_MAX,
+)
 from vibe_check.diagnostics.arbitration import ArbitrationMetrics  # noqa: TC001
 from vibe_check.diagnostics.separation import SeparationMetrics  # noqa: TC001
 
@@ -96,17 +103,17 @@ def render_diagnostic_report_markdown(report: DiagnosticReport) -> str:
     lines.append("")
     lines.append("## Gates")
     lines.append(
-        f"- Reliability (Krippendorff alpha >= 0.67): "
+        f"- Reliability (Krippendorff alpha >= {KRIPPENDORFF_ALPHA_MIN:.2f}): "
         f"{'PASS' if report.passes_reliability_gate else 'FAIL'} "
         f"(alpha={report.reliability.krippendorff_alpha:.3f})"
     )
     lines.append(
-        f"- Consistency (Cronbach alpha >= 0.70): "
+        f"- Consistency (Cronbach alpha >= {CRONBACH_ALPHA_MIN:.2f}): "
         f"{'PASS' if report.passes_consistency_gate else 'FAIL'} "
         f"(alpha={report.consistency.cronbach_alpha:.3f})"
     )
     lines.append(
-        f"- Separation (MDD > control, p<0.01, d>=0.5): "
+        f"- Separation (MDD > control, p<{P_VALUE_MAX:g}, d>={COHENS_D_MIN:g}): "
         f"{'PASS' if report.passes_separation_gate else 'FAIL'} "
         f"(mdd_mean={report.separation.mdd_mean:.2f}, "
         f"control_mean={report.separation.control_mean:.2f}, "
@@ -114,7 +121,7 @@ def render_diagnostic_report_markdown(report: DiagnosticReport) -> str:
         f"p={report.separation.p_value:.3g})"
     )
     lines.append(
-        f"- Arbitration (rate < 0.30): "
+        f"- Arbitration (rate < {ARBITRATION_RATE_MAX:.2f}): "
         f"{'PASS' if report.passes_arbitration_gate else 'FAIL'} "
         f"(rate={report.arbitration.overall_rate:.3f})"
     )

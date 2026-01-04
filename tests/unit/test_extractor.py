@@ -69,6 +69,7 @@ def test_unlabeled_preamble_is_dropped_and_flagged() -> None:
     )
     views = preprocess_dialogue(dialogue)
     assert views.has_unknown_speaker is True
+    assert views.orphan_line_count == 1
     assert views.dialogue_clean.startswith("Therapist: Hi")
 
 
@@ -81,7 +82,8 @@ def test_speaker_labeled_meta_is_dropped_and_flagged() -> None:
         dialogue="Therapist: Hi\nTherapist:, no markdown.\nClient: Hello",
     )
     views = preprocess_dialogue(dialogue)
-    assert views.has_unknown_speaker is True
+    assert views.has_unknown_speaker is False
+    assert views.meta_text_removed_count == 1
     assert "no markdown" not in views.dialogue_clean.lower()
     assert views.client_only_text == "Hello"
 
@@ -95,7 +97,8 @@ def test_doublequote_meta_suffix_is_trimmed() -> None:
         dialogue='Client: Hello?"" This uses meta commentary and should be removed.',
     )
     views = preprocess_dialogue(dialogue)
-    assert views.has_unknown_speaker is True
+    assert views.has_unknown_speaker is False
+    assert views.meta_text_removed_count == 1
     assert views.client_only_text == "Hello?"
 
 

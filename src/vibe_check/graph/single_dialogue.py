@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
 from langgraph.graph import END, START, StateGraph
@@ -26,7 +26,7 @@ class Juror(Protocol):
     async def ascore(self, scoring_text: str) -> PHQ8Report: ...
 
 
-JudgeItemFn = Callable[[str, str, list[PHQ8Report], str], JudgeItemReport]
+JudgeItemFn = Callable[[str, str, list[PHQ8Report], str], Awaitable[JudgeItemReport]]
 
 DialogueViewName = Literal["client_qa", "client_only"]
 
@@ -91,7 +91,7 @@ def build_single_dialogue_graph(
     def route_after_aggregate(state: ScoringState) -> str:
         return "arbitrate" if state["needs_arbitration"] else END
 
-    def arbitrate_node(state: ScoringState) -> dict[str, Any]:
+    async def arbitrate_node(state: ScoringState) -> dict[str, Any]:
         agg = state["final_output"]
         if agg is None:
             raise RuntimeError("aggregate node did not produce final_output")
@@ -105,7 +105,7 @@ def build_single_dialogue_graph(
 
         resolutions: dict[str, JudgeItemReport] = {}
         for item in contested:
-            resolutions[item] = judge_item(
+            resolutions[item] = await judge_item(
                 state["scoring_text"],
                 item,
                 agg.juror_reports,
@@ -164,9 +164,13 @@ async def invoke_with_checkpoint_resume(
     initial_state: ScoringState,
     thread_id: str,
     graph_max_concurrency: int | None = None,
+    recursion_limit: int = 25,
 ) -> ScoringState:
     """Invoke a compiled LangGraph app asynchronously, resuming from checkpoint when present."""
-    config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
+    config: dict[str, Any] = {
+        "configurable": {"thread_id": thread_id},
+        "recursion_limit": recursion_limit,
+    }
     if graph_max_concurrency is not None:
         config["max_concurrency"] = graph_max_concurrency
     has_checkpoint = await checkpointer.aget_tuple(config) is not None

@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | P4 (Low - Code Smell) |
-| **Status** | open |
+| **Status** | resolved |
 | **Date** | 2026-01-04 |
 | **Component** | `run/runner.py` |
 | **Impact** | Maintainability, readability, error-prone call sites |
@@ -12,24 +12,28 @@
 
 ## Summary
 
-The `score_corpus_async()` function takes **13 parameters**. This violates clean code principles and makes the function difficult to call correctly.
+The batch runner entrypoint (`score_corpus()` / `score_corpus_async()`) takes **~19 parameters**, making it error-prone and difficult to evolve.
+
+This is a maintainability issue (not a correctness bug), but it increases the chance of misconfigured runs and inconsistent manifest recording.
 
 ---
 
 ## Current State
 
-`run/runner.py:84-107`:
+`src/vibe_check/run/runner.py:83-104`:
 
 ```python
 async def score_corpus_async(
-    corpus: list[SQPsychConvDialogue],
+    *,
+    input_path: str | Path,
+    output_dir: Path,
+    checkpoint_db: str,
     jurors: Sequence[Juror],
     judge_item: JudgeItemFn,
-    *,
-    output_dir: str | Path,
+    limit: int | None = None,
     prompt_version: str,
     dialogue_view: DialogueViewName = "client_qa",
-    max_concurrency: int = 10,
+    max_concurrency: int = 1,
     fail_fast: bool = False,
     force: bool = False,
     dirichlet_alpha: float = 0.5,
@@ -37,7 +41,8 @@ async def score_corpus_async(
     arbitration_total_std_threshold: float = 2.0,
     arbitration_max_prob_threshold: float = 0.60,
     arbitration_entropy_threshold: float = 1.2,
-    clinical_ambiguity_band: tuple[float, float] = (0.4, 0.6),
+    clinical_ambiguity_band_low: float = 0.4,
+    clinical_ambiguity_band_high: float = 0.6,
     insufficient_evidence_threshold: int = 2,
 ) -> None:
 ```
@@ -52,7 +57,11 @@ async def score_corpus_async(
 
 ## Fix
 
-### Create a `RunConfig` dataclass
+### Expand and use the existing `RunConfig` dataclass (Recommended)
+
+`src/vibe_check/run/config.py` already defines `RunConfig`, but it currently only covers paths + a few knobs. Expand it to include the aggregation parameters and execution flags, then update `score_corpus()` / `score_corpus_async()` to accept a single config object.
+
+This keeps call sites small, makes it easier to persist a complete run manifest, and reduces accidental mismatches between CLI args, Settings, and the runner.
 
 ```python
 # run/config.py
@@ -77,7 +86,8 @@ class RunConfig:
     arbitration_total_std_threshold: float = 2.0
     arbitration_max_prob_threshold: float = 0.60
     arbitration_entropy_threshold: float = 1.2
-    clinical_ambiguity_band: tuple[float, float] = (0.4, 0.6)
+    clinical_ambiguity_band_low: float = 0.4
+    clinical_ambiguity_band_high: float = 0.6
     insufficient_evidence_threshold: int = 2
 
     @classmethod
@@ -86,7 +96,7 @@ class RunConfig:
         return cls(
             output_dir=output_dir,
             prompt_version=settings.prompt_version,
-            dialogue_view=settings.dialogue_view,
+            dialogue_view=settings.scoring_dialogue_view,
             max_concurrency=settings.max_concurrent_dialogues,
             dirichlet_alpha=settings.dirichlet_alpha,
             # ... etc
@@ -97,14 +107,14 @@ class RunConfig:
 
 ```python
 async def score_corpus_async(
-    corpus: list[SQPsychConvDialogue],
+    *,
     jurors: Sequence[Juror],
     judge_item: JudgeItemFn,
     config: RunConfig,
 ) -> None:
 ```
 
-**4 parameters** instead of 13.
+**3 parameters** instead of ~19.
 
 ---
 
@@ -121,3 +131,9 @@ async def score_corpus_async(
 
 - Clean Code principle: "Functions should have few arguments" (ideally 0-3)
 - `run/config.py` already exists but is underutilized
+
+---
+
+## Resolution (Implemented)
+
+Expanded `RunConfig` in `src/vibe_check/run/config.py` and refactored `src/vibe_check/run/runner.py` so `score_corpus()`/`score_corpus_async()` take a single `config` object, with the CLI constructing `RunConfig` and persisting the full configuration into the run manifest for reproducibility.

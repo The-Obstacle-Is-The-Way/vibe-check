@@ -11,12 +11,14 @@ from vibe_check.judge.schema import JudgeItemResolution
 
 if TYPE_CHECKING:
     from pydantic_ai.models import KnownModelName, Model
+    from pydantic_ai.settings import ModelSettings
 
 
 def build_judge_agent(
     *,
     model: Model | KnownModelName | str | None,
     prompt_version: str,
+    model_settings: ModelSettings | None = None,
     retries: int = 2,
 ) -> Agent[None, JudgeItemResolution]:
     """Build a PydanticAI agent for resolving contested items.
@@ -34,5 +36,6 @@ def build_judge_agent(
         model=model,
         output_type=JudgeItemResolution,
         retries=retries,
+        model_settings=model_settings,
         system_prompt=build_judge_system_prompt(prompt_version),
     )

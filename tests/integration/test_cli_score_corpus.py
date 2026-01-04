@@ -44,9 +44,15 @@ def _clear_settings_env(monkeypatch: MonkeyPatch) -> None:
         "RETRY_MAX_WAIT",
         "RETRY_JITTER",
         "VALIDATION_RETRIES",
+        "GRAPH_RECURSION_LIMIT",
         "CHECKPOINT_DB",
         "OUTPUT_DIR",
         "PROMPT_VERSION",
+        "LLM_TEMPERATURE",
+        "LLM_TOP_P",
+        "LLM_MAX_TOKENS",
+        "LLM_TIMEOUT",
+        "LLM_SEED",
     ]:
         monkeypatch.delenv(key, raising=False)
 

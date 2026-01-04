@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
+from vibe_check.run.config import RunConfig
 from vibe_check.run.factory import (
     build_fake_judge_item,
     build_fake_jury,
@@ -14,6 +16,9 @@ from vibe_check.run.factory import (
 )
 from vibe_check.run.runner import score_corpus
 from vibe_check.settings import Settings
+
+if TYPE_CHECKING:
+    from vibe_check.graph.single_dialogue import DialogueViewName
 
 
 def export_provider_api_keys(settings: Settings) -> None:
@@ -166,26 +171,31 @@ def main(argv: list[str] | None = None) -> int:
             jurors = build_fake_jury()
             judge_item = build_fake_judge_item()
 
-        score_corpus(
-            input_path=args.input,
+        run_config = RunConfig(
+            input_path=Path(args.input),
             output_dir=Path(args.output),
-            checkpoint_db=args.checkpoint,
-            jurors=jurors,
-            judge_item=judge_item,
+            checkpoint_db=str(args.checkpoint),
+            prompt_version=str(args.prompt_version),
+            dialogue_view=cast("DialogueViewName", args.dialogue_view),
             limit=args.limit,
-            prompt_version=args.prompt_version,
-            dialogue_view=args.dialogue_view,
             max_concurrency=max_concurrency,
-            force=args.force,
-            dirichlet_alpha=settings.dirichlet_alpha,
-            arbitration_total_std_threshold=settings.arbitration_total_std_threshold,
-            arbitration_max_prob_threshold=settings.arbitration_max_prob_threshold,
-            arbitration_entropy_threshold=settings.arbitration_entropy_threshold,
-            disagreement_range_threshold=settings.disagreement_range_threshold,
-            clinical_ambiguity_band_low=settings.clinical_ambiguity_band_low,
-            clinical_ambiguity_band_high=settings.clinical_ambiguity_band_high,
-            insufficient_evidence_threshold=settings.insufficient_evidence_threshold,
+            force=bool(args.force),
+            graph_recursion_limit=int(settings.graph_recursion_limit),
+            dirichlet_alpha=float(settings.dirichlet_alpha),
+            disagreement_range_threshold=int(settings.disagreement_range_threshold),
+            arbitration_total_std_threshold=float(settings.arbitration_total_std_threshold),
+            arbitration_max_prob_threshold=float(settings.arbitration_max_prob_threshold),
+            arbitration_entropy_threshold=float(settings.arbitration_entropy_threshold),
+            clinical_ambiguity_band_low=float(settings.clinical_ambiguity_band_low),
+            clinical_ambiguity_band_high=float(settings.clinical_ambiguity_band_high),
+            insufficient_evidence_threshold=int(settings.insufficient_evidence_threshold),
+            llm_temperature=float(settings.llm_temperature),
+            llm_top_p=float(settings.llm_top_p),
+            llm_max_tokens=int(settings.llm_max_tokens),
+            llm_timeout=float(settings.llm_timeout),
+            llm_seed=(int(settings.llm_seed) if settings.llm_seed is not None else None),
         )
+        score_corpus(config=run_config, jurors=jurors, judge_item=judge_item)
         return 0
 
     if args.command == "diagnostics":

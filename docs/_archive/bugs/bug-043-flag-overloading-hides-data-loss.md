@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | P2 (Medium - Data Integrity) |
-| **Status** | open |
+| **Status** | resolved |
 | **Date** | 2026-01-04 |
 | **Component** | `preprocessing/extractor.py` |
 | **Impact** | Cannot distinguish data loss from noise filtering |
@@ -12,7 +12,7 @@
 
 ## Summary
 
-The `had_unknown` boolean flag is used to track **6 completely different conditions**, making it impossible to distinguish between:
+The `had_unknown` boolean flag is used to track **multiple different conditions**, making it impossible to distinguish between:
 
 1. **Data loss** (content was dropped)
 2. **Noise filtering** (meta-text was cleaned)
@@ -26,12 +26,11 @@ This conflation violates a core principle: **data loss must be distinguishable f
 
 | Line | Condition | Severity | Should Be |
 |------|-----------|----------|-----------|
-| 42-43 | Bracketed text >= 200 chars | DATA LOSS | `truncated_bracket_count` |
-| 46-48 | Contains "guideline", "instructions", etc. | Noise filter | `meta_removed_count` |
-| 85-86 | `_looks_like_meta()` returns True | Noise filter | `meta_removed_count` |
-| 88-89 | len > 4000 OR word_count > 200 | DATA LOSS | `truncated_utterance_count` |
-| 122-126 | Unknown speaker prefix pattern | Parse warning | `unknown_speaker_count` |
-| 128-130 | Line without speaker context | Parse warning | `orphan_line_count` |
+| 47-53 | Long/keyworded bracketed meta removed | Noise filter | `meta_text_removed_count` |
+| 106-107 | `_looks_like_meta()` returns True | Noise filter | `meta_text_removed_count` |
+| 111-115 | Exceeds caps → truncated | DATA LOSS | `truncated_utterance_count` |
+| 149-153 | Unknown speaker prefix pattern | Parse warning | `unknown_speaker_count` |
+| 155-157 | Line without speaker context | Parse warning | `orphan_line_count` |
 
 **Result**: When `has_unknown_speaker=True`, you cannot know if:
 - A 5000-character client monologue was dropped (CRITICAL)
@@ -44,17 +43,18 @@ This conflation violates a core principle: **data loss must be distinguishable f
 
 ### Current Schema
 
-`schemas/views.py:32-33`:
+`schemas/views.py:32-39`:
 ```python
+truncated_utterance_count: int = 0
 has_empty_client_text: bool = False
-has_unknown_speaker: bool = False  # ← Conflates 6 conditions
+has_unknown_speaker: bool = False  # ← Currently conflates unknown speaker + meta-cleaning
 ```
 
 ### Validator Uses It
 
 `data/validator.py:81-83`:
 ```python
-_utterances, had_unknown = parse_utterances_with_diagnostics(d.dialogue)
+_utterances, had_unknown, _truncated = parse_utterances_with_diagnostics(d.dialogue)
 if had_unknown:
     unknown_speaker_count += 1  # ← Count includes truncation!
 ```
@@ -117,7 +117,7 @@ class DialogueViews(BaseModel):
 
 ## Related
 
-- [BUG-042: Silent Utterance Truncation](BUG-042-silent-utterance-truncation.md) - The truncation itself
+- [BUG-042: Silent Utterance Truncation](bug-042-silent-utterance-truncation.md) - The truncation itself
 - Both bugs should be fixed together
 
 ---
@@ -131,3 +131,9 @@ class DialogueViews(BaseModel):
 2. Verify each condition increments the correct counter
 3. Verify `has_data_loss=True` only for truncation
 4. Verify corpus validator shows separate counts
+
+---
+
+## Resolution (Implemented)
+
+Implemented a dedicated `PreprocessingDiagnostics` structure in `src/vibe_check/preprocessing/extractor.py` and surfaced separate counters in `src/vibe_check/schemas/views.py`, `src/vibe_check/data/validator.py`, and `src/vibe_check/run/runner.py` so meta-cleaning is no longer conflated with unknown-speaker warnings or truncation.

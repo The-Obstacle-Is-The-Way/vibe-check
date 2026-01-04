@@ -55,7 +55,7 @@ async def test_graph_arbitration_branch_overrides_final_scores(tmp_path: Path) -
     reports = [create_mock_report(i, force_disagreement="sleep") for i in range(6)]
     jurors = [FakeJuror(r) for r in reports]
 
-    def judge(
+    async def judge(
         scoring_text: str,
         item: str,
         juror_reports: list[PHQ8Report],
@@ -110,7 +110,7 @@ async def test_graph_uses_async_juror_path(tmp_path: Path) -> None:
 
     jurors = [AsyncJuror(create_mock_report(i)) for i in range(6)]
 
-    def judge(
+    async def judge(
         _scoring_text: str,
         _item: str,
         _juror_reports: list[PHQ8Report],
@@ -178,7 +178,7 @@ async def test_graph_runs_jurors_in_parallel(tmp_path: Path) -> None:
         for idx, r in enumerate(reports)
     ]
 
-    def judge(
+    async def judge(
         _scoring_text: str,
         _item: str,
         _juror_reports: list[PHQ8Report],
@@ -232,7 +232,7 @@ async def test_checkpoint_resume_does_not_duplicate_reports(tmp_path: Path) -> N
         FakeJuror(reports[5]),
     ]
 
-    def judge(
+    async def judge(
         _scoring_text: str,
         _item: str,
         _juror_reports: list[PHQ8Report],

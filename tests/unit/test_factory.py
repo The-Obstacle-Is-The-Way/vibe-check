@@ -25,6 +25,11 @@ def mock_settings() -> Settings:
         openai_api_key="test-openai",
         anthropic_api_key="test-anthropic",
         google_api_key="test-google",
+        llm_temperature=0.12,
+        llm_top_p=0.9,
+        llm_max_tokens=1234,
+        llm_timeout=12.5,
+        llm_seed=42,
     )
     return settings
 
@@ -51,6 +56,12 @@ class TestBuildRealJury:
             for call in mock_build_agent.call_args_list:
                 assert call.kwargs["prompt_version"] == passed_version
                 assert call.kwargs["prompt_version"] != "settings_version"
+                model_settings = call.kwargs["model_settings"]
+                assert model_settings["temperature"] == pytest.approx(0.12)
+                assert model_settings["top_p"] == pytest.approx(0.9)
+                assert model_settings["max_tokens"] == 1234
+                assert model_settings["timeout"] == pytest.approx(12.5)
+                assert model_settings["seed"] == 42
 
     def test_uses_passed_dialogue_view_not_settings(self, mock_settings: Settings) -> None:
         """BUG-027: build_real_jury must use passed dialogue_view, not settings."""
@@ -70,6 +81,12 @@ class TestBuildRealJury:
             for call in mock_build_agent.call_args_list:
                 assert call.kwargs["view_name"] == passed_view
                 assert call.kwargs["view_name"] != "client_only"
+                model_settings = call.kwargs["model_settings"]
+                assert model_settings["temperature"] == pytest.approx(0.12)
+                assert model_settings["top_p"] == pytest.approx(0.9)
+                assert model_settings["max_tokens"] == 1234
+                assert model_settings["timeout"] == pytest.approx(12.5)
+                assert model_settings["seed"] == 42
 
     def test_creates_six_jurors(self, mock_settings: Settings) -> None:
         """Verify we still get 6 jurors (3 models x 2 runs each)."""
@@ -84,6 +101,13 @@ class TestBuildRealJury:
 
             assert len(jurors) == 6
             assert mock_build_agent.call_count == 6
+            for call in mock_build_agent.call_args_list:
+                model_settings = call.kwargs["model_settings"]
+                assert model_settings["temperature"] == pytest.approx(0.12)
+                assert model_settings["top_p"] == pytest.approx(0.9)
+                assert model_settings["max_tokens"] == 1234
+                assert model_settings["timeout"] == pytest.approx(12.5)
+                assert model_settings["seed"] == 42
 
 
 class TestBuildRealJudgeItem:
@@ -107,6 +131,12 @@ class TestBuildRealJudgeItem:
             call_kwargs = mock_build_agent.call_args.kwargs
             assert call_kwargs["prompt_version"] == passed_version
             assert call_kwargs["prompt_version"] != "settings_version"
+            model_settings = call_kwargs["model_settings"]
+            assert model_settings["temperature"] == pytest.approx(0.12)
+            assert model_settings["top_p"] == pytest.approx(0.9)
+            assert model_settings["max_tokens"] == 1234
+            assert model_settings["timeout"] == pytest.approx(12.5)
+            assert model_settings["seed"] == 42
 
 
 class TestBackwardsCompatibility:

@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | P4 (Low - Architectural Friction) |
-| **Status** | open |
+| **Status** | resolved |
 | **Date** | 2026-01-04 |
 | **Component** | `run/factory.py`, `graph/single_dialogue.py` |
 | **Impact** | Performance (minor), code consistency |
@@ -116,3 +116,9 @@ If the sync design is truly intentional for simplicity, add explicit documentati
 2. Update graph `arbitrate_node` to await judge calls
 3. Verify arbitration still works correctly
 4. Benchmark to confirm no regression
+
+---
+
+## Resolution (Implemented)
+
+Converted the judge path to be fully async: `src/vibe_check/run/factory.py` now returns an async `judge_item` function, `src/vibe_check/graph/single_dialogue.py` awaits judge calls during arbitration, and `src/vibe_check/scoring/fakes.py` provides an async fake judge for tests.

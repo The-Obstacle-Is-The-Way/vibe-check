@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | P4 (Low - Code Hygiene) |
-| **Status** | open |
+| **Status** | resolved |
 | **Date** | 2026-01-04 |
 | **Component** | Various files |
 | **Impact** | Maintainability, discoverability |
@@ -197,5 +197,11 @@ MAX_ERROR_MESSAGE_CHARS = 500  # Truncation limit for error messages in ledger
 
 ## Related
 
-- [BUG-042: Silent Utterance Truncation](BUG-042-silent-utterance-truncation.md) - also about preprocessing constants
-- [BUG-049: Hardcoded Diagnostic Thresholds](BUG-049-hardcoded-diagnostic-thresholds.md) - diagnostic constants
+- [BUG-042: Silent Utterance Truncation](bug-042-silent-utterance-truncation.md) - also about preprocessing constants
+- [BUG-049: Hardcoded Diagnostic Thresholds](bug-049-hardcoded-diagnostic-thresholds.md) - diagnostic constants
+
+---
+
+## Resolution (Implemented)
+
+Added the identified constants in `src/vibe_check/constants.py` (e.g., `MAX_BRACKET_CHARS`, `MAX_SPEAKER_PREFIX_CHARS`, `DEFAULT_RPM_FALLBACK`, `SQLITE_TIMEOUT`, `MAX_ERROR_MESSAGE_CHARS`) and replaced the corresponding hardcoded values in `src/vibe_check/preprocessing/extractor.py`, `src/vibe_check/resilience.py`, and `src/vibe_check/run/ledger.py`.

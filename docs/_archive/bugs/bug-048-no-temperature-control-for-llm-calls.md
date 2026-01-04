@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | P1 (High - Research Reproducibility) |
-| **Status** | open |
+| **Status** | resolved |
 | **Date** | 2026-01-04 |
 | **Component** | `scoring/agent.py`, `judge/agent.py`, `run/factory.py` |
 | **Impact** | Non-reproducible scores, research validity |
@@ -12,7 +12,7 @@
 
 ## Summary
 
-**No temperature, top_p, top_k, or max_tokens parameters are specified anywhere in the codebase.** All LLM calls use provider defaults (typically temperature=1.0), which introduces randomness into clinical scoring.
+**No explicit LLM sampling/inference parameters are specified anywhere in the codebase.** All LLM calls use provider/model defaults (temperature/top_p/max_tokens/timeout/etc.), which introduces unnecessary randomness into clinical scoring.
 
 This is a **critical research reproducibility issue**.
 
@@ -22,10 +22,9 @@ The master spec **explicitly mentions temperature** but the implementation ignor
 
 | Location | Spec Says | Implementation |
 |----------|-----------|----------------|
-| `spec-vibe-check.md:49` | "LLM JSON failures can be deterministic at temperature=0" | No temperature set |
-| `spec-vibe-check.md:1643` | "Do not retry blindly at temperature=0" | No temperature set |
-| `spec-vibe-check.md:1683` | `call_model(..., temperature=0.1)` | No temperature passed |
-| `docs/reference/cli.md:245` | `--seed` for deterministic sampling | Seed not connected to model calls |
+| `docs/_archive/research/spec-vibe-check.md:49` | "LLM JSON failures can be deterministic at temperature=0" | No temperature set |
+| `docs/_archive/research/spec-vibe-check.md:1643` | "Do not retry blindly at temperature=0" | No temperature set |
+| `docs/_archive/research/spec-vibe-check.md:1683` | `call_model(..., temperature=0.1)` | No temperature passed |
 
 **The spec acknowledges temperature matters but the code doesn't implement it.**
 
@@ -61,9 +60,9 @@ return Agent(
 
 | Temperature | Behavior |
 |-------------|----------|
-| 0.0 | Deterministic (same input → same output) |
+| 0.0 | Most stable / lowest randomness (not strictly deterministic) |
 | 0.3-0.7 | Low variability (reasonable for creative tasks) |
-| 1.0 (default) | High variability (different output each run) |
+| provider default | Potential variability (different output each run) |
 
 With temperature=1.0:
 - Same dialogue scored twice → potentially different PHQ-8 scores
@@ -92,13 +91,14 @@ Without explicit control, jurors from different providers may have different "pe
 
 | Parameter | Value | Rationale |
 |-----------|-------|-----------|
-| `temperature` | **0.0** | Deterministic scoring |
-| `top_p` | 1.0 | Use temperature control instead |
+| `temperature` | **0.0** | Most stable scoring |
+| `top_p` | 1.0 | Keep nucleus sampling wide; rely on temperature |
 | `max_tokens` | 2000 | Sufficient for JSON response |
+| `timeout` | 60.0 | Avoid indefinite hangs |
 
 ### Alternative: Low Temperature with Seed
 
-Some research prefers `temperature=0.1` with explicit seed for slight variation:
+Some research prefers `temperature=0.1` with an explicit seed for controlled variance:
 ```python
 model_settings={"temperature": 0.1, "seed": 42}
 ```
@@ -196,7 +196,7 @@ ModelSettings(
 
 1. Add temperature parameter to agent builders
 2. Verify PydanticAI passes settings to providers
-3. Run same dialogue twice with temperature=0.0 → verify identical scores
+3. Run same dialogue twice with temperature=0.0 → expect much higher stability (provider determinism may still vary)
 4. Run same dialogue twice with temperature=1.0 → observe variation
 5. Update manifest to record temperature used
 
@@ -217,30 +217,27 @@ This enables answering: "What inference settings produced these scores?"
 
 ---
 
-## Research Best Practices (2025)
-
-### Academic Consensus
+## Suggested Reading (Background)
 
 | Source | Recommendation |
 |--------|----------------|
-| [arXiv:2402.05201](https://arxiv.org/html/2402.05201v2) | "For problem-solving tasks, set temperature to 0.0 to maximize reproducibility without compromising accuracy" |
-| [arXiv:2506.07295](https://arxiv.org/html/2506.07295v1) | Studies temperature's impact on LLM reasoning and consistency |
-| [PromptFoo Guide](https://www.promptfoo.dev/docs/guides/evaluate-llm-temperature/) | "Run systematic evaluation to find optimal temperature for your use case" |
-| [IBM LLM Temperature](https://www.ibm.com/think/topics/llm-temperature) | "For applications needing reliable, reproducible outputs, use 0.2-0.3" |
-| [Prompt Engineering Guide](https://www.promptingguide.ai/introduction/settings) | "For research contexts, combine moderate temperature with fixed seed" |
+| [arXiv:2402.05201](https://arxiv.org/html/2402.05201v2) | Discussion of temperature effects in evaluation-style tasks |
+| [arXiv:2506.07295](https://arxiv.org/html/2506.07295v1) | Study of temperature impact on reasoning/consistency |
+| [PromptFoo Guide](https://www.promptfoo.dev/docs/guides/evaluate-llm-temperature/) | Practical guidance for evaluating temperature settings |
+| [IBM LLM Temperature](https://www.ibm.com/think/topics/llm-temperature) | General overview of temperature and its tradeoffs |
+| [Prompt Engineering Guide](https://www.promptingguide.ai/introduction/settings) | General overview of inference settings |
 
 ### Key Findings
 
-1. **Temperature 0.0** maximizes reproducibility for evaluation/scoring tasks
-2. **Seed parameter** is essential - OpenAI introduced it specifically for reproducibility
-3. **System fingerprint** should be tracked to detect backend changes affecting outputs
-4. **Performance drops** significantly at temperature > 1.0 for structured tasks
+1. **Low temperature** improves stability for evaluation/scoring tasks
+2. **Record inference settings** (temperature/top_p/max_tokens/timeout/seed) for auditability
+3. **Seeds can help** for providers/models that support them, but determinism is not guaranteed
 
 ### Recommended Configuration for Clinical Scoring
 
 ```python
 ModelSettings(
-    temperature=0.0,    # Deterministic for reproducibility
+    temperature=0.0,    # Most stable / lowest randomness
     seed=42,            # Fixed seed across runs
     max_tokens=2000,    # Sufficient for structured JSON
 )
@@ -259,7 +256,13 @@ ModelSettings(
 
 ## Related
 
-- [ADR-001: Three-Layer Resilience](../architecture/decisions/ADR-001-three-layer-resilience.md)
+- [ADR-001: Rate limiting & retries](../architecture/adr-001-rate-limiting-retries.md)
 - [PydanticAI ModelSettings](https://docs.pydantic.dev/latest/concepts/agents/#model-settings)
 - [arXiv:2402.05201 - Effect of Temperature on LLM Problem Solving](https://arxiv.org/html/2402.05201v2)
 - [arXiv:2506.07295 - Temperature Impact Study](https://arxiv.org/html/2506.07295v1)
+
+---
+
+## Resolution (Implemented)
+
+Added explicit inference controls to `src/vibe_check/settings.py` (`llm_temperature`, `llm_top_p`, `llm_max_tokens`, `llm_timeout`, optional `llm_seed`) and wired them through agent construction (`src/vibe_check/scoring/agent.py`, `src/vibe_check/judge/agent.py`, `src/vibe_check/run/factory.py`). The selected settings are recorded in the run manifest via `RunConfig` (`src/vibe_check/run/config.py`, `src/vibe_check/run/runner.py`) and documented in `.env.example` and `docs/reference/settings.md`.

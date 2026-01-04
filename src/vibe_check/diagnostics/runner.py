@@ -8,7 +8,12 @@ from typing import Any
 
 import numpy as np
 
-from vibe_check.constants import PHQ8_ITEMS
+from vibe_check.constants import (
+    ARBITRATION_RATE_MAX,
+    CRONBACH_ALPHA_MIN,
+    KRIPPENDORFF_ALPHA_MIN,
+    PHQ8_ITEMS,
+)
 from vibe_check.diagnostics.arbitration import compute_arbitration_metrics
 from vibe_check.diagnostics.consistency import (
     compute_cronbach_alpha,
@@ -102,10 +107,10 @@ class RunDiagnostics:
         # Arbitration
         arbitration = compute_arbitration_metrics(rows)
 
-        passes_reliability = reliability.krippendorff_alpha >= 0.67
-        passes_consistency = consistency.cronbach_alpha >= 0.70
+        passes_reliability = reliability.krippendorff_alpha >= KRIPPENDORFF_ALPHA_MIN
+        passes_consistency = consistency.cronbach_alpha >= CRONBACH_ALPHA_MIN
         passes_separation = separation.is_valid
-        passes_arbitration = arbitration.overall_rate < 0.30
+        passes_arbitration = arbitration.overall_rate < ARBITRATION_RATE_MAX
 
         return DiagnosticReport(
             run_id=run_id,

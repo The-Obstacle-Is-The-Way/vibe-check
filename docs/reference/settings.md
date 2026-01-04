@@ -63,6 +63,20 @@ JUDGE_MODEL=claude-opus-4-5-20251101
 
 ---
 
+## LLM Inference Settings
+
+Controls sampling and request behavior for all LLM calls. For clinical scoring / research reproducibility, defaults are intentionally conservative and deterministic.
+
+| Field | Env Variable | Type | Default | Description |
+|-------|--------------|------|---------|-------------|
+| `llm_temperature` | `LLM_TEMPERATURE` | `float` | `0.0` | Sampling temperature (lower = more deterministic) |
+| `llm_top_p` | `LLM_TOP_P` | `float` | `1.0` | Nucleus sampling (keep wide; rely on temperature) |
+| `llm_max_tokens` | `LLM_MAX_TOKENS` | `int` | `2000` | Max response tokens |
+| `llm_timeout` | `LLM_TIMEOUT` | `float` | `60.0` | Request timeout (seconds) |
+| `llm_seed` | `LLM_SEED` | `int \| None` | `None` | Optional seed (supported by some providers/models) |
+
+---
+
 ## Scoring Configuration
 
 Controls juror behavior and aggregation.
@@ -158,6 +172,16 @@ Transient error retry behavior (ADR-001).
 
 ---
 
+## LangGraph Execution
+
+Controls limits for LangGraph execution per dialogue.
+
+| Field | Env Variable | Type | Default | Description |
+|-------|--------------|------|---------|-------------|
+| `graph_recursion_limit` | `GRAPH_RECURSION_LIMIT` | `int` | `25` | Max graph steps per dialogue (defense-in-depth) |
+
+---
+
 ## Checkpointing
 
 LangGraph state persistence.
@@ -199,6 +223,13 @@ JUROR_CLAUDE_MODEL=claude-sonnet-4-5-20250929
 JUROR_GEMINI_MODEL=gemini-3-pro-preview
 JUDGE_MODEL=claude-opus-4-5-20251101
 
+# LLM inference (reproducibility)
+LLM_TEMPERATURE=0.0
+LLM_TOP_P=1.0
+LLM_MAX_TOKENS=2000
+LLM_TIMEOUT=60.0
+# LLM_SEED=42
+
 # Scoring
 RUNS_PER_MODEL=2
 DIRICHLET_ALPHA=0.5
@@ -227,6 +258,9 @@ GOOGLE_RPM=100
 MAX_RETRIES=5
 RETRY_INITIAL_WAIT=1.0
 VALIDATION_RETRIES=2
+
+# LangGraph
+GRAPH_RECURSION_LIMIT=25
 
 # Output
 OUTPUT_DIR=./data/outputs

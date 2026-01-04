@@ -9,6 +9,7 @@ from tests.fixtures.hf_disk_dataset import write_sqpsychconv_like_dataset
 from tests.fixtures.sample_votes import create_mock_report
 
 from vibe_check.constants import phq8_rubric_hash
+from vibe_check.run.config import RunConfig
 from vibe_check.run.factory import build_fake_judge_item
 from vibe_check.run.ledger import JobLedger
 from vibe_check.run.runner import score_corpus
@@ -48,12 +49,14 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
     jurors = [StaticJuror(i) for i in range(6)]
 
     score_corpus(
-        input_path=dataset_dir,
-        output_dir=output_dir,
-        checkpoint_db=checkpoint_db,
-        limit=5,
-        prompt_version="v1",
-        dialogue_view="client_qa",
+        config=RunConfig(
+            input_path=dataset_dir,
+            output_dir=output_dir,
+            checkpoint_db=checkpoint_db,
+            prompt_version="v1",
+            dialogue_view="client_qa",
+            limit=5,
+        ),
         jurors=jurors,
         judge_item=build_fake_judge_item(),
     )
@@ -82,12 +85,14 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
     assert manifest_1["arbitration_rate"] > 0.0
 
     score_corpus(
-        input_path=dataset_dir,
-        output_dir=output_dir,
-        checkpoint_db=checkpoint_db,
-        limit=5,
-        prompt_version="v1",
-        dialogue_view="client_qa",
+        config=RunConfig(
+            input_path=dataset_dir,
+            output_dir=output_dir,
+            checkpoint_db=checkpoint_db,
+            prompt_version="v1",
+            dialogue_view="client_qa",
+            limit=5,
+        ),
         jurors=jurors,
         judge_item=build_fake_judge_item(),
     )
@@ -129,13 +134,15 @@ def test_batch_runner_supports_parallel_dialogues(tmp_path: Path) -> None:
     jurors = [SlowJuror(i) for i in range(6)]
 
     score_corpus(
-        input_path=dataset_dir,
-        output_dir=output_dir,
-        checkpoint_db=checkpoint_db,
-        limit=4,
-        prompt_version="v1",
-        dialogue_view="client_qa",
-        max_concurrency=2,
+        config=RunConfig(
+            input_path=dataset_dir,
+            output_dir=output_dir,
+            checkpoint_db=checkpoint_db,
+            prompt_version="v1",
+            dialogue_view="client_qa",
+            limit=4,
+            max_concurrency=2,
+        ),
         jurors=jurors,
         judge_item=build_fake_judge_item(),
     )
@@ -177,24 +184,28 @@ def test_batch_runner_refuses_config_mismatch_without_force(tmp_path: Path) -> N
     jurors = [StaticJuror(i) for i in range(6)]
 
     score_corpus(
-        input_path=dataset_dir,
-        output_dir=output_dir,
-        checkpoint_db=checkpoint_db,
-        limit=2,
-        prompt_version="v1",
-        dialogue_view="client_qa",
+        config=RunConfig(
+            input_path=dataset_dir,
+            output_dir=output_dir,
+            checkpoint_db=checkpoint_db,
+            prompt_version="v1",
+            dialogue_view="client_qa",
+            limit=2,
+        ),
         jurors=jurors,
         judge_item=build_fake_judge_item(),
     )
 
     with pytest.raises(ValueError, match="run configuration mismatch"):
         score_corpus(
-            input_path=dataset_dir,
-            output_dir=output_dir,
-            checkpoint_db=checkpoint_db,
-            limit=2,
-            prompt_version="v2",
-            dialogue_view="client_qa",
+            config=RunConfig(
+                input_path=dataset_dir,
+                output_dir=output_dir,
+                checkpoint_db=checkpoint_db,
+                prompt_version="v2",
+                dialogue_view="client_qa",
+                limit=2,
+            ),
             jurors=jurors,
             judge_item=build_fake_judge_item(),
         )
@@ -237,14 +248,16 @@ def test_batch_runner_marks_failed_and_continues_when_fail_fast_false(tmp_path: 
     jurors = [FlakyJuror(0)] + [StaticJuror(i) for i in range(1, 6)]
 
     score_corpus(
-        input_path=dataset_dir,
-        output_dir=output_dir,
-        checkpoint_db=checkpoint_db,
-        limit=3,
-        prompt_version="v1",
-        dialogue_view="client_qa",
-        max_concurrency=1,
-        fail_fast=False,
+        config=RunConfig(
+            input_path=dataset_dir,
+            output_dir=output_dir,
+            checkpoint_db=checkpoint_db,
+            prompt_version="v1",
+            dialogue_view="client_qa",
+            limit=3,
+            max_concurrency=1,
+            fail_fast=False,
+        ),
         jurors=jurors,
         judge_item=build_fake_judge_item(),
     )
@@ -303,14 +316,16 @@ def test_batch_runner_fail_fast_raises_on_first_error(tmp_path: Path) -> None:
 
     with pytest.raises(ExceptionGroup) as excinfo:
         score_corpus(
-            input_path=dataset_dir,
-            output_dir=output_dir,
-            checkpoint_db=checkpoint_db,
-            limit=3,
-            prompt_version="v1",
-            dialogue_view="client_qa",
-            max_concurrency=1,
-            fail_fast=True,
+            config=RunConfig(
+                input_path=dataset_dir,
+                output_dir=output_dir,
+                checkpoint_db=checkpoint_db,
+                prompt_version="v1",
+                dialogue_view="client_qa",
+                limit=3,
+                max_concurrency=1,
+                fail_fast=True,
+            ),
             jurors=jurors,
             judge_item=build_fake_judge_item(),
         )

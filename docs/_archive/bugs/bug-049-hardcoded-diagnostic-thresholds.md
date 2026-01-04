@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Severity** | P3 (Medium - Configuration Gap) |
-| **Status** | open |
+| **Status** | resolved |
 | **Date** | 2026-01-04 |
 | **Component** | `diagnostics/runner.py`, `diagnostics/separation.py`, `diagnostics/report.py` |
 | **Impact** | Cannot tune quality gates without code changes |
@@ -12,12 +12,13 @@
 
 ## Summary
 
-The SPEC-07 diagnostic thresholds (Krippendorff α, Cronbach α, arbitration rate, Cohen's d, p-value) are **hardcoded in multiple files** instead of being configurable via settings.
+The SPEC-07 diagnostic thresholds (Krippendorff α, Cronbach α, arbitration rate, Cohen's d, p-value) are **duplicated as hardcoded literals across multiple files** (logic + report rendering).
 
 This prevents:
-- Tuning thresholds for different use cases
-- Experimenting with stricter/looser quality gates
-- Recording what thresholds were used for a given run
+- Changing thresholds in one place without missing another (DRY violation)
+- Reliably auditing “what gates were applied” without reading code
+
+Note: `docs/reference/thresholds.md` documents these as **not user-configurable** today; this bug is about centralization and drift-prevention, not necessarily exposing knobs.
 
 ---
 
@@ -64,20 +65,9 @@ f"- Arbitration (rate < 0.30): "
 
 ## Fix
 
-### Add to `settings.py`
+### Put thresholds in `constants.py` (Recommended)
 
-```python
-# Diagnostic Quality Gates (SPEC-07)
-diagnostic_krippendorff_alpha_min: float = 0.67
-diagnostic_cronbach_alpha_min: float = 0.70
-diagnostic_arbitration_rate_max: float = 0.30
-diagnostic_cohens_d_min: float = 0.5
-diagnostic_p_value_max: float = 0.01
-```
-
-### Add to `constants.py` (Alternative)
-
-If these should NOT be user-configurable (research standards), put in constants:
+Even if thresholds remain non-configurable, they should be single-sourced in code.
 
 ```python
 # SPEC-07 Quality Gate Thresholds (research-defined, not configurable)
@@ -108,7 +98,7 @@ passes_arbitration = arbitration.overall_rate < ARBITRATION_RATE_MAX
 
 ## Recommendation
 
-**Put in `constants.py`** (not settings), because:
+**Keep in `constants.py`** (not settings), because:
 
 1. These are **research-defined standards**, not operational tuning
 2. Changing them mid-study would invalidate comparisons
@@ -129,5 +119,11 @@ But **document them prominently** so users know what gates exist.
 
 ## Related
 
-- [SPEC-07: Run Diagnostics](../_archive/specs/spec-07-run-diagnostics.md)
+- [SPEC-07: Run Diagnostics](../specs/spec-07-run-diagnostics.md)
 - Quality gate definitions in master spec
+
+---
+
+## Resolution (Implemented)
+
+Extracted SPEC-07 quality gate thresholds into `src/vibe_check/constants.py` and updated `src/vibe_check/diagnostics/{runner,report,separation}.py` to reference the shared constants instead of duplicating literals.

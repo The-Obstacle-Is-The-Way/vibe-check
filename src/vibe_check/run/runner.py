@@ -28,81 +28,47 @@ from vibe_check.sqlite import open_async_sqlite_saver, sqlite_path_from_conn_str
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from vibe_check.graph.single_dialogue import DialogueViewName, JudgeItemFn, Juror
+    from vibe_check.graph.single_dialogue import JudgeItemFn, Juror
     from vibe_check.graph.state import ScoringState
+    from vibe_check.run.config import RunConfig
 
 
 def score_corpus(
     *,
-    input_path: str | Path,
-    output_dir: Path,
-    checkpoint_db: str,
+    config: RunConfig,
     jurors: Sequence[Juror],
     judge_item: JudgeItemFn,
-    limit: int | None = None,
-    prompt_version: str,
-    dialogue_view: DialogueViewName = "client_qa",
-    max_concurrency: int = 1,
-    fail_fast: bool = False,
-    force: bool = False,
-    dirichlet_alpha: float = 0.5,
-    disagreement_range_threshold: int = 2,
-    arbitration_total_std_threshold: float = 2.0,
-    arbitration_max_prob_threshold: float = 0.60,
-    arbitration_entropy_threshold: float = 1.2,
-    clinical_ambiguity_band_low: float = 0.4,
-    clinical_ambiguity_band_high: float = 0.6,
-    insufficient_evidence_threshold: int = 2,
 ) -> None:
     """Score a corpus and write outputs to disk, safe to resume."""
-    asyncio.run(
-        score_corpus_async(
-            input_path=input_path,
-            output_dir=output_dir,
-            checkpoint_db=checkpoint_db,
-            jurors=jurors,
-            judge_item=judge_item,
-            limit=limit,
-            prompt_version=prompt_version,
-            dialogue_view=dialogue_view,
-            max_concurrency=max_concurrency,
-            fail_fast=fail_fast,
-            force=force,
-            dirichlet_alpha=dirichlet_alpha,
-            disagreement_range_threshold=disagreement_range_threshold,
-            arbitration_total_std_threshold=arbitration_total_std_threshold,
-            arbitration_max_prob_threshold=arbitration_max_prob_threshold,
-            arbitration_entropy_threshold=arbitration_entropy_threshold,
-            clinical_ambiguity_band_low=clinical_ambiguity_band_low,
-            clinical_ambiguity_band_high=clinical_ambiguity_band_high,
-            insufficient_evidence_threshold=insufficient_evidence_threshold,
-        )
-    )
+    asyncio.run(score_corpus_async(config=config, jurors=jurors, judge_item=judge_item))
 
 
 async def score_corpus_async(
     *,
-    input_path: str | Path,
-    output_dir: Path,
-    checkpoint_db: str,
+    config: RunConfig,
     jurors: Sequence[Juror],
     judge_item: JudgeItemFn,
-    limit: int | None = None,
-    prompt_version: str,
-    dialogue_view: DialogueViewName = "client_qa",
-    max_concurrency: int = 1,
-    fail_fast: bool = False,
-    force: bool = False,
-    dirichlet_alpha: float = 0.5,
-    disagreement_range_threshold: int = 2,
-    arbitration_total_std_threshold: float = 2.0,
-    arbitration_max_prob_threshold: float = 0.60,
-    arbitration_entropy_threshold: float = 1.2,
-    clinical_ambiguity_band_low: float = 0.4,
-    clinical_ambiguity_band_high: float = 0.6,
-    insufficient_evidence_threshold: int = 2,
 ) -> None:
     """Async batch runner implementation for corpus-scale scoring."""
+    input_path = config.input_path
+    output_dir = config.output_dir
+    checkpoint_db = config.checkpoint_db
+    prompt_version = config.prompt_version
+    dialogue_view = config.dialogue_view
+    limit = config.limit
+    max_concurrency = config.max_concurrency
+    fail_fast = config.fail_fast
+    force = config.force
+
+    dirichlet_alpha = config.dirichlet_alpha
+    disagreement_range_threshold = config.disagreement_range_threshold
+    arbitration_total_std_threshold = config.arbitration_total_std_threshold
+    arbitration_max_prob_threshold = config.arbitration_max_prob_threshold
+    arbitration_entropy_threshold = config.arbitration_entropy_threshold
+    clinical_ambiguity_band_low = config.clinical_ambiguity_band_low
+    clinical_ambiguity_band_high = config.clinical_ambiguity_band_high
+    insufficient_evidence_threshold = config.insufficient_evidence_threshold
+
     if max_concurrency < 1:
         raise ValueError("max_concurrency must be >= 1")
 
@@ -125,6 +91,7 @@ async def score_corpus_async(
         "phq8_rubric_hash": phq8_rubric_hash(),
         "dialogue_view": dialogue_view,
         "max_concurrency": max_concurrency,
+        "graph_recursion_limit": int(config.graph_recursion_limit),
         "dirichlet_alpha": dirichlet_alpha,
         "disagreement_range_threshold": disagreement_range_threshold,
         "arbitration_total_std_threshold": arbitration_total_std_threshold,
@@ -133,6 +100,11 @@ async def score_corpus_async(
         "clinical_ambiguity_band_low": clinical_ambiguity_band_low,
         "clinical_ambiguity_band_high": clinical_ambiguity_band_high,
         "insufficient_evidence_threshold": insufficient_evidence_threshold,
+        "llm_temperature": config.llm_temperature,
+        "llm_top_p": config.llm_top_p,
+        "llm_max_tokens": config.llm_max_tokens,
+        "llm_timeout": config.llm_timeout,
+        "llm_seed": config.llm_seed,
         "jurors": [
             {
                 "class": j.__class__.__name__,
@@ -253,6 +225,7 @@ async def score_corpus_async(
                         initial_state=initial_state,
                         thread_id=dialogue.file_id,
                         graph_max_concurrency=max(len(jurors), 1),
+                        recursion_limit=int(config.graph_recursion_limit),
                     )
                     result = final_state["final_output"]
                     if result is None:
@@ -288,6 +261,9 @@ async def score_corpus_async(
                     row["dialogue_view"] = dialogue_view
                     row["scoring_text"] = scoring_text
                     row["truncated_utterance_count"] = int(views.truncated_utterance_count)
+                    row["meta_text_removed_count"] = int(views.meta_text_removed_count)
+                    row["unknown_speaker_count"] = int(views.unknown_speaker_count)
+                    row["orphan_line_count"] = int(views.orphan_line_count)
                     write_row(output_dir, row)
 
                     ledger.mark_done(dialogue.file_id, token_usage=job_tokens)
