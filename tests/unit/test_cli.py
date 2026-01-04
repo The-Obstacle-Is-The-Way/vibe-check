@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
+import pytest
+
 from vibe_check.cli import build_parser
 
 if TYPE_CHECKING:
@@ -112,3 +114,52 @@ def test_cli_parses_validate_export_args() -> None:
         ]
     )
     assert args.command == "validate-export"
+
+
+def test_cli_live_requires_all_provider_api_keys(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from vibe_check.cli import main
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+
+    with pytest.raises(SystemExit) as excinfo:
+        main(
+            [
+                "score-corpus",
+                "--input",
+                "data/sqpsychconv/qwen-2.5",
+                "--checkpoint",
+                "sqlite:///tmp/checkpoints.db",
+                "--output",
+                "data/outputs/dev_run",
+                "--live",
+            ]
+        )
+
+    assert excinfo.value.code == 2
+    err = capsys.readouterr().err
+    assert "--live requires API keys" in err
+    assert "OPENAI_API_KEY" in err
+    assert "ANTHROPIC_API_KEY" in err
+    assert "GOOGLE_API_KEY" in err
+
+
+def test_cli_score_corpus_help_clarifies_max_concurrency_scope(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    parser = build_parser()
+    with pytest.raises(SystemExit) as excinfo:
+        parser.parse_args(["score-corpus", "--help"])
+
+    assert excinfo.value.code == 0
+    help_text = capsys.readouterr().out
+    assert "--max-concurrency" in help_text
+    normalized = " ".join(help_text.lower().split())
+    assert "jurors run sequentially" in normalized

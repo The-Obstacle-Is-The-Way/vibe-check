@@ -28,6 +28,9 @@ def test_env_example_includes_arbitration_thresholds() -> None:
     keys = _env_example_keys(repo_root)
     assert "ARBITRATION_MAX_PROB_THRESHOLD" in keys
     assert "ARBITRATION_ENTROPY_THRESHOLD" in keys
+    assert "CLINICAL_AMBIGUITY_BAND_LOW" in keys
+    assert "CLINICAL_AMBIGUITY_BAND_HIGH" in keys
+    assert "INSUFFICIENT_EVIDENCE_THRESHOLD" in keys
 
 
 def test_settings_google_api_key_accepts_gemini_api_key_alias(

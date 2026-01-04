@@ -22,7 +22,7 @@ class ScoringState(TypedDict):
     scoring_text: str  # The specific view used for scoring (e.g. client_qa)
 
     # Accumulated results
-    # operator.add allows multiple parallel jury nodes to append to this list
+    # operator.add allows checkpoint-friendly sequential append
     jury_results: Annotated[list[PHQ8Report], operator.add]
 
     # Control flow

@@ -129,3 +129,50 @@ def test_aggregate_votes_respects_range_threshold_parameter() -> None:
 
     _, _, arbitration_items_low, _ = aggregate_votes(votes, range_threshold=1)
     assert "sleep" in arbitration_items_low
+
+
+def test_aggregate_votes_respects_clinical_ambiguity_band_parameter() -> None:
+    votes: dict[str, list[int]] = {item: [0, 0, 0, 0, 0, 0] for item in PHQ8_ITEMS}
+    votes["sleep"] = [1, 1, 1, 2, 2, 2]
+
+    _, _, arbitration_items_default, _ = aggregate_votes(
+        votes,
+        range_threshold=999,
+        arbitration_max_prob_threshold=0.0,
+        arbitration_entropy_threshold=999.0,
+    )
+    assert "sleep" in arbitration_items_default
+
+    _, _, arbitration_items_disabled, _ = aggregate_votes(
+        votes,
+        range_threshold=999,
+        arbitration_max_prob_threshold=0.0,
+        arbitration_entropy_threshold=999.0,
+        clinical_ambiguity_band=(0.0, 0.1),
+    )
+    assert "sleep" not in arbitration_items_disabled
+
+
+def test_aggregate_votes_respects_insufficient_evidence_threshold_parameter() -> None:
+    votes: dict[str, list[int]] = {item: [2, 2, 2, 2, 2, 2] for item in PHQ8_ITEMS}
+    insufficient_evidence_counts: dict[str, int] = dict.fromkeys(PHQ8_ITEMS, 0)
+    insufficient_evidence_counts["fatigue"] = 2
+
+    _, _, arbitration_items_default, _ = aggregate_votes(
+        votes,
+        insufficient_evidence_counts=insufficient_evidence_counts,
+        range_threshold=999,
+        arbitration_max_prob_threshold=0.0,
+        arbitration_entropy_threshold=999.0,
+    )
+    assert "fatigue" in arbitration_items_default
+
+    _, _, arbitration_items_disabled, _ = aggregate_votes(
+        votes,
+        insufficient_evidence_counts=insufficient_evidence_counts,
+        range_threshold=999,
+        arbitration_max_prob_threshold=0.0,
+        arbitration_entropy_threshold=999.0,
+        insufficient_evidence_threshold=3,
+    )
+    assert "fatigue" not in arbitration_items_disabled

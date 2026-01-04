@@ -31,6 +31,8 @@ def aggregate_votes(
     insufficient_evidence_counts: dict[str, int] | None = None,
     arbitration_max_prob_threshold: float = 0.60,
     arbitration_entropy_threshold: float = 1.2,
+    clinical_ambiguity_band: tuple[float, float] = (0.4, 0.6),
+    insufficient_evidence_threshold: int = 2,
 ) -> tuple[dict[str, ItemAggregation], np.ndarray, list[str], dict[str, str]]:
     """Aggregate per-item vote arrays into posteriors and arbitration flags."""
     missing = [item for item in PHQ8_ITEMS if item not in votes_by_item]
@@ -60,9 +62,11 @@ def aggregate_votes(
             posterior,
             votes,
             insufficient_evidence_count=insufficient_count,
+            insufficient_evidence_threshold=insufficient_evidence_threshold,
             range_threshold=range_threshold,
             max_prob_threshold=arbitration_max_prob_threshold,
             entropy_threshold=arbitration_entropy_threshold,
+            clinical_ambiguity_band=clinical_ambiguity_band,
         )
         if needs_arb and reason is not None:
             arbitration_items.append(item)
@@ -116,6 +120,8 @@ def aggregate_reports(
     arbitration_total_std_threshold: float = 2.0,
     arbitration_max_prob_threshold: float = 0.60,
     arbitration_entropy_threshold: float = 1.2,
+    clinical_ambiguity_band: tuple[float, float] = (0.4, 0.6),
+    insufficient_evidence_threshold: int = 2,
 ) -> AggregatedPHQ8:
     """Aggregate multiple juror reports into a final consensus result."""
     if not reports:
@@ -138,6 +144,8 @@ def aggregate_reports(
         insufficient_evidence_counts=insufficient_counts,
         arbitration_max_prob_threshold=arbitration_max_prob_threshold,
         arbitration_entropy_threshold=arbitration_entropy_threshold,
+        clinical_ambiguity_band=clinical_ambiguity_band,
+        insufficient_evidence_threshold=insufficient_evidence_threshold,
     )
 
     total_mode = int(np.argmax(total_posterior))
