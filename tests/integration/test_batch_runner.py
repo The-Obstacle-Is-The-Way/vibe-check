@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import TYPE_CHECKING
 
@@ -102,6 +103,45 @@ def test_batch_runner_writes_outputs_and_resumes(tmp_path: Path) -> None:
         "reasoning_tokens": 55,
         "total_tokens": 880,
     }
+
+
+def test_batch_runner_supports_parallel_dialogues(tmp_path: Path) -> None:
+    output_dir = tmp_path / "run"
+    checkpoint_db = str(tmp_path / "checkpoints.sqlite")
+    dataset_dir = write_sqpsychconv_like_dataset(tmp_path, n_train=4, n_test=0)
+
+    class SlowJuror:
+        def __init__(self, idx: int) -> None:
+            self._report = create_mock_report(idx)
+
+        def score(self, _scoring_text: str) -> PHQ8Report:
+            return self._report
+
+        async def ascore(self, scoring_text: str) -> PHQ8Report:
+            await asyncio.sleep(0.01)
+            return self.score(scoring_text)
+
+    jurors = [SlowJuror(i) for i in range(6)]
+
+    score_corpus(
+        input_path=dataset_dir,
+        output_dir=output_dir,
+        checkpoint_db=checkpoint_db,
+        limit=4,
+        prompt_version="v1",
+        dialogue_view="client_qa",
+        max_concurrency=2,
+        jurors=jurors,
+        judge_item=build_fake_judge_item(),
+    )
+
+    scored_path = output_dir / "scored.jsonl"
+    assert scored_path.exists()
+    assert len(scored_path.read_text(encoding="utf-8").splitlines()) == 4
+
+    with JobLedger(output_dir / "ledger.sqlite") as ledger:
+        statuses = {file_id: ledger.get_status(file_id) for file_id in ledger.list_all()}
+    assert set(statuses.values()) == {"done"}
 
 
 def test_batch_runner_refuses_config_mismatch_without_force(tmp_path: Path) -> None:
