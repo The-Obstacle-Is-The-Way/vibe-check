@@ -130,3 +130,41 @@ def test_long_utterance_char_cap_is_applied() -> None:
     assert views.client_utterance_count == 1
     assert views.truncated_utterance_count == 1
     assert 0 < len(views.client_only_text) <= MAX_UTTERANCE_CHARS
+
+
+def test_generation_artifacts_are_stripped() -> None:
+    dialogue = SQPsychConvDialogue(
+        file_id="test",
+        condition="mdd",
+        client_model="test",
+        therapist_model="test",
+        dialogue=(
+            "Therapist: Hello, Mr. [Client's Name]. [Please confirm the date and time.]\n"
+            "Client: Thanks. [/END]\n"
+            "Client: [Keep silent]\n"
+            "Client: [Sigh]\n"
+            "Therapist: Let's meet [insert preferred date] [Next week].\n"
+            "Client: Inhale.. hold.. exhale. [Repeats a few times]\n"
+            "Therapist: Sounds good. [19/20]\n"
+            "Client: Great. [1/8]\n"
+            "Therapist: [Take care, and I'll see you then.]\n"
+            "Client: Okay.\n"
+        ),
+    )
+    views = preprocess_dialogue(dialogue)
+
+    assert "[/END]" not in views.dialogue_clean
+    assert "[Sigh]" not in views.dialogue_clean
+    assert "[19/20]" not in views.dialogue_clean
+    assert "[1/8]" not in views.dialogue_clean
+    assert "insert preferred date" not in views.dialogue_clean.lower()
+    assert "next week" not in views.dialogue_clean.lower()
+    assert "client's name" not in views.dialogue_clean.lower()
+    assert "keep silent" not in views.dialogue_clean.lower()
+    assert "confirm the date and time" not in views.dialogue_clean.lower()
+    assert "repeats a few times" not in views.dialogue_clean.lower()
+    assert "take care" not in views.dialogue_clean.lower()
+
+    # Verify whitespace is properly normalized after artifact removal
+    assert "  " not in views.dialogue_clean  # No double spaces
+    assert "Mr.." not in views.dialogue_clean  # No double-dot artifacts

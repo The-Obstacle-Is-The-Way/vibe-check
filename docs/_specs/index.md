@@ -35,11 +35,12 @@ All specs are implemented and archived in [`../_archive/specs/`](../_archive/spe
 | SPEC-09 | [Human Alignment](../_archive/specs/spec-09-human-alignment.md) | Calibration (conditional, if diagnostics fail) |
 | SPEC-10 | [Parallel Juror Execution](../_archive/specs/SPEC-10-parallel-juror-execution.md) | Performance optimization (BUG-035) |
 | SPEC-11 | [PHQ-8 Rubric Embedding](../_archive/specs/SPEC-11-phq8-rubric-embedding.md) | Clinical rubric in prompts (BUG-040) |
+| SPEC-12 | [Preprocessing Artifact Stripping](../_archive/specs/SPEC-12-preprocessing-artifact-stripping.md) | Strip SQPsychConv bracket artifacts |
 
 ---
 
 ## Status
 
-- **Total specs**: 11
+- **Total specs**: 12 (12 archived)
 - **All implemented**: ✅ YES
-- **Ready for production run**: ✅ YES (BUG-048 resolved)
+- **Ready for pilot run**: ✅ YES

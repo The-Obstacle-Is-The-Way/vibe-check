@@ -11,6 +11,7 @@ from vibe_check.constants import (
     MAX_SPEAKER_PREFIX_CHARS,
     MAX_UTTERANCE_CHARS,
     MAX_UTTERANCE_WORDS,
+    STRIP_GENERATION_ARTIFACT_PATTERNS,
 )
 from vibe_check.schemas.views import DialogueViews
 
@@ -25,6 +26,7 @@ _META_DOUBLEQUOTE_SUFFIX_RE = re.compile(
 )
 _BRACKETED_RE = re.compile(r"\[(?P<inner>[^\[\]]+)\]")
 _WORD_RE = re.compile(r"\S+")
+_GENERATION_ARTIFACT_RE = re.compile("|".join(STRIP_GENERATION_ARTIFACT_PATTERNS), re.IGNORECASE)
 
 Speaker = Literal["therapist", "client"]
 
@@ -114,11 +116,25 @@ def parse_utterances_with_diagnostics(
             return text, False
         return text[:max_chars].rstrip(), True
 
+    def _strip_generation_artifacts(text: str) -> tuple[str, bool]:
+        cleaned = _GENERATION_ARTIFACT_RE.sub("", text)
+        if cleaned == text:
+            return text, False
+        # Avoid accumulating whitespace at removal boundaries.
+        cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+        cleaned = re.sub(r"[ \t]+\n", "\n", cleaned)
+        cleaned = re.sub(r"\n[ \t]+", "\n", cleaned)
+        cleaned = re.sub(r"\s+([,.;:!?])", r"\1", cleaned)
+        cleaned = re.sub(r"\.\.(?=\s|$)", ".", cleaned)
+        cleaned = cleaned.strip()
+        return cleaned, True
+
     def _sanitize_utterance_text(text: str) -> tuple[str, bool, bool]:
         """Strip obvious generation artifacts from speaker-labeled utterances."""
-        cleaned, bracket_removed = _strip_bracketed_meta(text.strip())
+        cleaned, artifacts_removed = _strip_generation_artifacts(text.strip())
+        cleaned, bracket_removed = _strip_bracketed_meta(cleaned)
         cleaned, suffix_trimmed = _truncate_doublequote_suffix(cleaned)
-        meta_removed = bracket_removed or suffix_trimmed
+        meta_removed = artifacts_removed or bracket_removed or suffix_trimmed
         cleaned = cleaned.strip()
         if not cleaned:
             return "", meta_removed, False

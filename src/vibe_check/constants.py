@@ -40,6 +40,39 @@ MAX_UTTERANCE_CHARS = 4000
 MAX_SPEAKER_PREFIX_CHARS = 32
 MAX_BRACKET_CHARS = 200
 
+# Preprocessing artifact stripping (SPEC-12)
+# These are deterministic, corpus-specific cleanup rules intended to remove
+# template placeholders and termination markers from SQPsychConv-style dialogues.
+STRIP_GENERATION_ARTIFACT_PATTERNS: tuple[str, ...] = (
+    # Termination markers
+    r"\[\s*/?\s*END\s*\]",
+    # Template placeholders / scheduling scaffolding
+    r"\[\s*insert[^\]]*\]",
+    r"\[\s*next[^\]]*\]",
+    r"\[\s*please\s+confirm[^\]]*\]",
+    r"\[\s*review[^\]]*\]",
+    r"\[\s*turn\s+\d+[^\]]*\]",
+    r"\[\s*client\s+agrees[^\]]*\]",
+    r"\[\s*if\s+the\s+client\s+agrees[^\]]*\]",
+    # Name placeholders (support straight and curly apostrophes)
+    r"\[\s*client(?:'|\u2019)?s?\s*name\s*\]",
+    r"\[\s*therapist(?:'|\u2019)?s?\s*name\s*\]",
+    r"\[\s*colleague(?:'|\u2019)?s?\s*name\s*\]",
+    r"\[\s*(?:daughter|sister)(?:'|\u2019)?s?\s*name\s*\]",
+    # Export / chunking artifacts (seen in a small number of rows)
+    r"\[\s*\d+\s*/\s*\d+\s*\]",
+    # Semantic-void roleplay directives
+    r"\[\s*keep\s+silent\s*\]",
+    r"\[\s*no\s+reply\s*\]",
+    r"\[\s*quiet\s*\]",
+    r"\[\s*pause[^\]]*\]",
+    # Bracketed stage directions / closings (not useful for PHQ-8 evidence)
+    r"\[\s*(?:sigh|smiles?|exhales?|inhales?(?:\s+deeply)?|taking\s+a\s+deep\s+breath)[^\]]*\]",
+    r"\[\s*repeats\s+a\s+few\s+times[^\]]*\]",
+    r"\[\s*(?:see\s+you|take\s+care|thank\s+you)[^\]]*\]",
+    r"\[\s*i(?:'|\u2019)?ll\s+send[^\]]*\]",
+)
+
 # Operational defaults
 SQLITE_TIMEOUT = 30.0
 DEFAULT_RPM_FALLBACK = 60
