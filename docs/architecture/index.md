@@ -27,12 +27,16 @@ vibe-check is a multi-agent PHQ-8 scoring system built on:
 
 ## Key Design Decisions
 
-### 1. Multi-Agent Jury + Judge
+### 1. Multi-Agent Jury + Single Judge
 
-Instead of single-model scoring, vibe-check by default uses 6 jurors (3 models × 2 runs) plus a judge for arbitration. This provides:
-- Cross-model validation
-- Uncertainty quantification
-- Higher reliability than single-model approaches
+Instead of single-model scoring, vibe-check uses 6 jurors (3 models × 2 runs) plus a single judge for arbitration. This provides:
+- Cross-model validation (OpenAI, Anthropic, Google)
+- Run-to-run variance capture (2 runs per model)
+- Uncertainty quantification via Bayesian posteriors
+
+**Why a single judge?** The judge role is *synthesis of existing evidence*, not independent scoring. Opus seeing 6 juror opinions and their evidence is analogous to a senior clinician reviewing junior assessments. Adding a second judge from a juror family (e.g., GPT-5-Pro alongside GPT-5.2 jurors) would reduce diversity benefit without clear accuracy gains.
+
+**Literature support**: 2025-2026 research shows consensus-based multi-judge systems offer stability but no accuracy advantage over single-judge when the single judge has access to diverse input (see LLM-as-a-Judge Survey, DataRobot Study, Amazon CollabEval).
 
 ### 2. Bayesian Aggregation
 

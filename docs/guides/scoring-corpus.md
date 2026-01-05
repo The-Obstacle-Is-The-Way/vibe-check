@@ -14,15 +14,22 @@ Complete walkthrough of running vibe-check on the full SQPsychConv dataset.
 
 ## Estimated Cost
 
-For full 2,090 dialogues with 6 jurors by default + arbitration (~30%):
+For full 2,090 dialogues with 6 jurors + arbitration (~30%):
 
-| Component | Calls | Est. Cost |
-|-----------|-------|-----------|
-| Jurors (GPT) | 4,180 | ~$20 |
-| Jurors (Claude) | 4,180 | ~$25 |
-| Jurors (Gemini) | 4,180 | ~$15 |
-| Judge (Opus) | ~630 items | ~$30 |
-| **Total** | - | **~$90-120** |
+| Component | Calls | Input Tokens | Output Tokens | Est. Cost |
+|-----------|-------|--------------|---------------|-----------|
+| GPT-5.2 Juror (×2 runs) | 4,180 | ~8.3M | ~1.7M | ~$225 |
+| Sonnet-4.5 Juror (×2 runs) | 4,180 | ~8.3M | ~1.7M | ~$50 |
+| Gemini-3-Pro Juror (×2 runs) | 4,180 | ~8.3M | ~1.7M | ~$19 |
+| **Juror Subtotal** | 12,540 | ~24.9M | ~5.0M | **~$293** |
+| Opus-4.5 Judge (per item) | ~1,881* | ~4.7M | ~0.6M | ~$113 |
+| **TOTAL** | | | | **~$406** |
+
+*With 50% buffer: **~$609***
+
+> **Note**: Judge calls assume ~30% of dialogues arbitrated × ~3 contested items per arbitrated dialogue. If arbitration triggers `__total__` (8 items), judge calls can reach ~5,000 and costs scale accordingly.
+
+See [Preflight Checklist](../preflight-checklist/index.md) for more detailed cost breakdown.
 
 ---
 
@@ -107,6 +114,21 @@ uv run vibe-check score-corpus \
 Resume uses two SQLite databases:
 - `ledger.sqlite`: which dialogues are `done` / `running` / `failed`, plus token usage totals
 - `--checkpoint` DB: LangGraph state checkpoints per `file_id`
+
+### Resume Safety: Dataset Fingerprinting
+
+The runner computes a **content-sensitive dataset fingerprint** by hashing `file_id + dialogue SHA-256` for all dialogues. This prevents accidental resume into a modified corpus:
+
+```python
+# Fingerprint includes content, not just IDs
+dataset_rows = sorted(
+    f"{d.file_id}:{hashlib.sha256(d.dialogue.encode()).hexdigest()}"
+    for d in corpus
+)
+fingerprint = hashlib.sha256("\n".join(dataset_rows).encode()).hexdigest()
+```
+
+If the corpus changes (even with same file_ids), the fingerprint changes and resume is blocked unless you use `--force`.
 
 ---
 

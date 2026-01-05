@@ -50,6 +50,8 @@ See `docs/_archive/dataset-sqpsychconv-qwq.md` for qwq bug documentation.
 | `therapist_model` | string | Model used for therapist (variant name) |
 | `dialogue` | string | Full conversation transcript |
 
+> **Warning**: `file_id` encodes the class label (e.g., `control...` → control, `active...` → mdd). This is safe for the current pipeline because `file_id` is not included in juror/judge prompts, but **dangerous** if used as an input feature in downstream ML training.
+
 ---
 
 ## Condition Distribution
@@ -138,6 +140,81 @@ print(train.head())
 | Project website | CC BY-SA 4.0 |
 | HuggingFace dataset card | **No license displayed** |
 | Dataset itself | **UNCONFIRMED** |
+
+---
+
+## Token Estimates (client_qa view)
+
+Approximate token counts for scoring (tiktoken `cl100k_base`):
+
+| Stat | View Text Only | + Juror System Prompt |
+|------|----------------|------------------------|
+| Min | ~616 | ~1,109 |
+| Max | ~3,032 | ~3,525 |
+| Mean | ~1,306 | ~1,799 |
+| Median | ~1,240 | ~1,733 |
+
+Notes:
+- 1 dialogue exceeds 3,000 tokens for view text alone; 16 exceed 3,000 when including the juror system prompt.
+- Providers tokenize differently; these are for order-of-magnitude budgeting.
+- `client_only` view reduces tokens by ~58% (mean ~550 vs ~1,306).
+
+---
+
+## Data Quality Notes
+
+### Raw Corpus Artifacts (Stripped During Preprocessing)
+
+The raw corpus contains generation artifacts that are stripped by the preprocessing pipeline:
+
+| Artifact | Count | Status |
+|----------|-------|--------|
+| `[/END]` termination markers | 2,492 occurrences (100% of dialogues) | Stripped |
+| Template placeholders (`[insert date]`, etc.) | 492 occurrences | Stripped |
+| Mid-dialogue `[/END]` | 400 dialogues | Stripped |
+
+See [Preprocessing](../preprocessing/dialogue-views.md) for details on artifact removal.
+
+### Minor Anomalies (Kept)
+
+| Issue | Count | Status |
+|-------|-------|--------|
+| Chinese characters in dialogues | 4 dialogues (1 in client text) | Kept - LLMs handle it |
+| Asterisk roleplay markers (`*pauses*`) | 36 dialogues | Kept - semantically meaningful |
+| Curly quotes (U+2019, U+201C/D) | 2,089 dialogues | Normal - UTF-8 handled correctly |
+
+---
+
+## PHQ-8 Labelability Analysis
+
+> **Key insight**: PHQ-8 was designed for patient self-report, not third-party inference from conversation.
+
+### Evidence Availability by Item
+
+| PHQ-8 Item | Direct Evidence in Corpus | Labelability |
+|------------|--------------------------|--------------|
+| **Anhedonia** | Common ("don't enjoy things anymore") | Good |
+| **Depressed mood** | Very common ("feeling down", "hopeless") | Good |
+| **Sleep** | Common ("can't sleep", "sleeping too much") | Good |
+| **Fatigue** | Common ("tired", "no energy") | Good |
+| **Appetite** | **Rare** (~0.5-0.9% by keyword heuristic) | **Poor** |
+| **Guilt** | Moderate ("feel like a failure") | Moderate |
+| **Concentration** | Moderate ("can't focus") | Moderate |
+| **Psychomotor** | **Very rare** (~0.5% strict, ~4.3% including "restless") | **Poor** |
+
+### Frequency Anchor Problem
+
+PHQ-8 requires frequency mapping (0-3 scale based on "last 2 weeks"). However:
+- **0/2,090** dialogues contain explicit "last/past two weeks" language in client text
+- **0** occurrences of literal PHQ response phrasing ("more than half the days", "nearly every day")
+
+This means jurors must infer frequency from intensity language, leading to potential inter-juror disagreement.
+
+### Recommendations
+
+1. **Expect high `insufficient_evidence` rates** for appetite and psychomotor items
+2. **Total score is more reliable** than individual item scores (errors average out)
+3. **Run a pilot first** to measure per-item `insufficient_evidence` rates before full production
 
 ---
 

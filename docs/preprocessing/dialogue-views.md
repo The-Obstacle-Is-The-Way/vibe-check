@@ -48,7 +48,12 @@ Not well. I wake up at 3am most nights.
 About two months now.
 ```
 
-**Warning**: This view loses context. Short answers like "Yes" or "About two months" become meaningless without the therapist's question.
+**Trade-offs**:
+- **Pro**: ~58% fewer tokens (mean ~550 vs ~1,306)
+- **Pro**: Eliminates therapist prompt leakage risk
+- **Con**: Loses context for short answers ("Yes", "About two months")
+
+> **Note**: Empirical analysis shows therapist-only text predicts `condition` with ~0.92 accuracy (AUC ~0.96), indicating significant label leakage potential when therapist text is included.
 
 ### `client_qa_text` (Default)
 
@@ -108,14 +113,35 @@ This is the default view for scoring because it preserves the semantic context o
 
 ## Artifact Removal
 
-The preprocessor removes common generation artifacts:
+The preprocessor removes common generation artifacts via regex patterns defined in `constants.py`:
+
+### Removed Patterns (SPEC-12)
+
+| Category | Pattern Examples | Regex |
+|----------|-----------------|-------|
+| **Termination markers** | `[/END]`, `[END]` | `\[\s*/?\s*END\s*\]` |
+| **Template placeholders** | `[insert date]`, `[next week]` | `\[\s*insert[^\]]*\]`, `\[\s*next[^\]]*\]` |
+| **Name placeholders** | `[Client's Name]`, `[Therapist's Name]` | `\[\s*client(?:'|\u2019)?s?\s*name\s*\]` |
+| **Chunk markers** | `[19/20]`, `[1/8]` | `\[\s*\d+\s*/\s*\d+\s*\]` |
+| **Roleplay directives** | `[Keep silent]`, `[Pause]`, `[Sigh]` | `\[\s*keep\s+silent\s*\]`, etc. |
+| **Stage directions** | `[Take care]`, `[See you then]` | `\[\s*(?:see\s+you|take\s+care)[^\]]*\]` |
+
+### Preserved Content
+
+| Pattern | Example | Reason |
+|---------|---------|--------|
+| Asterisk roleplay | `*pauses*`, `*takes a deep breath*` | Semantically meaningful for PHQ-8 |
+| Curly quotes | `'` (U+2019) | Normal Unicode, LLMs handle fine |
+| Chinese text | (rare, 4 dialogues) | LLMs understand, clinically relevant |
+
+### Other Sanitization
 
 | Pattern | Example | Action |
 |---------|---------|--------|
 | Bracketed instructions | `[word limit: 64]` | Remove |
 | Long bracketed text | `[Check the guidelines...]` | Remove |
 | Meta-commentary | `"" This finalizes the...` | Truncate |
-| Excessively long utterances | `> 4000 chars or > 200 words` | Skip |
+| Excessively long utterances | `> 4000 chars or > 200 words` | Truncate (not skip) |
 | Unknown speaker labels | `Assistant:`, `User:` | Flag as unknown |
 
 ---
