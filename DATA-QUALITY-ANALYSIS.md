@@ -321,9 +321,11 @@ PHQ-8 maps symptoms to **frequency buckets**:
 - 2 = More than half the days (7-10 days)
 - 3 = Nearly every day (11-14 days)
 
-**The corpus almost never contains PHQ-calibrated frequency anchors.** For example, explicit “last/past two weeks” language appears in only **~14/2,090 dialogues (~0.7%)** in client text, and literal PHQ response-category phrasing ("more than half the days", "nearly every day", etc.) appears **0 times**.
+**The corpus contains essentially no PHQ-calibrated frequency anchors.** Explicit "last/past two weeks" language appears in **0/2,090 dialogues (0%)** in client text. Broader "past few weeks" variants appear in only **3/2,090 (~0.14%)**. Literal PHQ response-category phrasing ("more than half the days", "nearly every day", etc.) appears **0 times**.
 
-This means for 96% of dialogues, jurors must infer frequency from intensity language:
+*Verification method: `grep -E "(last|past)\s+(two|2|couple\s+of|few)\s+weeks?" client_text` (case-insensitive)*
+
+This means for ~100% of dialogues, jurors must infer frequency from intensity language:
 - "I've been feeling really down" → Score 2? 3? Unclear.
 - "Sometimes I can't concentrate" → Score 1? 2? Unclear.
 
@@ -379,7 +381,7 @@ Some PHQ-8 items are likely to be **dominated by "insufficient evidence"** acros
 - **Psychomotor**:
   - strict (pacing/fidget/can't sit still/slowed): ~10/2,090 (~0.5%)
   - including "restless": ~90/2,090 (~4.3%)
-- **PHQ-calibrated timeframe anchors** (“last/past two weeks”) in client text: ~14/2,090 (~0.7%)
+- **PHQ-calibrated timeframe anchors** ("last/past two weeks"): 0/2,090 (0%); "past few weeks" variants: 3/2,090 (~0.14%)
 
 Practical implication: if you force 8-item scoring, expect large amounts of imputation/guessing for appetite + psychomotor and noisy mapping from vague language to the 0–3 frequency scale.
 

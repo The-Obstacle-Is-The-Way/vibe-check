@@ -39,7 +39,7 @@ cat .env | grep -E "^(OPENAI|ANTHROPIC|GOOGLE)_API_KEY" | sed 's/=.*/=***/'
 ```
 
 **Expected output**:
-```
+```text
 OPENAI_API_KEY=***
 ANTHROPIC_API_KEY=***
 GOOGLE_API_KEY=***

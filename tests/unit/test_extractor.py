@@ -154,3 +154,7 @@ def test_generation_artifacts_are_stripped() -> None:
     assert "client's name" not in views.dialogue_clean.lower()
     assert "keep silent" not in views.dialogue_clean.lower()
     assert "confirm the date and time" not in views.dialogue_clean.lower()
+
+    # Verify whitespace is properly normalized after artifact removal
+    assert "  " not in views.dialogue_clean  # No double spaces
+    assert "Mr.." not in views.dialogue_clean  # No double-dot artifacts
