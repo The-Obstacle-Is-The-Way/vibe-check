@@ -130,3 +130,27 @@ def test_long_utterance_char_cap_is_applied() -> None:
     assert views.client_utterance_count == 1
     assert views.truncated_utterance_count == 1
     assert 0 < len(views.client_only_text) <= MAX_UTTERANCE_CHARS
+
+
+def test_generation_artifacts_are_stripped() -> None:
+    dialogue = SQPsychConvDialogue(
+        file_id="test",
+        condition="mdd",
+        client_model="test",
+        therapist_model="test",
+        dialogue=(
+            "Therapist: Hello, Mr. [Client's Name]. [Please confirm the date and time.]\n"
+            "Client: Thanks. [/END]\n"
+            "Client: [Keep silent]\n"
+            "Therapist: Let's meet [insert preferred date] [Next week].\n"
+            "Client: Okay.\n"
+        ),
+    )
+    views = preprocess_dialogue(dialogue)
+
+    assert "[/END]" not in views.dialogue_clean
+    assert "insert preferred date" not in views.dialogue_clean.lower()
+    assert "next week" not in views.dialogue_clean.lower()
+    assert "client's name" not in views.dialogue_clean.lower()
+    assert "keep silent" not in views.dialogue_clean.lower()
+    assert "confirm the date and time" not in views.dialogue_clean.lower()

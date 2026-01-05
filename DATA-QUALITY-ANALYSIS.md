@@ -9,7 +9,7 @@
 
 The corpus is **structurally clean and parseable** for PHQ-8 scoring, but PHQ-8 **labeling feasibility is conditional** once you account for (a) sparse direct evidence for some items (notably appetite/psychomotor) and (b) **therapist prompt leakage risk** if therapist turns are included in the scoring text.
 
-There are also **minor preprocessing gaps** worth addressing to avoid wasting tokens and potential LLM confusion.
+The raw corpus also contains minor bracketed generation artifacts, but these are now stripped deterministically during preprocessing (SPEC-12) to avoid token waste and potential LLM confusion.
 
 **Verdict**: Run a small pilot first; default to `client_only` for labeling; treat `client_qa` as an ablation (costlier + higher leakage surface).
 
@@ -42,7 +42,9 @@ Notes:
 
 ---
 
-## 2. P2 Issues - Generation Artifacts (Optional Fixes)
+## 2. P2 Issues - Generation Artifacts (Fixed in Preprocessing)
+
+Note: counts below refer to the **raw corpus**; preprocessing now strips these artifacts (SPEC-12).
 
 ### 2.1 `[/END]` Termination Marker
 
@@ -62,7 +64,7 @@ Client: Thanks, I appreciate it.
 
 **Impact**: ~5 wasted tokens per dialogue × 2,090 = ~10,450 tokens. More importantly, `[/END]` in therapist turns gets included in `client_qa` view and sent to jurors.
 
-**Fix**: Strip `[/END]` during preprocessing.
+**Status**: Stripped during preprocessing (SPEC-12).
 
 ---
 
@@ -97,7 +99,7 @@ Therapist: Hello, Mr. [Client's Name]. How are you feeling today?
 
 **Impact**: Clearly synthetic, could confuse LLMs scoring for depression symptoms.
 
-**Fix**: Strip common template placeholders or flag dialogues for review.
+**Status**: Stripped during preprocessing (SPEC-12).
 
 ---
 
@@ -119,7 +121,7 @@ Counts below are **occurrences** (not dialogues).
 Client: [Quiet]
 ```
 
-**Impact**: These are not clinical content. Could be stripped or left (low impact).
+**Impact**: These are not clinical content. Now stripped during preprocessing (SPEC-12).
 
 ---
 
@@ -211,9 +213,9 @@ The preprocessing pipeline (`src/vibe_check/preprocessing/extractor.py`) handles
 
 ### 5.1 Before Production (P2 Fixes)
 
-**Option A: Fix Preprocessing** (Low-cost, optional)
-1. Strip `[/END]` markers in `_sanitize_utterance_text()`
-2. Strip common template placeholders (`[insert ...]`, `[Client's Name]`, etc.)
+**Option A: Fix Preprocessing** (Implemented)
+1. Strip `[/END]` markers during preprocessing (SPEC-12)
+2. Strip common template placeholders (`[insert ...]`, `[Client's Name]`, etc.) (SPEC-12)
 
 **Option B: Document and Proceed**
 - Accept the ~3,000 extra bracket artifacts
@@ -652,7 +654,7 @@ If adding a second judge, choose a **different model family** than the jurors:
 Based on this analysis:
 
 - ❌ **Two judges** - Single judge with 6-juror input is sufficient
-- ❌ **Preprocessing fixes** - P2 artifacts are low-risk and low-cost (optional; proceed with awareness if skipped)
+- ✓ **Preprocessing fixes** - Implemented (SPEC-12)
 - ❌ **Chinese character removal** - 1 dialogue (0.05%), LLMs handle it
 - ❌ **Different dialogue view** - `client_qa` vs `client_only` is an ablation choice
 

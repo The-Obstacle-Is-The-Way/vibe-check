@@ -14,13 +14,7 @@
 
 ## Active Specs
 
-| ID | Title | Status | Priority |
-|----|-------|--------|----------|
-| SPEC-12 | [Preprocessing Artifact Stripping](./SPEC-12-preprocessing-artifact-stripping.md) | **ACTIVE** | P2 (before pilot) |
-
-### SPEC-12: Preprocessing Artifact Stripping
-
-Strip generation artifacts (`[/END]`, `[insert date]`, `[Client's Name]`, etc.) that currently pass through preprocessing unchanged. See [SPEC-12](./SPEC-12-preprocessing-artifact-stripping.md) for details.
+_No active specs. All specifications have been implemented and archived._
 
 ---
 
@@ -41,11 +35,12 @@ All specs are implemented and archived in [`../_archive/specs/`](../_archive/spe
 | SPEC-09 | [Human Alignment](../_archive/specs/spec-09-human-alignment.md) | Calibration (conditional, if diagnostics fail) |
 | SPEC-10 | [Parallel Juror Execution](../_archive/specs/SPEC-10-parallel-juror-execution.md) | Performance optimization (BUG-035) |
 | SPEC-11 | [PHQ-8 Rubric Embedding](../_archive/specs/SPEC-11-phq8-rubric-embedding.md) | Clinical rubric in prompts (BUG-040) |
+| SPEC-12 | [Preprocessing Artifact Stripping](../_archive/specs/SPEC-12-preprocessing-artifact-stripping.md) | Strip SQPsychConv bracket artifacts |
 
 ---
 
 ## Status
 
-- **Total specs**: 12 (11 archived + 1 active)
-- **SPEC-12 active**: Preprocessing artifact stripping (P2, ~30 min)
-- **Ready for pilot run**: ✅ YES (SPEC-12 is optional but recommended)
+- **Total specs**: 12 (12 archived)
+- **All implemented**: ✅ YES
+- **Ready for pilot run**: ✅ YES
