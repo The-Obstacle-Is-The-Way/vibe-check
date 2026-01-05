@@ -75,8 +75,10 @@ async def score_corpus_async(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     corpus_full = load_corpus(input_path)
-    dataset_file_ids = sorted(d.file_id for d in corpus_full)
-    dataset_fingerprint = hashlib.sha256("\n".join(dataset_file_ids).encode("utf-8")).hexdigest()
+    dataset_rows = sorted(
+        f"{d.file_id}:{hashlib.sha256(d.dialogue.encode('utf-8')).hexdigest()}" for d in corpus_full
+    )
+    dataset_fingerprint = hashlib.sha256("\n".join(dataset_rows).encode("utf-8")).hexdigest()
 
     corpus = corpus_full
     if limit is not None:

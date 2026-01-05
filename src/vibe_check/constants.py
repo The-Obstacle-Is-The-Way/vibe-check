@@ -59,11 +59,18 @@ STRIP_GENERATION_ARTIFACT_PATTERNS: tuple[str, ...] = (
     r"\[\s*therapist(?:'|\u2019)?s?\s*name\s*\]",
     r"\[\s*colleague(?:'|\u2019)?s?\s*name\s*\]",
     r"\[\s*(?:daughter|sister)(?:'|\u2019)?s?\s*name\s*\]",
+    # Export / chunking artifacts (seen in a small number of rows)
+    r"\[\s*\d+\s*/\s*\d+\s*\]",
     # Semantic-void roleplay directives
     r"\[\s*keep\s+silent\s*\]",
     r"\[\s*no\s+reply\s*\]",
     r"\[\s*quiet\s*\]",
     r"\[\s*pause[^\]]*\]",
+    # Bracketed stage directions / closings (not useful for PHQ-8 evidence)
+    r"\[\s*(?:sigh|smiles?|exhales?|inhales?(?:\s+deeply)?|taking\s+a\s+deep\s+breath)[^\]]*\]",
+    r"\[\s*repeats\s+a\s+few\s+times[^\]]*\]",
+    r"\[\s*(?:see\s+you|take\s+care|thank\s+you)[^\]]*\]",
+    r"\[\s*i(?:'|\u2019)?ll\s+send[^\]]*\]",
 )
 
 # Operational defaults
