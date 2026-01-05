@@ -129,18 +129,18 @@ print(f'truncated_utterance_count: {views.truncated_utterance_count}')
 uv run pytest -q
 ```
 
-**Expected**: 140 passed, 1 skipped
+**Expected**: 141 passed, 1 skipped
 
 ### 4.2 Offline Dry Run
 
 ```bash
 # Score 5 dialogues with fake jurors (no API calls)
+# NOTE: Do NOT pass `--live`; fake mode is the default.
 uv run vibe-check score-corpus \
   --input data/sqpsychconv/qwen-2.5 \
   --output data/outputs/preflight-test \
   --checkpoint sqlite:///data/checkpoints/preflight-test.db \
-  --limit 5 \
-  --offline
+  --limit 5
 
 # Check outputs
 ls data/outputs/preflight-test/
@@ -161,7 +161,8 @@ uv run vibe-check score-corpus \
   --output data/outputs/validation-run \
   --checkpoint sqlite:///data/checkpoints/validation.db \
   --limit 50 \
-  --max-concurrency 5
+  --max-concurrency 5 \
+  --live
 ```
 
 ### 5.2 Full Production Run
@@ -172,16 +173,20 @@ uv run vibe-check score-corpus \
   --input data/sqpsychconv/qwen-2.5 \
   --output data/outputs/production-run \
   --checkpoint sqlite:///data/checkpoints/production.db \
-  --max-concurrency 50
+  --max-concurrency 50 \
+  --live
 
 # Run diagnostics after completion
 uv run vibe-check diagnostics \
-  --input data/outputs/production-run/scored.jsonl
+  --scored data/outputs/production-run/scored.jsonl \
+  --output data/outputs/production-run/diagnostics.json \
+  --format json \
+  --strict
 
 # Export public labels
 uv run vibe-check export \
   --input data/outputs/production-run/scored.jsonl \
-  --output data/outputs/production-run/public \
+  --output-dir data/outputs/production-run/public \
   --format jsonl
 ```
 
@@ -220,7 +225,8 @@ uv run vibe-check score-corpus \
   --input data/sqpsychconv/qwen-2.5 \
   --output data/outputs/production-run \
   --checkpoint sqlite:///data/checkpoints/production.db \
-  --max-concurrency 50
+  --max-concurrency 50 \
+  --live
 ```
 
 ---
@@ -231,7 +237,10 @@ uv run vibe-check score-corpus \
 
 ```bash
 uv run vibe-check diagnostics \
-  --input data/outputs/production-run/scored.jsonl
+  --scored data/outputs/production-run/scored.jsonl \
+  --output data/outputs/production-run/diagnostics.json \
+  --format json \
+  --strict
 ```
 
 **Quality gates** (from SPEC-07):
@@ -244,7 +253,7 @@ uv run vibe-check diagnostics \
 
 ```bash
 uv run vibe-check validate-export \
-  --input data/outputs/production-run/public/labels.jsonl
+  --input data/outputs/production-run/public/vibe_check_labels.jsonl
 ```
 
 ---
@@ -264,11 +273,11 @@ uv run vibe-check validate-export \
 
 - [ ] API credits loaded (OpenAI $60, Anthropic $870, Google $30)
 - [ ] `.env` file has all 3 API keys
-- [ ] `uv run pytest` passes (140 tests)
+- [ ] `uv run pytest` passes (141 tests)
 - [ ] Offline dry run completes successfully
 - [ ] Validation run (50 dialogues) completes without errors
 - [ ] Ready for production run
 
 ---
 
-*Last updated: 2026-01-04*
+*Last updated: 2026-01-05*
