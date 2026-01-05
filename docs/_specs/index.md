@@ -14,7 +14,13 @@
 
 ## Active Specs
 
-_No active specs. All specifications have been implemented and archived._
+| ID | Title | Status | Priority |
+|----|-------|--------|----------|
+| SPEC-12 | [Preprocessing Artifact Stripping](./SPEC-12-preprocessing-artifact-stripping.md) | **ACTIVE** | P2 (before pilot) |
+
+### SPEC-12: Preprocessing Artifact Stripping
+
+Strip generation artifacts (`[/END]`, `[insert date]`, `[Client's Name]`, etc.) that currently pass through preprocessing unchanged. See [SPEC-12](./SPEC-12-preprocessing-artifact-stripping.md) for details.
 
 ---
 
@@ -40,6 +46,6 @@ All specs are implemented and archived in [`../_archive/specs/`](../_archive/spe
 
 ## Status
 
-- **Total specs**: 11
-- **All implemented**: ✅ YES
-- **Ready for production run**: ✅ YES (BUG-048 resolved)
+- **Total specs**: 12 (11 archived + 1 active)
+- **SPEC-12 active**: Preprocessing artifact stripping (P2, ~30 min)
+- **Ready for pilot run**: ✅ YES (SPEC-12 is optional but recommended)
