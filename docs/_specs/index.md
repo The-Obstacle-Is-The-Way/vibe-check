@@ -17,12 +17,39 @@
 
 | ID | Title | Status | Scope |
 |----|-------|--------|-------|
-| SPEC-13 | [NA-Aware Schema](SPEC-13-na-aware-schema.md) | DRAFT | Schema: `PHQ8ItemScore` + `PHQ8TotalScore` with assertion semantics |
-| SPEC-14 | [Clinical Inference Prompts](SPEC-14-clinical-inference-prompts.md) | DRAFT | Prompts: Replace frequency anchors with clinical inference |
-| SPEC-15 | [NA-Aware Aggregation](SPEC-15-na-aware-aggregation.md) | DRAFT | Aggregation: Handle None votes, track `p_not_mentioned` |
-| SPEC-16 | [HuggingFace NA-Aware Export](SPEC-16-huggingface-na-export.md) | DRAFT | Export: New NA-aware format (SPEC-08 unchanged) |
+| SPEC-13 | [NA-Aware Schema](SPEC-13-na-aware-schema.md) | DRAFT v2 | Schema: `PHQ8ItemScore` + `discussed` field + assertion semantics |
+| SPEC-14 | [Clinical Inference Prompts](SPEC-14-clinical-inference-prompts.md) | DRAFT v2 | Prompts: v2 constants, JSON skeleton, deterministic tests |
+| SPEC-15 | [NA-Aware Aggregation](SPEC-15-na-aware-aggregation.md) | DRAFT v2 | Aggregation: 25-bin posterior, severity gating, NA handling |
+| SPEC-16 | [HuggingFace NA-Aware Export](SPEC-16-huggingface-na-export.md) | DRAFT v2 | Export: `vibe_check_labels_huggingface.jsonl` format |
+| SPEC-17 | [Judge NA Semantics](SPEC-17-judge-na-semantics.md) | DRAFT | Judge: NA-aware arbitration schema + prompts |
+| SPEC-18 | [Diagnostics NA Updates](SPEC-18-diagnostics-na-updates.md) | DRAFT | Diagnostics: Coverage metrics, NA-aware gates |
 
-**Dependency Chain**: SPEC-13 → SPEC-14 → SPEC-15 → SPEC-16
+### Dependency Chain
+
+```
+SPEC-13 (Schema) ──┬──> SPEC-14 (Prompts)
+                   │
+                   ├──> SPEC-15 (Aggregation) ──> SPEC-16 (Export)
+                   │
+                   └──> SPEC-17 (Judge)
+
+SPEC-15 (Aggregation) ──> SPEC-18 (Diagnostics)
+```
+
+### v2 Revision Summary
+
+All Phase 1 specs were revised based on senior review feedback:
+
+| Issue | Resolution |
+|-------|------------|
+| Missing `discussed` field | Added to SPEC-13 per SSOT §12.1 |
+| Behavioral LLM tests non-deterministic | SPEC-14 uses prompt string inspection + TestModel |
+| Total posterior variable length | SPEC-15 keeps 25 bins, NA → point-mass at 0 |
+| `severity_bucket_phq_like` ungated | SPEC-15 gates on `is_proration_valid` |
+| CLI contract wrong | SPEC-16 matches real CLI (`--input`, `--output-dir`, `--format`) |
+| Missing judge NA spec | Added SPEC-17 |
+| Missing diagnostics spec | Added SPEC-18 |
+| v1 constants modification | v2 constants separate (preserves `phq8_rubric_hash()`) |
 
 ---
 
@@ -49,16 +76,18 @@ All specs are implemented and archived in [`../_archive/specs/`](../_archive/spe
 
 ## Status
 
-- **Total specs**: 16 (12 archived, 4 active)
-- **Phase 1 specs**: 4 DRAFT (pending senior review)
+- **Total specs**: 18 (12 archived, 6 active)
+- **Phase 1 specs**: 6 DRAFT (4 revised to v2, 2 new)
 - **Ready for pilot run**: ⏸️ BLOCKED (Phase 1 specs must be implemented first)
 
 ### Phase 1 Implementation Order
 
 1. **SPEC-13**: Schema changes (foundation)
 2. **SPEC-14**: Prompt changes (requires SPEC-13)
-3. **SPEC-15**: Aggregation changes (requires SPEC-13)
-4. **SPEC-16**: Export changes (requires SPEC-15)
+3. **SPEC-17**: Judge changes (requires SPEC-13)
+4. **SPEC-15**: Aggregation changes (requires SPEC-13)
+5. **SPEC-16**: Export changes (requires SPEC-15)
+6. **SPEC-18**: Diagnostics changes (requires SPEC-15)
 
 ### Blocking Issue
 
