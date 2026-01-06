@@ -65,5 +65,5 @@ Together they provide:
 
 ## Related Sections
 
-- [Scoring](../scoring/) - What generates the data being validated
+- [Scoring](../scoring/index.md) - What generates the data being validated
 - [Architecture: Resilience](../architecture/resilience.md) - Implementation details

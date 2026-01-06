@@ -66,5 +66,5 @@ The default view for scoring is `client_qa_text`:
 
 ## Related Sections
 
-- [Scoring](../scoring/) - How preprocessed text becomes scores
+- [Scoring](../scoring/index.md) - How preprocessed text becomes scores
 - [Architecture: Data Flow](../architecture/data-flow.md) - Full input-to-output journey

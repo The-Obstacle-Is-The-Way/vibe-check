@@ -46,6 +46,8 @@ dev = [
     "mypy>=1.15.0",
     # Pre-commit
     "pre-commit>=4.1.0",
+    # Documentation
+    "mkdocs-material>=9.5.0",
 ]
 
 [project.scripts]

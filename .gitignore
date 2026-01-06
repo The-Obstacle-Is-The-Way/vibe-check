@@ -250,3 +250,6 @@ test_checkpoint.sqlite
 
 # Temporary working files (citation checks, scratch analysis)
 .tmp/
+
+# MkDocs build output
+site/

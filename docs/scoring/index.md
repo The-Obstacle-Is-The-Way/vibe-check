@@ -80,6 +80,6 @@ When jurors disagree beyond thresholds, a "judge" (Claude Opus) reviews the evid
 
 ## Related Sections
 
-- [Preprocessing](../preprocessing/) - How dialogues become scoring text
-- [Reliability](../reliability/) - Quality gates and resilience
-- [Architecture](../architecture/) - System design and data flow
+- [Preprocessing](../preprocessing/index.md) - How dialogues become scoring text
+- [Reliability](../reliability/index.md) - Quality gates and resilience
+- [Architecture](../architecture/index.md) - System design and data flow
