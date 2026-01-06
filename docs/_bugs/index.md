@@ -12,6 +12,7 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
+| BUG-051 | P1 | resolved | [DAIC-WOZ PHQ-8 Ground Truth Integrity](../_archive/bugs/bug-051-daic-woz-ground-truth-integrity.md) |
 | BUG-050 | P4 | resolved | [Remaining Magic Numbers in Codebase](../_archive/bugs/bug-050-remaining-magic-numbers.md) |
 | BUG-049 | P3 | resolved | [Hardcoded Diagnostic Thresholds](../_archive/bugs/bug-049-hardcoded-diagnostic-thresholds.md) |
 | BUG-048 | P1 | resolved | [No Temperature Control for LLM Calls](../_archive/bugs/bug-048-no-temperature-control-for-llm-calls.md) |
@@ -53,13 +54,13 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 | BUG-042 to BUG-042 | 1 | Preprocessing truncation audit |
 | BUG-043 to BUG-050 | 8 | Reproducibility + diagnostics + hygiene |
 
-**Total resolved**: 50 bugs
+**Total resolved**: 51 bugs
 
 ---
 
 ## Filing New Bugs
 
-1. Use the next available number: **BUG-051**
+1. Use the next available number: **BUG-052**
 2. Create file in this directory: `BUG-NNN-short-description.md`
 3. Include: Severity, Status, Date, Summary, Root Cause, Fix
 4. When resolved, move to `docs/_archive/bugs/`

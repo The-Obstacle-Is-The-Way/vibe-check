@@ -58,19 +58,20 @@ All bugs in this directory have been **resolved**. Bug numbers are permanent ide
 | BUG-048 | [No temperature control for LLM calls](bug-048-no-temperature-control-for-llm-calls.md) | P1 | RESOLVED |
 | BUG-049 | [Hardcoded diagnostic thresholds](bug-049-hardcoded-diagnostic-thresholds.md) | P3 | RESOLVED |
 | BUG-050 | [Remaining magic numbers](bug-050-remaining-magic-numbers.md) | P4 | RESOLVED |
+| BUG-051 | [DAIC-WOZ PHQ-8 ground truth integrity](bug-051-daic-woz-ground-truth-integrity.md) | P1 | RESOLVED |
 
 ---
 
 ## Statistics
 
-- **Total bugs**: 50
-- **Resolved/Fixed**: 50
+- **Total bugs**: 51
+- **Resolved/Fixed**: 51
 - **Open**: 0
 
 ---
 
 ## Next Bug Number
 
-When filing new bugs, use: **BUG-051**
+When filing new bugs, use: **BUG-052**
 
 Place new bugs in `docs/_bugs/` (not `_archive`). Move to archive when resolved.

@@ -77,11 +77,11 @@ Instead, the psychiatrist:
 
 ### 2.3 The Key Clinical Insight
 
-> **A psychiatrist infers severity from intensity, not frequency counts.**
+> **A psychiatrist infers severity from narrative evidence (recency + persistence + intensity + functional impact), not literal day counts.**
 
 | Patient says | Psychiatrist infers | PHQ-8 equivalent |
 |--------------|---------------------|------------------|
-| "I've been really tired lately" | Moderate-high severity | Score 2-3 |
+| "I've been really tired lately" | Fatigue present; severity depends on persistence/impact | Score 1-2 (sometimes 3 if pervasive) |
 | "Sometimes I feel a bit low" | Mild severity | Score 1 |
 | "I can't sleep at all anymore" | High severity | Score 3 |
 | *(doesn't mention appetite)* | **Unknown, not 0** | **NA** |
@@ -226,14 +226,16 @@ class PHQ8ItemScore(BaseModel):
 ```
 
 **Semantic distinction**:
-- `score=0, discussed=True, explicitly_denied=True` → Patient said "I'm sleeping fine"
-- `score=None, discussed=False` → Sleep never came up
-- `score=2, discussed=True` → Patient described moderate sleep issues
+- `score=0, discussed=True, assertion="denied"` → Patient said "I'm sleeping fine"
+- `score=None, discussed=False, assertion="not_mentioned"` → Sleep never came up (no evidence)
+- `score=2, discussed=True, assertion="present"` → Patient described moderate sleep issues
 
 ### 5.2 Prompt Rewrite: Clinical Inference Mode
 
 **Current prompt focus**: Frequency mapping
 **Proposed prompt focus**: Clinical severity inference
+
+> **Note**: This is an early sketch. The **approved** prompt language is in **Section 12.3** (includes ConText-style rules and a more defensible severity table).
 
 ```markdown
 You are a psychiatrist reviewing a therapy transcript to infer PHQ-8 symptom severity.
@@ -242,21 +244,26 @@ CLINICAL INFERENCE GUIDELINES:
 1. TIMEFRAME: Assume the conversation reflects the patient's recent state (last ~2 weeks).
    Do NOT expect explicit "in the last two weeks" language.
 
-2. SEVERITY INFERENCE: Map patient language intensity to severity:
-   - Mild indicators: "sometimes", "a bit", "occasionally" → Score 1
-   - Moderate indicators: "often", "really", "a lot" → Score 2
-   - Severe indicators: "always", "can't", "completely", "every day" → Score 3
-   - Explicitly denied: "I'm sleeping fine", "appetite is good" → Score 0
+2. CONTEXT (ConText-style):
+   - Experiencer: score only if attributed to the CLIENT (not family/others)
+   - Temporality: score current/recent symptoms; exclude purely historical/resolved
+   - Hypothetical/conditional: do not score "what if/if it happens" statements as current
 
-3. NOT DISCUSSED vs DENIED:
-   - If the symptom domain is NOT mentioned at all → discussed=false, score=null
-   - If the patient explicitly denies the symptom → discussed=true, score=0, explicitly_denied=true
-   - Score 0 means "explicitly absent", NOT "not mentioned"
+3. SEVERITY INFERENCE (Evidence → Score):
+   - Prefer explicit frequency cues when present ("most days", "every day")
+   - Otherwise approximate using persistence + intensity + functional impact
+   - Do NOT up-score to 2–3 solely on bare intensifiers (e.g., "really") without persistence/impact
+   - Explicit denial → Score 0 (assertion="denied")
 
-4. EVIDENCE REQUIREMENT:
-   - For scores 1-3: Quote the patient language that indicates severity
-   - For score 0: Quote the denial ("I'm eating normally")
-   - For not discussed: No evidence needed (symptom domain absent)
+4. NOT MENTIONED vs DENIED:
+   - If no evidence for CLIENT+timeframe → score=null, assertion="not_mentioned", confidence=null
+   - If explicitly denied → score=0, assertion="denied"
+   - If mentioned but hedged → score=1, assertion="possible" (unless too vague → not_mentioned)
+
+5. EVIDENCE REQUIREMENT:
+   - For scores 1-3 and "possible": quote client language that supports the inference
+   - For denied: quote the denial
+   - For not_mentioned: evidence=[]
 ```
 
 ### 5.3 Total Score Handling with NA Items
@@ -325,11 +332,14 @@ This teaches the model that not-mentioned ≠ absent.
 
 | Gotcha | Status | Mitigation |
 |--------|--------|------------|
-| Score 0 conflates "denied" and "not mentioned" | ❌ Current issue | Schema change |
-| Prompts expect frequency anchors | ❌ Current issue | Prompt rewrite |
-| Total score undefined with NA items | ⚠️ Need decision | Choose Option A/B/C |
+| Score 0 conflates "denied" and "not mentioned" | ✅ Addressed | NA-aware schema + explicit rules |
+| Prompts expect frequency anchors | ✅ Addressed | Clinical inference prompt (Section 12.3) |
+| Total score undefined with NA items | ✅ Decided | Hybrid totals + strict proration gate (≥7) |
 | Juror disagreement on intensity→severity mapping | ⚠️ Expected | Arbitration handles |
 | Appetite/psychomotor rarely discussed | ✅ Known | Will mostly be NA |
+| Other-experiencer / historical / hypothetical mentions | ⚠️ High-risk | ConText-style rules + judge evidence requirement |
+| Legacy int-only exports reintroduce NA confusion | ⚠️ High-risk | Treat SPEC-08 as legacy/imputed; use NA-aware exporter for research |
+| Coverage shift (SQPsychConv ↔ DAIC-WOZ) | ⚠️ High-risk | Pre-scoring corpus comparison (Section 12.6) |
 | Therapist text leaks condition | ✅ Mitigated | Use client_only view |
 | file_id encodes condition | ✅ Mitigated | Not in prompts |
 | No explicit timeframe in transcripts | ✅ Addressed | Prompt assumes recent |
@@ -340,9 +350,11 @@ This teaches the model that not-mentioned ≠ absent.
 
 ### 8.1 Must Decide
 
-- [ ] **Schema change**: Add `discussed` flag and allow `score=None`?
-- [ ] **Total score method**: Prorated, imputed, or separate tracking?
-- [ ] **Prompt rewrite**: Switch from frequency to intensity inference?
+- [x] **Schema change**: Add `assertion` + allow `score=None` with `confidence=None` when NA (Section 12.1)
+- [x] **Total score method**: Report hybrid totals; gate proration at high coverage (Sections 12.2 / 11.1)
+- [x] **Prompt rewrite**: Switch from frequency anchors to clinical inference with ConText-style rules (Section 12.3)
+- [x] **Export strategy**: Keep SPEC-08 stable; add separate NA-aware exporter (Section 12.5)
+- [x] **Domain shift**: Run SQPsychConv vs DAIC-WOZ coverage analysis before paid scoring (Section 12.6)
 
 ### 8.2 Can Defer to Pilot
 
@@ -652,6 +664,10 @@ For publishing to HuggingFace, use this schema (JSON Lines format):
 
 **Decision**: Create a NEW export module for NA-aware HuggingFace format. Do NOT modify SPEC-08.
 
+**Pitfall / clarification**:
+- Any **int-only** export necessarily **imputes** or **drops** the no-evidence state. Treat SPEC-08 outputs as **legacy/imputed** and do not use them as the primary artifact for embedding training or clinical interpretation.
+- The NA-aware HuggingFace export (Section 12.4) is the **canonical research export** for this project.
+
 **Rationale**:
 - SPEC-08 is a stable public contract (integers only)
 - Breaking changes would affect any downstream consumers
@@ -695,7 +711,7 @@ src/vibe_check/export/
 |------|-------------|-------------|
 | `src/vibe_check/schemas/scoring.py` | **Major** | Add `assertion`, allow `score=None`, add `PHQ8TotalScore` |
 | `src/vibe_check/scoring/prompting.py` | **Major** | Rewrite system prompt for clinical inference |
-| `src/vibe_check/aggregation/posterior.py` | **Major** | Handle NA votes in Bayesian aggregation (or treat NA votes as missing) |
+| `src/vibe_check/aggregation/posterior.py` | **Major** | Treat NA votes as missing for score posteriors; track `not_mentioned` separately |
 | `src/vibe_check/aggregation/aggregate.py` | **Moderate** | Propagate NA-aware per-item consensus + totals |
 | `src/vibe_check/judge/prompting.py` | **Moderate** | Update judge to understand assertion semantics |
 | `src/vibe_check/diagnostics/report.py` | **Moderate** | Add NA rate, coverage, and assertion distribution metrics |
@@ -727,7 +743,7 @@ src/vibe_check/export/
 
 ### 13.3 Aggregation Changes Required
 
-- [ ] Update posterior calculation to handle NA votes
+- [ ] Treat NA votes as missing for 0–3 score posterior; separately compute `p_not_mentioned` per item
 - [ ] Update entropy calculation to exclude NA
 - [ ] Add per-item `assertion` consensus
 - [ ] Compute both prorated and imputed totals
@@ -749,6 +765,8 @@ src/vibe_check/export/
 | Most items are NA (low coverage) | Medium | High | Export `coverage`/`na_count`; use masked features; treat prorated totals as optional and gated (≥7 items) |
 | Prorated scores are biased under realistic assumptions | High | Medium | Compute proration only at high coverage; treat as auxiliary feature, not ground truth |
 | Coverage distribution shifts (SQPsychConv ↔ DAIC-WOZ) | Medium | High | Pilot on both corpora; avoid over-encoding “missingness style” as signal; report per-item NA rates by corpus |
+| Legacy int-only exports misused as “clinically aligned” labels | Medium | High | Mark SPEC-08 as legacy/imputed; make NA-aware export the canonical research artifact |
+| Severity buckets/cutpoints misinterpreted under partial/imputed totals | Medium | Medium | Compute clinical buckets only when proration is valid; otherwise label as ML-only proxy (or omit) |
 | Downstream models can't handle NA | Medium | Medium | Provide imputed_total fallback |
 | HuggingFace schema too complex | Low | Low | Provide flattened CSV alternative |
 

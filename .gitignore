@@ -233,8 +233,13 @@ data/outputs/
 
 # Dataset files (downloaded from HuggingFace, not versioned in git)
 # Re-download with: datasets.load_dataset("AIMH/SQPsychConv_qwen-2.5")
-# See: docs/data/DATASET-sqpsychconv-all-variants.md
+# See: docs/data/dataset-sqpsychconv-all-variants.md
 data/sqpsychconv/
+
+# DAIC-WOZ dataset (research use only, not redistributable)
+# Obtain from AVEC 2017 challenge or USC ICT
+# See: docs/data/dataset-daic-woz.md
+data/daic-woz/
 
 # Test artifacts (SQLite checkpoint DBs)
 test_checkpoint.sqlite
