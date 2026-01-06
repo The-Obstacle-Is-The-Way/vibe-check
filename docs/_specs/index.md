@@ -9,12 +9,20 @@
 ## Master Specification
 
 - **[spec-vibe-check.md](../_archive/research/spec-vibe-check.md)** - Master specification (SSOT)
+- **[clinical-alignment-review.md](../_brainstorming/clinical-alignment-review.md)** - Clinical alignment review (APPROVED for Phase 1)
 
 ---
 
-## Active Specs
+## Active Specs (Phase 1: NA-Aware Clinical Alignment)
 
-_No active specs. All specifications have been implemented and archived._
+| ID | Title | Status | Scope |
+|----|-------|--------|-------|
+| SPEC-13 | [NA-Aware Schema](SPEC-13-na-aware-schema.md) | DRAFT | Schema: `PHQ8ItemScore` + `PHQ8TotalScore` with assertion semantics |
+| SPEC-14 | [Clinical Inference Prompts](SPEC-14-clinical-inference-prompts.md) | DRAFT | Prompts: Replace frequency anchors with clinical inference |
+| SPEC-15 | [NA-Aware Aggregation](SPEC-15-na-aware-aggregation.md) | DRAFT | Aggregation: Handle None votes, track `p_not_mentioned` |
+| SPEC-16 | [HuggingFace NA-Aware Export](SPEC-16-huggingface-na-export.md) | DRAFT | Export: New NA-aware format (SPEC-08 unchanged) |
+
+**Dependency Chain**: SPEC-13 → SPEC-14 → SPEC-15 → SPEC-16
 
 ---
 
@@ -41,6 +49,20 @@ All specs are implemented and archived in [`../_archive/specs/`](../_archive/spe
 
 ## Status
 
-- **Total specs**: 12 (12 archived)
-- **All implemented**: ✅ YES
-- **Ready for pilot run**: ✅ YES
+- **Total specs**: 16 (12 archived, 4 active)
+- **Phase 1 specs**: 4 DRAFT (pending senior review)
+- **Ready for pilot run**: ⏸️ BLOCKED (Phase 1 specs must be implemented first)
+
+### Phase 1 Implementation Order
+
+1. **SPEC-13**: Schema changes (foundation)
+2. **SPEC-14**: Prompt changes (requires SPEC-13)
+3. **SPEC-15**: Aggregation changes (requires SPEC-13)
+4. **SPEC-16**: Export changes (requires SPEC-15)
+
+### Blocking Issue
+
+Per [clinical-alignment-review.md](../_brainstorming/clinical-alignment-review.md):
+> The current implementation would generate embeddings that encode incorrect patterns (frequency expectations, 0=not_mentioned conflation).
+
+**No paid API runs until Phase 1 is complete.**
