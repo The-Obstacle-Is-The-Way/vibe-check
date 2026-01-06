@@ -1,6 +1,6 @@
 # Clinical Alignment Review: PHQ-8 Scoring from Therapy Transcripts
 
-> **Status**: CRITICAL PRE-RUN REVIEW — Awaiting Senior Approval
+> **Status**: APPROVED FOR PHASE 1 IMPLEMENTATION + PILOT — Paid scoring run remains blocked pending pilot diagnostics
 > **Author**: Clinical (Double-Board Psychiatrist) + Engineering collaboration
 > **Date**: 2026-01-06
 > **Blocks**: All paid API scoring runs
@@ -13,10 +13,10 @@
 
 **Solution**: Align with how psychiatrists actually infer symptoms:
 1. **Infer severity from intensity** ("I'm exhausted" → high severity) instead of expecting explicit frequency anchors
-2. **Allow NA for undiscussed items** using clinical NLP assertion standards (present/denied/possible/not_mentioned)
-3. **Report both prorated AND imputed totals** since missing items are not random (MNAR)
+2. **Allow NA for undiscussed items** using a clinical-NLP-inspired assertion/coverage scheme (present/denied/possible/not_mentioned)
+3. **Report both prorated AND imputed totals** since transcript missingness is likely **informative** (not MCAR) and totals are uncertain under partial evidence
 
-**Key Innovation**: Extending standard clinical NLP assertion frameworks with `not_mentioned`—novel but clinically correct for third-party inference from transcripts.
+**Key Change**: Add an explicit **no-evidence** state (`not_mentioned`) so “denied” (absent) is not conflated with “unknown.”
 
 **Impact**: These changes are required before spending money on API calls. The current implementation would generate embeddings that encode incorrect patterns (frequency expectations, 0=not_mentioned conflation).
 
@@ -26,13 +26,18 @@
 
 Before approving this document, please confirm:
 
-1. [ ] **Schema**: Is the `assertion` field (present/denied/possible/not_mentioned) the right clinical abstraction?
-2. [ ] **Proration**: Is 50% coverage (≥4 items discussed) a reasonable validity threshold?
-3. [ ] **Intensity mapping**: Does the intensity→severity table (Section 12.3) match clinical judgment?
-4. [ ] **"Possible" handling**: Should uncertain mentions (e.g., "maybe I've been a bit tired") be:
+1. [x] **Schema**: Is the `assertion` field (present/denied/possible/not_mentioned) the right clinical abstraction?
+   - **Senior Reviewer Answer**: Yes, with two clarifications: (1) `denied` should be treated as clinical **negation/absent**, and (2) the prompt must explicitly enforce **experiencer** (client vs someone else) and **temporality** (current/recent vs historical) so we do not score non-target mentions as “present.”
+2. [x] **Proration**: Is 50% coverage (≥4 items discussed) a reasonable validity threshold?
+   - **Senior Reviewer Answer**: Not for PHQ-8 *comparability*; acceptable only as a **minimum-coverage gate** for research embeddings. For PHQ-like totals, use a stricter gate (see Section 11.1 / 12.2).
+3. [x] **Intensity mapping**: Does the intensity→severity table (Section 12.3) match clinical judgment?
+   - **Senior Reviewer Answer**: Directionally yes, but it over-weights bare intensifiers (e.g., “really”) and under-specifies recency/functional impact. Use the revised table + rules in Section 12.3.
+4. [x] **"Possible" handling**: Should uncertain mentions (e.g., "maybe I've been a bit tired") be:
    - Scored as 1 with `assertion="possible"`, OR
    - Scored as NA with `assertion="possible"`?
-5. [ ] **Judge behavior**: Should the judge be able to override a juror's `not_mentioned` if evidence exists?
+   - **Senior Reviewer Answer**: Default to **score=1** with `assertion="possible"` *when the symptom domain is clearly referenced* but hedged; use `score=null` only when the statement is too vague to ground the domain/timeframe.
+5. [x] **Judge behavior**: Should the judge be able to override a juror's `not_mentioned` if evidence exists?
+   - **Senior Reviewer Answer**: Yes, but only when the judge can cite **explicit textual evidence**; otherwise, keep `not_mentioned` to avoid invention.
 
 ---
 
@@ -130,35 +135,58 @@ Scoring scale (0-3 based on frequency):
 ### 4.1 The Full Pipeline Vision
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    FULL RESEARCH PIPELINE                           │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  SQPsychConv (synthetic)          DAIC-WOZ (real)                   │
-│  2,090 dialogues                  189 clinical interviews           │
-│         │                                │                          │
-│         ▼                                │                          │
-│  ┌─────────────────┐                     │                          │
-│  │ vibe-check      │                     │                          │
-│  │ PHQ-8 scoring   │                     │                          │
-│  └────────┬────────┘                     │                          │
-│           │                              │                          │
-│           ▼                              │                          │
-│  ┌─────────────────┐                     │                          │
-│  │ ai-psychiatrist │                     │                          │
-│  │ embeddings      │◄────────────────────┘                          │
-│  │ + few-shot      │                                                │
-│  └────────┬────────┘                                                │
-│           │                                                         │
-│           ▼                                                         │
-│  Predict PHQ-8 on unseen DAIC-WOZ transcripts                       │
-│                                                                     │
-│  VALIDATION: Do synthetic-trained embeddings generalize to real?    │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         FULL RESEARCH PIPELINE                               │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  SQPsychConv (synthetic)              DAIC-WOZ (real)                        │
+│  2,090 dialogues                      189 clinical interviews                │
+│         │                                    │                               │
+│         ▼                                    │                               │
+│  ┌──────────────────────┐                    │                               │
+│  │ vibe-check           │                    │                               │
+│  │ PHQ-8 scoring        │                    │                               │
+│  │ (NA-aware labels)    │                    │                               │
+│  └──────────┬───────────┘                    │                               │
+│             │                                │                               │
+│             ▼                                │                               │
+│  ┌──────────────────────┐                    │                               │
+│  │ ai-psychiatrist      │                    │                               │
+│  │ Train embeddings on  │                    │                               │
+│  │ labeled SQPsychConv  │                    │                               │
+│  └──────────┬───────────┘                    │                               │
+│             │                                │                               │
+│             ▼                                ▼                               │
+│  ┌───────────────────────────────────────────────────────────────┐           │
+│  │ TRANSFER: Apply embeddings to predict PHQ-8 on DAIC-WOZ       │           │
+│  │           (zero-shot or few-shot, NO training on DAIC-WOZ)    │           │
+│  └───────────────────────────────────────────────────────────────┘           │
+│                                                                              │
+│  VALIDATION: Do synthetic-trained embeddings generalize to real interviews?  │
+│                                                                              │
+│  ⚠️ DOMAIN SHIFT RISK: If coverage patterns differ (e.g., SQPsychConv       │
+│     discusses 6/8 items, DAIC-WOZ discusses 4/8), missingness becomes        │
+│     a spurious signal. Solution: Analyze both corpora BEFORE scoring.        │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 4.2 Why Alignment Matters
+### 4.2 What's NOT Cheating (Legitimate DAIC-WOZ Use During Development)
+
+| Legitimate Use | Why It's OK |
+|----------------|-------------|
+| Analyzing DAIC-WOZ **coverage patterns** | Understanding structure, not leaking labels |
+| Checking transcript **formatting differences** | Preprocessing alignment, not outcome tuning |
+| Validating NA-aware schema **works on real data** | Schema robustness, not label fitting |
+| Comparing **item discussion rates** across corpora | Domain shift detection, not training |
+
+| What WOULD Be Cheating | Why It's Wrong |
+|------------------------|----------------|
+| Using DAIC-WOZ labels to tune vibe-check prompts | Leaks ground truth into labeling process |
+| Training ai-psychiatrist on DAIC-WOZ | Defeats the transfer learning validation |
+| Selecting SQPsychConv dialogues to match DAIC-WOZ distribution | Cherry-picking, not generalizing |
+
+### 4.3 Why Alignment Matters
 
 If vibe-check scores are misaligned with clinical inference:
 1. **Embeddings learn wrong patterns** (frequency language vs intensity)
@@ -239,7 +267,7 @@ If items can be NA, how do we compute total score?
 ```python
 # Only sum discussed items, scale to 0-24
 discussed_items = [s for s in scores if s.discussed]
-if len(discussed_items) >= 4:  # Minimum coverage
+if len(discussed_items) >= 7:  # Strict gate (≤1 NA) for PHQ-like comparability
     raw_sum = sum(s.score for s in discussed_items)
     total = (raw_sum / len(discussed_items)) * 8  # Scale to 8 items
 else:
@@ -367,23 +395,25 @@ This teaches the model that not-mentioned ≠ absent.
 
 ## 11. Research-Backed Recommendations (Web Search Findings)
 
-### 11.1 Official PHQ Proration Formula
+### 11.1 PHQ-8 Missing Items & Proration (What’s “Official,” What Transfers, What Doesn’t)
 
-From [APA DSM-5 Severity Measures](https://www.psychiatry.org/File%20Library/Psychiatrists/Practice/DSM/APA_DSM5_Severity-Measure-For-Depression-Child-Age-11-to-17.pdf):
+**PHQ-8 (self-report) scoring guidance is strict about missingness.** For example, an NIH PHQ-8 case report form states:
 
-> **Prorated Score = (Partial Raw Score × Total Items) ÷ Items Answered**
-> If the result is a fraction, round to the nearest whole number.
+> “Score is the sum of the 8 items. **If more than 1 item missing, set the value of the scale to missing.**”
+> — [NIH HEAL PHQ-8 CRF](https://heal.nih.gov/files/CDEs/2023-06/patient-health-questionnaire-8-crf.docx)
 
-**Example**: If 5 of 8 items are scored with raw sum = 10:
-```
-Prorated = (10 × 8) ÷ 5 = 16
-```
+**Proration exists in closely related PHQ-9 derivatives, but only for small amounts of missingness.** The APA DSM-5TR “Severity Measure for Depression—Adult” (PHQ-9 adapted) states that when 1–2 items are unanswered, compute:
 
-**Caveat**: This assumes items are missing at random. In our case, items are systematically not discussed (appetite, psychomotor), so proration may overestimate if those items would typically be low.
+> “Multiply the partial raw score by the total number of items … and divide … by the number of items that were actually answered … If the result is a fraction, round to the nearest whole number.”
+> — [APA DSM-5TR Severity Measure for Depression—Adult](https://www.psychiatry.org/getmedia/a3986be5-94af-42e7-afce-19234c2f4998/APA-DSM5TR-SeverityMeasureForDepressionAdult.pdf)
+
+**Critical transfer note for transcripts**: Our “NA” is *not* item nonresponse; it is **no evidence in the conversation**. This is not “missing at random,” and it is not the same construct as PHQ item nonresponse. Therefore:
+- Treat `prorated_total` as an **auxiliary, high-variance comparability feature**, not a gold-standard PHQ total.
+- Gate proration strictly (recommend: only compute `prorated_total` when `discussed_count >= 7`).
 
 ### 11.2 Clinical NLP Assertion Annotation Standards
 
-From [John Snow Labs Clinical NLP Best Practices](https://www.johnsnowlabs.com/tips-and-tricks-on-how-to-annotate-assertion-in-clinical-texts/) and [i2b2/VA Challenge](https://pmc.ncbi.nlm.nih.gov/articles/PMC3900128/):
+From [i2b2/VA Challenge (2010)](https://pmc.ncbi.nlm.nih.gov/articles/PMC3168320/), [ConText](https://pmc.ncbi.nlm.nih.gov/articles/PMC2757457/), and practitioner summaries (e.g., [John Snow Labs](https://www.johnsnowlabs.com/tips-and-tricks-on-how-to-annotate-assertion-in-clinical-texts/)):
 
 Standard assertion labels in clinical NLP:
 
@@ -392,18 +422,19 @@ Standard assertion labels in clinical NLP:
 | **Present** | Entity is affirmed | "Patient has insomnia" |
 | **Absent** | Entity is negated | "Denies insomnia" |
 | **Possible** | Uncertainty expressed | "May have insomnia" |
-| **Hypothetical** | Conditional | "If insomnia worsens..." |
-| **Past** | Historical | "History of insomnia" |
+| **Conditional / Hypothetical** | Not currently asserted | "If insomnia worsens..." |
+| **Other experiencer** | Not about the patient | "Mother has insomnia" |
+| **Past / Historical** | Not current | "History of insomnia" |
 
-**Critical gap**: Standard clinical NLP frameworks assume you're annotating entities that WERE mentioned. There's no standard "not mentioned" category because typical NER only extracts what's in the text.
+**Key point for this project**: i2b2-style assertion classification assumes the concept mention is already extracted (“Assertion classification was run on reports annotated with the reference standard concepts…”). In our task, we must also represent **lack of evidence** for a predefined PHQ domain.
 
-**Our innovation**: We need a **"not discussed"** category that's distinct from "absent/negated". This is novel but clinically correct.
+**Our extension**: Add a **no-evidence/not-mentioned** state for each PHQ item to avoid conflating “denied” with “unknown.” This is justified for transcript-based inference, but should be described as an **annotation-coverage construct**, not a core i2b2 assertion label.
 
 ### 11.3 Mental Health Dataset Publishing Standards
 
-From [GitHub mental-health-datasets](https://github.com/kharrigian/mental-health-datasets) and [HuggingFace mental health collections](https://huggingface.co/datasets/Amod/mental_health_counseling_conversations):
+There is no single “mental health dataset publishing standard.” For release and reuse hygiene, follow general dataset documentation norms (e.g., datasheets and dataset cards), plus mental-health–specific risk considerations (privacy, misuse, clinical over-interpretation).
 
-Best practices for mental health NLP datasets:
+Recommended practices for this project’s exports:
 
 1. **Explicit missing indicators**: Use `null`/`None` rather than sentinel values like `-1`
 2. **Confidence scores**: Include annotator confidence alongside labels
@@ -411,7 +442,7 @@ Best practices for mental health NLP datasets:
 4. **Multi-annotator data**: Preserve disagreement, don't just report consensus
 5. **Annotation guidelines**: Publish the exact instructions given to annotators
 
-**Notable**: The [Primate2022 dataset](https://arxiv.org/html/2412.03796v1) labels Reddit posts using PHQ-9, demonstrating precedent for LLM-based PHQ annotation.
+Even though SQPsychConv is synthetic, include a dataset card that clearly states: synthetic provenance, intended use (research), and known failure modes (coverage shift vs DAIC-WOZ, intensity→frequency approximation).
 
 ### 11.4 LLM Psychiatric Annotation Research
 
@@ -419,12 +450,11 @@ From [Nature npj Mental Health (2025)](https://www.nature.com/articles/s44184-02
 
 | Finding | Implication |
 |---------|-------------|
-| LLMs achieve 86.9% accuracy identifying clinical annotations | LLM annotation is viable |
-| Recall increases from 77.3% → 86.1% with fine-tuning | Our multi-juror approach compensates |
-| "Hallucinations" occur when LLMs face queries they can't handle | NA option prevents forced hallucination |
-| Lack of clinical validation is the primary limitation | MDD vs control separation validates |
+| Fine-tuning improved symptom-extraction accuracy to **86.9%** (and recall up to **81.1%** on the test set; **86.1%** on a “high-quality EMR” subset) | LLM psychiatric labeling can be viable with calibration |
+| Fine-tuned GPT-3.5 achieved **0.817 accuracy** in multiclass symptom-label classification in a pilot delineation pipeline | Multi-stage LLM pipelines can produce clinically useful intermediate labels |
+| Both papers emphasize workflow integration and limitations (generalizability, labeling quality, evaluation setting) | Our pilot + diagnostics are necessary before full-scale runs |
 
-**Key insight**: Forcing LLMs to score items without evidence leads to hallucination. Allowing NA is both clinically correct AND reduces hallucination risk.
+**Key insight for our design**: Forced-choice scoring when evidence is absent increases confabulation risk. Allowing an explicit no-evidence state is both clinically defensible and operationally safer.
 
 ### 11.5 Addressing Item-Level Missing Data (PMC Research)
 
@@ -432,9 +462,12 @@ From [PMC Proration vs FIML Study](https://pmc.ncbi.nlm.nih.gov/articles/PMC4701
 
 > "Often when participants have missing scores on one or more items comprising a scale, researchers compute prorated scale scores by averaging the available items. Methodologists have cautioned that proration may make strict assumptions about the missing data mechanisms."
 
-**Translation**: Proration assumes Missing Completely At Random (MCAR). Our case is Missing Not At Random (MNAR) - appetite/psychomotor are systematically not discussed. Proration will be biased.
+**Translation**: Proration can be biased even under MCAR (e.g., when item means/covariances differ), and it becomes more problematic as missingness increases. Our “NA” mechanism is also plausibly **informative** (people are more likely to mention severe symptoms), so treat totals derived from partial evidence as uncertain.
 
-**Recommendation**: Report both raw discussed scores AND prorated total, letting downstream users choose.
+**Recommendation**:
+- Always export `discussed_count`, `na_count`, and per-item assertions.
+- Compute `prorated_total` only when coverage is high (recommend: `discussed_count >= 7`).
+- Prefer downstream models that can consume **masked per-item vectors** over relying on a single total score.
 
 ---
 
@@ -448,15 +481,15 @@ From [PMC Proration vs FIML Study](https://pmc.ncbi.nlm.nih.gov/articles/PMC4701
 class PHQ8ItemScore(BaseModel):
     """Single PHQ-8 item score with clinical annotation semantics."""
 
-    discussed: bool                      # Was this symptom domain mentioned at all?
-    score: Literal[0, 1, 2, 3] | None   # None if not discussed
-    assertion: Literal[                  # Clinical NLP standard (extended)
+    discussed: bool                      # Is there evidence about the CLIENT's recent (≈2wk) status for this item?
+    score: Literal[0, 1, 2, 3] | None   # None if no evidence (not discussed / not scorable)
+    assertion: Literal[                  # Clinical-NLP-inspired label (extended with "not_mentioned")
         "present",      # Symptom affirmed (score 1-3)
         "denied",       # Symptom explicitly denied (score 0)
-        "possible",     # Uncertain mention (score 1, flagged for review)
-        "not_mentioned" # Symptom domain absent from transcript (score=None)
+        "possible",     # Uncertain/hedged affirmation (default score 1 unless too vague to score)
+        "not_mentioned" # No evidence in transcript for CLIENT+timeframe (score=None)
     ]
-    confidence: float                    # 0.0-1.0
+    confidence: float | None             # 0.0-1.0; use null when score is null
     evidence: list[str]                  # Up to 3 supporting quotes
 ```
 
@@ -467,15 +500,15 @@ class PHQ8ItemScore(BaseModel):
 | `present` | 1-3 | Patient clearly describes symptom | "I can't sleep at all" |
 | `denied` | 0 | Patient explicitly denies symptom | "My appetite is fine" |
 | `possible` | 1 | Uncertain or hedged mention | "Maybe I've been a bit tired" |
-| `not_mentioned` | None | Symptom domain never discussed | *(no sleep discussion)* |
+| `not_mentioned` | None | No evidence for CLIENT+timeframe | *(sleep never discussed as current for client)* |
 
-**Note on `possible`**: Per reviewer question #4, we score `possible` as 1 (conservative non-zero) rather than NA because the symptom WAS mentioned, just with uncertainty. The `assertion="possible"` flag allows downstream filtering if desired.
+**Note on `possible` (Reviewer Q4)**: Default `possible` to **score=1** (low severity) *only when* the client clearly refers to the symptom domain but hedges intensity/frequency. If the language is too vague to identify the domain (or is purely hypothetical/past/other-experiencer), use `not_mentioned` with `score=null`.
 
 **Rationale**:
-- Aligns with clinical NLP assertion standards
+- Mirrors core clinical NLP “assertion/ConText” concepts (negation, uncertainty, experiencer, temporality)
 - Prevents forced hallucination
 - Preserves full information for downstream use
-- Novel but clinically correct extension of standard frameworks
+- `not_mentioned` is a justified coverage state for transcript-based inference (not an i2b2-native label)
 
 ### 12.2 Total Score Decision: **Report Both (Hybrid)** ✅ RECOMMENDED
 
@@ -491,22 +524,23 @@ class PHQ8TotalScore(BaseModel):
     coverage: float                      # discussed_count / 8
 
     # Prorated (for comparability with standard PHQ-8)
-    prorated_total: float | None         # (discussed_sum × 8) / discussed_count
-    prorated_total_rounded: int | None   # Rounded to nearest int
+    prorated_total: float | None         # Only if discussed_count >= 7 (<=1 NA)
+    prorated_total_rounded: int | None   # Rounded to nearest int (when prorated_total is set)
 
     # Conservative (for downstream ML)
     imputed_total: int                   # Treat NA as 0, sum all
     na_count: int                        # How many items were NA
 
-    # Validity flag
-    is_valid: bool                       # discussed_count >= 4 (50% coverage minimum)
+    # Validity flags
+    is_min_coverage: bool                # discussed_count >= 4 (embedding minimum, not “PHQ comparable”)
+    is_proration_valid: bool             # discussed_count >= 7 (PHQ-like total is minimally defensible)
 ```
 
 **Rationale**:
-- Prorated for clinical comparability
+- Prorated only when coverage is high (PHQ comparability gate)
 - Imputed for ML (some models can't handle NA)
 - Raw for full transparency
-- Validity threshold prevents meaningless scores
+- Separate flags prevent “50% coverage” from being misread as clinically equivalent to PHQ completion
 
 ### 12.3 Prompt Decision: **Clinical Inference Mode** ✅ RECOMMENDED
 
@@ -517,35 +551,44 @@ Replace frequency-based prompting with intensity-based clinical inference:
 ```markdown
 You are a psychiatrist reviewing a therapy transcript to infer PHQ-8 symptom severity.
 
-## CLINICAL CONTEXT
-This is a synthetic therapy conversation. Assume the discussion reflects the patient's
-recent state (approximately the last 2 weeks). Do NOT expect explicit PHQ-8 phrasing
-like "more than half the days" or "in the last two weeks."
+## TARGET TIMEFRAME
+Infer the client's symptom burden over the recent period (≈ last 2 weeks), **unless the transcript clearly anchors a different timeframe**.
+- If a symptom is clearly described as *historical* or *resolved*, do not score it as current.
 
-## SEVERITY INFERENCE (Intensity → Score)
-Map the patient's language intensity to PHQ-8 severity:
+## CONTEXT RULES (ConText-style)
+- **Experiencer**: Score symptoms only if attributed to the **CLIENT** (not family/others).
+- **Temporality**: Prefer current/recent symptoms; exclude purely historical mentions.
+- **Hypothetical/conditional**: Do not treat “what if / if it happens” statements as evidence of current symptoms.
+- **Negation**: Explicit denial counts as evidence for score 0.
 
-| Intensity Markers | Score | Clinical Meaning |
-|-------------------|-------|------------------|
-| "a bit", "sometimes", "occasionally" | 1 | Several days |
-| "often", "really", "a lot", "most days" | 2 | More than half the days |
-| "always", "can't", "every day", "completely" | 3 | Nearly every day |
-| "I'm fine", "no problems", explicit denial | 0 | Not at all (DENIED) |
-| *(symptom domain not mentioned)* | null | Not discussed |
+## SEVERITY INFERENCE (Evidence → Score)
+Prefer **explicit frequency cues** when present (e.g., "every day", "most nights"). Otherwise, approximate using **persistence + intensity + functional impact**. Do not up-score to 2–3 solely on bare intensifiers (e.g., "really") without persistence/impact.
+
+| Evidence pattern | Score | Practical cue |
+|-----------------|-------|---------------|
+| Mild / intermittent, minimal impact | 1 | "sometimes", "a bit", "here and there" |
+| Frequent/persistent *or* moderate impact | 2 | "often", "most days", "regularly", clear disruption |
+| Near-daily/persistent *and* severe impact | 3 | "every day/nearly every day", "can't function", pervasive impairment |
+| Explicit denial of the symptom | 0 | "I'm sleeping fine", "my appetite is good" |
+| No evidence for CLIENT+timeframe | null | not discussed / not scorable |
 
 ## CRITICAL: "NOT DISCUSSED" vs "DENIED"
 - **DENIED (score=0)**: Patient explicitly says they DON'T have the symptom
   - Example: "My appetite is fine" → appetite: score=0, assertion="denied"
 
-- **NOT DISCUSSED (score=null)**: Symptom domain never comes up
-  - Example: Appetite never mentioned → appetite: score=null, assertion="not_mentioned"
+- **NOT MENTIONED / NO EVIDENCE (score=null)**: No evidence for the symptom domain for the CLIENT in the target timeframe
+  - Example: Sleep never discussed as a current client issue → sleep: score=null, assertion="not_mentioned"
 
 ⚠️ DO NOT score 0 for items that are simply not mentioned. Score 0 means DENIED.
 
 ## EVIDENCE REQUIREMENTS
-- For scores 1-3: Quote patient language showing severity
-- For score 0 (denied): Quote the denial statement
-- For not discussed: Leave evidence empty, set assertion="not_mentioned"
+- For scores 1-3 (`present`) and score 1 (`possible`): Quote client language supporting the inference
+- For score 0 (`denied`): Quote the denial statement
+- For score=null (`not_mentioned`): Leave evidence empty, set confidence=null
+
+## OUTPUT RULES
+- Use ONLY the provided transcript. Do not invent symptoms or frequency.
+- If you cannot justify a score with text, output score=null with assertion="not_mentioned".
 ```
 
 **Rationale**:
@@ -555,13 +598,17 @@ Map the patient's language intensity to PHQ-8 severity:
 
 ### 12.4 HuggingFace Dataset Schema ✅ RECOMMENDED
 
-**Current file**: `src/vibe_check/export/huggingface.py` (to be created)
+**Current files**: `src/vibe_check/export/schemas.py`, `src/vibe_check/export/writer.py`
+
+**Important**: The existing export is described as a stable public contract (SPEC-08). Implement this HuggingFace-style export as:
+- A **separate optional exporter** (new module), or
+- A **versioned** export contract (do not silently change existing field types from `int` to `int|null`).
 
 For publishing to HuggingFace, use this schema (JSON Lines format):
 
 ```python
 {
-    "file_id": "active436",
+    "dialogue_id": "active436",
     "condition": "mdd",  # Ground truth from corpus
     "split": "train",
 
@@ -582,10 +629,12 @@ For publishing to HuggingFace, use this schema (JSON Lines format):
         "discussed_count": 5,
         "discussed_sum": 8,
         "coverage": 0.625,
-        "prorated_total": 12.8,
-        "prorated_total_rounded": 13,
+        "prorated_total": null,          # only when discussed_count >= 7
+        "prorated_total_rounded": null,  # only when discussed_count >= 7
         "imputed_total": 8,  # NA treated as 0
-        "is_valid": true
+        "na_count": 3,
+        "is_min_coverage": true,
+        "is_proration_valid": false
     },
 
     # Provenance
@@ -599,6 +648,43 @@ For publishing to HuggingFace, use this schema (JSON Lines format):
 }
 ```
 
+### 12.5 Export Strategy: **Separate NA-Aware Exporter** ✅ DECIDED
+
+**Decision**: Create a NEW export module for NA-aware HuggingFace format. Do NOT modify SPEC-08.
+
+**Rationale**:
+- SPEC-08 is a stable public contract (integers only)
+- Breaking changes would affect any downstream consumers
+- Separate exporter allows versioned evolution
+
+**Implementation**:
+```
+src/vibe_check/export/
+├── schemas.py          # SPEC-08 (unchanged, int-only)
+├── writer.py           # SPEC-08 writer (unchanged)
+├── validator.py        # SPEC-08 validator (unchanged)
+├── huggingface.py      # NEW: NA-aware HuggingFace export
+└── huggingface_schema.py  # NEW: NA-aware schema (Section 12.4)
+```
+
+### 12.6 Domain Shift Mitigation: **Pre-Scoring Corpus Analysis** ✅ DECIDED
+
+**Decision**: Before running paid scoring, analyze BOTH SQPsychConv AND DAIC-WOZ to understand coverage patterns.
+
+**Analysis checklist** (programmatic, no label leakage):
+- [ ] Transcript length distribution (tokens/words)
+- [ ] Speaker turn counts
+- [ ] Keyword heuristics for PHQ-8 items (sleep, appetite, energy, etc.)
+- [ ] Estimated "discussability" per item
+- [ ] Formatting differences (speaker labels, timestamps, etc.)
+
+**Purpose**: Detect if coverage patterns differ significantly. If SQPsychConv covers 6/8 items on average and DAIC-WOZ covers 4/8, we need to:
+1. Document this as a known limitation
+2. Ensure embeddings don't over-encode missingness as signal
+3. Consider masked per-item representations over totals
+
+**Location for analysis**: `scripts/corpus_comparison.py` (to be created)
+
 ---
 
 ## 13. Implementation Checklist
@@ -609,13 +695,19 @@ For publishing to HuggingFace, use this schema (JSON Lines format):
 |------|-------------|-------------|
 | `src/vibe_check/schemas/scoring.py` | **Major** | Add `assertion`, allow `score=None`, add `PHQ8TotalScore` |
 | `src/vibe_check/scoring/prompting.py` | **Major** | Rewrite system prompt for clinical inference |
-| `src/vibe_check/aggregation/posterior.py` | **Major** | Handle NA votes in Bayesian aggregation |
+| `src/vibe_check/aggregation/posterior.py` | **Major** | Handle NA votes in Bayesian aggregation (or treat NA votes as missing) |
+| `src/vibe_check/aggregation/aggregate.py` | **Moderate** | Propagate NA-aware per-item consensus + totals |
 | `src/vibe_check/judge/prompting.py` | **Moderate** | Update judge to understand assertion semantics |
-| `src/vibe_check/diagnostics/quality_gates.py` | **Moderate** | Add NA rate and coverage metrics |
-| `src/vibe_check/export/labels.py` | **Moderate** | Export assertion field, handle NA |
-| `src/vibe_check/export/huggingface.py` | **New** | Create HuggingFace export format |
-| `tests/unit/test_scoring.py` | **Major** | Update tests for new schema |
-| `tests/unit/test_aggregation.py` | **Major** | Test NA handling |
+| `src/vibe_check/diagnostics/report.py` | **Moderate** | Add NA rate, coverage, and assertion distribution metrics |
+| `src/vibe_check/export/schemas.py` | **None** | SPEC-08 unchanged (int-only contract preserved) |
+| `src/vibe_check/export/writer.py` | **None** | SPEC-08 writer unchanged |
+| `src/vibe_check/export/validator.py` | **None** | SPEC-08 validator unchanged |
+| `src/vibe_check/export/huggingface.py` | **New** | NA-aware HuggingFace export (separate from SPEC-08) |
+| `src/vibe_check/export/huggingface_schema.py` | **New** | NA-aware schema for HuggingFace format |
+| `scripts/corpus_comparison.py` | **New** | Pre-scoring analysis of SQPsychConv vs DAIC-WOZ |
+| `tests/unit/test_schemas_scoring.py` | **Major** | Update tests for new juror output schema |
+| `tests/unit/test_posterior.py` | **Major** | Test NA handling in posterior math |
+| `tests/unit/test_huggingface_export.py` | **New** | Test NA-aware HuggingFace export |
 
 ### 13.1 Schema Changes Required
 
@@ -630,6 +722,7 @@ For publishing to HuggingFace, use this schema (JSON Lines format):
 - [ ] Rewrite juror system prompt for clinical inference
 - [ ] Add intensity → severity mapping table
 - [ ] Add explicit NOT DISCUSSED vs DENIED guidance
+- [ ] Add ConText-style rules: experiencer + temporality + hypothetical/conditional exclusions
 - [ ] Update evidence requirements for each assertion type
 
 ### 13.3 Aggregation Changes Required
@@ -653,8 +746,9 @@ For publishing to HuggingFace, use this schema (JSON Lines format):
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
 | Jurors disagree on intensity→severity | High | Medium | Arbitration handles; report uncertainty |
-| Most items are NA (low coverage) | Medium | High | Validity threshold; require ≥4 items |
-| Prorated scores are biased (MNAR) | High | Medium | Report both prorated AND imputed |
+| Most items are NA (low coverage) | Medium | High | Export `coverage`/`na_count`; use masked features; treat prorated totals as optional and gated (≥7 items) |
+| Prorated scores are biased under realistic assumptions | High | Medium | Compute proration only at high coverage; treat as auxiliary feature, not ground truth |
+| Coverage distribution shifts (SQPsychConv ↔ DAIC-WOZ) | Medium | High | Pilot on both corpora; avoid over-encoding “missingness style” as signal; report per-item NA rates by corpus |
 | Downstream models can't handle NA | Medium | Medium | Provide imputed_total fallback |
 | HuggingFace schema too complex | Low | Low | Provide flattened CSV alternative |
 
@@ -666,30 +760,33 @@ For publishing to HuggingFace, use this schema (JSON Lines format):
 
 | # | Source | Key Finding |
 |---|--------|-------------|
-| 1 | [APA DSM-5 Severity Measures - PHQ-A Instructions](https://www.psychiatry.org/File%20Library/Psychiatrists/Practice/DSM/APA_DSM5_Severity-Measure-For-Depression-Child-Age-11-to-17.pdf) | Official proration formula: `(Partial Sum × 8) ÷ Items Answered` |
-| 2 | [PMC: Proration vs FIML for Missing Data](https://pmc.ncbi.nlm.nih.gov/articles/PMC4701045/) | Proration assumes MCAR; our case is MNAR → report both prorated AND imputed |
-| 3 | [PMC: PHQ-9 Validation (Kroenke 2001)](https://pmc.ncbi.nlm.nih.gov/articles/PMC1495268/) | Original PHQ validation; severity cut-points |
+| 1 | [NIH HEAL: PHQ-8 CRF](https://heal.nih.gov/files/CDEs/2023-06/patient-health-questionnaire-8-crf.docx) | PHQ-8 total is sum of 8 items; if >1 item is missing, set scale to missing |
+| 2 | [APA DSM-5TR: Severity Measure for Depression—Adult (PHQ-9 adapted)](https://www.psychiatry.org/getmedia/a3986be5-94af-42e7-afce-19234c2f4998/APA-DSM5TR-SeverityMeasureForDepressionAdult.pdf) | Proration formula when 1–2 items are unanswered; round fraction to nearest whole |
+| 3 | [PubMed: PHQ-8 as a measure of current depression (Kroenke 2009)](https://pubmed.ncbi.nlm.nih.gov/18752852/) | Establishes PHQ-8 as a validated measure of current depression in population settings |
+| 4 | [PMC: Proration vs FIML for Missing Data](https://pmc.ncbi.nlm.nih.gov/articles/PMC4701045/) | Proration can be biased even under MCAR; discusses FIML alternatives |
+| 5 | [PMC: PHQ-9 Validation (Kroenke 2001)](https://pmc.ncbi.nlm.nih.gov/articles/PMC1495268/) | PHQ validation and severity conventions (PHQ-9) |
 
 ### 15.2 Clinical NLP Standards
 
 | # | Source | Key Finding |
 |---|--------|-------------|
-| 4 | [i2b2/VA Challenge (2010)](https://pmc.ncbi.nlm.nih.gov/articles/PMC3900128/) | Established assertion labels: present, absent, possible, hypothetical, past |
-| 5 | [John Snow Labs: Clinical Assertion Annotation](https://www.johnsnowlabs.com/tips-and-tricks-on-how-to-annotate-assertion-in-clinical-texts/) | Practical annotation guidelines; no `not_mentioned` category (gap we fill) |
+| 6 | [i2b2/VA Challenge (2010)](https://pmc.ncbi.nlm.nih.gov/articles/PMC3168320/) | Assertion task categories include present, absent, possible, conditional, hypothetical, and other experiencer |
+| 7 | [PMC: ConText (2009)](https://pmc.ncbi.nlm.nih.gov/articles/PMC2757457/) | Negation + experiencer + temporality framing for clinical concepts |
+| 8 | [John Snow Labs: Clinical Assertion Annotation](https://www.johnsnowlabs.com/tips-and-tricks-on-how-to-annotate-assertion-in-clinical-texts/) | Practitioner-oriented assertion label inventories and heuristics |
 
 ### 15.3 LLM Annotation Research
 
 | # | Source | Key Finding |
 |---|--------|-------------|
-| 6 | [Nature npj Mental Health: LLM Psychiatric Detection (2025)](https://www.nature.com/articles/s44184-025-00175-1) | LLMs achieve 86.9% accuracy; forcing scores without evidence → hallucination |
-| 7 | [PMC: LLM Psychiatric Interviews (2024)](https://pmc.ncbi.nlm.nih.gov/articles/PMC11544339/) | Symptom delineation research; validation methodology |
-| 8 | [arXiv: Multi-Label Mental Health Annotation (Primate2022)](https://arxiv.org/html/2412.03796v1) | Precedent for LLM-based PHQ annotation from social media |
+| 9 | [Nature npj Mental Health: LLM symptom extraction + classification (2025)](https://www.nature.com/articles/s44184-025-00175-1) | Fine-tuning improved symptom extraction accuracy to 86.9% with large recall gains |
+| 10 | [PMC: Aligning LLMs for Psychiatric Interviews (2024)](https://pmc.ncbi.nlm.nih.gov/articles/PMC11544339/) | Pilot symptom delineation/summarization pipeline; performance depends on labeling quality |
 
 ### 15.4 Dataset Publishing
 
 | # | Source | Key Finding |
 |---|--------|-------------|
-| 9 | [GitHub: Mental Health Datasets Repository](https://github.com/kharrigian/mental-health-datasets) | Best practices: use `null` not sentinels, include confidence, report coverage |
+| 11 | [arXiv: Datasheets for Datasets](https://arxiv.org/abs/1803.09010) | Standard dataset documentation template for provenance, intended use, and limitations |
+| 12 | [HuggingFace Dataset Cards](https://huggingface.co/docs/datasets/dataset_card) | Practical conventions for dataset metadata and responsible-use documentation |
 
 ---
 
@@ -706,17 +803,18 @@ For publishing to HuggingFace, use this schema (JSON Lines format):
 
 | Checkpoint | Reviewer | Date | Status |
 |------------|----------|------|--------|
-| Clinical alignment validated | | | ⏳ Pending |
-| Schema design approved | | | ⏳ Pending |
-| Prompt rewrite approved | | | ⏳ Pending |
-| Ready for implementation | | | ⏳ Pending |
+| Clinical alignment validated | Senior ML Reviewer (Clinical NLP) | 2026-01-06 | ✅ Approved (for implementation + pilot) |
+| Schema design approved | Senior ML Reviewer (Clinical NLP) | 2026-01-06 | ✅ Approved (see Sections 12.1–12.2) |
+| Prompt rewrite approved | Senior ML Reviewer (Clinical NLP) | 2026-01-06 | ✅ Approved (see Section 12.3) |
+| Ready for implementation | Senior ML Reviewer (Clinical NLP) | 2026-01-06 | ✅ Approved (Phase 1 + Phase 2 pilot) |
 
 ### 16.3 Approval to Proceed
 
-- [ ] **All reviewer questions answered (Section "Questions for Senior Reviewer")**
-- [ ] **Schema changes approved**
-- [ ] **Prompt rewrite approved**
-- [ ] **Implementation can proceed**
+- [x] **All reviewer questions answered (Section "Questions for Senior Reviewer")**
+- [x] **Schema changes approved**
+- [x] **Prompt rewrite approved**
+- [x] **Implementation can proceed (Phase 1 + Phase 2 pilot)**
+- [ ] **Paid scoring run approved (only after pilot diagnostics meet gates)**
 
 ---
 
@@ -726,6 +824,8 @@ For publishing to HuggingFace, use this schema (JSON Lines format):
 |---------|------|--------|---------|
 | 1.0 | 2026-01-06 | Clinical + Engineering | Initial comprehensive draft |
 | 1.1 | 2026-01-06 | Engineering | Added executive summary, reviewer questions, file references, expanded sources |
+| 1.2 | 2026-01-06 | Senior ML Reviewer | Corrected citations (i2b2/proration), tightened proration gates, added ConText-style prompt rules, aligned checklist to repo |
+| 1.3 | 2026-01-06 | Engineering | Added: pipeline diagram (4.1), cheating vs legitimate use table (4.2), export strategy decision (12.5), domain shift mitigation plan (12.6), updated files list |
 
 ---
 

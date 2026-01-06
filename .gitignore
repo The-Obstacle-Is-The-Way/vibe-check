@@ -242,3 +242,6 @@ test_checkpoint.sqlite
 
 # Local secrets
 .secrets/
+
+# Temporary working files (citation checks, scratch analysis)
+.tmp/
