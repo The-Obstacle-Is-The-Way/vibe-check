@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Literal, cast
 
 from vibe_check.constants import PHQ8_ITEMS
 from vibe_check.judge.schema import JudgeItemReport
-from vibe_check.schemas.scoring import PHQ8ItemScore, PHQ8Report, TokenUsage
+from vibe_check.schemas.scoring import Assertion, PHQ8ItemScore, PHQ8Report, TokenUsage
 
 if TYPE_CHECKING:
     from vibe_check.scoring.juror import JurorScorer  # noqa: F401
@@ -33,16 +33,18 @@ class DeterministicFakeJuror:
             seed = f"{self.model_id}|{self.run_number}|{item}|{scoring_text}"
             score = cast("Score", _stable_int(seed) % 4)
             snippet = " ".join(scoring_text.strip().split()[:20]).strip()
-            evidence = [snippet] if snippet else []
+            evidence = [snippet] if snippet else ["Client: (no snippet)"]
+            assertion: Assertion = "denied" if score == 0 else "present"
             return PHQ8ItemScore(
+                discussed=True,
                 score=score,
+                assertion=assertion,
                 confidence=0.7,
                 evidence=evidence,
-                insufficient_evidence=False,
             )
 
         items = {item: make_item(item) for item in PHQ8_ITEMS}
-        total = sum(int(items[item].score) for item in PHQ8_ITEMS)
+        total_score = sum(int(items[item].score or 0) for item in PHQ8_ITEMS)
 
         return PHQ8Report(
             model_id=self.model_id,
@@ -55,7 +57,8 @@ class DeterministicFakeJuror:
             guilt=items["guilt"],
             concentration=items["concentration"],
             psychomotor=items["psychomotor"],
-            total_score=total,
+            total_score=total_score,
+            discussed_count=8,
             mentions_self_harm=False,
             self_harm_evidence=[],
             usage=TokenUsage(
@@ -77,7 +80,7 @@ async def deterministic_fake_judge_item(
     prompt_version: str,
 ) -> JudgeItemReport:
     del scoring_text, prompt_version
-    votes = [int(getattr(r, item).score) for r in juror_reports]
+    votes = [int(getattr(r, item).score or 0) for r in juror_reports]
     avg = sum(votes) / float(len(votes))
     final = cast("Score", max(0, min(3, round(avg))))
     return JudgeItemReport(

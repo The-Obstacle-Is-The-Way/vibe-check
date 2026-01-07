@@ -8,37 +8,54 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from vibe_check.constants import SEVERITY_BUCKETS, SeverityBucket
-from vibe_check.schemas.scoring import PHQ8Report, TokenUsage
+from vibe_check.schemas.scoring import Assertion, PHQ8Report, PHQ8TotalScore, TokenUsage
 
 
-class ItemAggregation(BaseModel):
-    """Aggregated statistics for one PHQ-8 item."""
+class ItemAggregationNA(BaseModel):
+    """Aggregated statistics for one PHQ-8 item with NA handling (SPEC-15)."""
 
     model_config = ConfigDict(extra="forbid")
 
-    votes: list[int]
-    vote_counts: dict[str, int]
-    posterior: dict[str, float]
+    # Raw votes (including None for not_mentioned)
+    votes: list[int | None]
+    assertions: list[Assertion]
 
-    mode: int = Field(ge=0, le=3)
-    expected: float = Field(ge=0.0, le=3.0)
-    entropy: float = Field(ge=0.0)
-    vote_range: int = Field(ge=0, le=3)
-    clinical_prob: float = Field(ge=0.0, le=1.0, description="P(score >= 2)")
+    # Numeric vote stats (excluding NA)
+    numeric_votes: list[int]
+    vote_counts: dict[str, int]  # "0","1","2","3"
+    posterior: dict[str, float] | None  # None if all votes are NA
+
+    # Aggregated stats (from numeric votes only)
+    mode: int | None = Field(default=None, ge=0, le=3)
+    expected: float | None = Field(default=None, ge=0.0, le=3.0)
+    entropy: float | None = Field(default=None, ge=0.0)
+    vote_range: int | None = Field(default=None, ge=0, le=3)
+    clinical_prob: float | None = Field(default=None, ge=0.0, le=1.0, description="P(score >= 2)")
+
+    # NA tracking
+    na_count: int = Field(ge=0)
+    p_not_mentioned: float = Field(ge=0.0, le=1.0)
+
+    # Consensus
+    consensus_score: int | None = Field(default=None, ge=0, le=3)
+    consensus_assertion: Assertion
 
     needs_arbitration: bool = False
     arbitration_reason: str | None = None
 
 
 class AggregatedPHQ8(BaseModel):
-    """Final aggregated output for one dialogue."""
+    """Final aggregated output for one dialogue (NA-aware; SPEC-15)."""
 
     model_config = ConfigDict(extra="forbid")
 
     file_id: str
     condition: Literal["mdd", "control"]
 
-    items: dict[str, ItemAggregation]
+    items: dict[str, ItemAggregationNA]
+
+    # Totals/provenance (SSOT §12.2)
+    totals: PHQ8TotalScore
 
     total_mode: int = Field(ge=0, le=24)
     total_expected: float = Field(ge=0.0, le=24.0)
@@ -47,6 +64,7 @@ class AggregatedPHQ8(BaseModel):
     total_ci_90: tuple[int, int]
 
     severity_bucket: SeverityBucket
+    severity_bucket_phq_like: SeverityBucket | None = None
     severity_bucket_probs: dict[str, float]
 
     final_item_scores: dict[str, int]
@@ -77,6 +95,11 @@ class AggregatedPHQ8(BaseModel):
             raise ValueError(
                 f"final_total_score={self.final_total_score} does not match "
                 f"sum(final_item_scores)={expected_total}"
+            )
+        if self.totals.imputed_total != self.final_total_score:
+            raise ValueError(
+                f"totals.imputed_total={self.totals.imputed_total} does not match "
+                f"final_total_score={self.final_total_score}"
             )
         bucket = None
         for name, (lo, hi) in SEVERITY_BUCKETS.items():

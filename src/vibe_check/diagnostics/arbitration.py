@@ -59,12 +59,14 @@ def compute_arbitration_metrics(rows: list[AggregatedPHQ8]) -> ArbitrationMetric
             for item, payload in row.judge_resolution.items():
                 if item not in row.items:
                     continue
-                mode = int(row.items[item].mode)
+                mode = row.items[item].mode
+                if mode is None:
+                    continue
                 final_score = payload.get("final_score") if isinstance(payload, dict) else None
                 if final_score is None:
                     continue
                 judge_total += 1
-                if int(final_score) == mode:
+                if int(final_score) == int(mode):
                     judge_mode_agree += 1
 
     per_item_rates = {item: per_item_counts[item] / float(total) for item in PHQ8_ITEMS}

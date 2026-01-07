@@ -97,7 +97,7 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument(
         "--format",
         default="jsonl,csv",
-        help="Comma-separated formats to write: jsonl,csv",
+        help="Comma-separated formats to write: jsonl,csv,huggingface",
     )
 
     validate_export = sub.add_parser("validate-export", help="Validate a public export JSONL file.")
@@ -223,15 +223,28 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "export":
-        from vibe_check.export.writer import write_label_exports
-
         formats = {part.strip() for part in str(args.format).split(",") if part.strip()}
-        validation = write_label_exports(
-            scored_jsonl=args.input,
-            output_dir=args.output_dir,
-            formats=formats,
-        )
-        return 0 if validation.is_valid else 2
+
+        if "huggingface" in formats:
+            from vibe_check.export.huggingface import write_huggingface_export
+
+            write_huggingface_export(
+                scored_jsonl=args.input,
+                output_dir=args.output_dir,
+            )
+
+        spec08_formats = formats - {"huggingface"}
+        if spec08_formats:
+            from vibe_check.export.writer import write_label_exports
+
+            validation = write_label_exports(
+                scored_jsonl=args.input,
+                output_dir=args.output_dir,
+                formats=spec08_formats,
+            )
+            return 0 if validation.is_valid else 2
+
+        return 0
 
     if args.command == "validate-export":
         from vibe_check.export.validator import validate_label_export

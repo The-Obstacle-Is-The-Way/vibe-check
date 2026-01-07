@@ -85,6 +85,11 @@ ARBITRATION_RATE_MAX = 0.30
 COHENS_D_MIN = 0.5
 P_VALUE_MAX = 0.01
 
+# Coverage quality gates (SPEC-18)
+MIN_ITEM_COVERAGE: float = 0.50
+MAX_CORPUS_NA_RATE: float = 0.25
+MIN_DIALOGUE_MIN_COVERAGE_RATE: float = 0.90
+
 # PHQ-8 Clinical Rubric (for prompt embedding; see SPEC-11)
 PHQ8_TIME_FRAME: str = "Over the last 2 weeks"
 
@@ -109,6 +114,98 @@ PHQ8_RUBRIC: dict[str, str] = {
         "fidgety or restless that you have been moving around a lot more than usual"
     ),
 }
+
+# === V2 CONSTANTS (CLINICAL INFERENCE) - SPEC-14 ===
+PHQ8_TIME_FRAME_V2: str = "Recent period (~last 2 weeks), unless transcript indicates otherwise"
+
+PHQ8_SCORE_SCALE_V2: str = """| Evidence Pattern | Score | Cues |
+|-----------------|-------|------|
+| Mild / intermittent, minimal impact | 1 | "sometimes", "a bit", "here and there" |
+| Frequent/persistent OR moderate impact | 2 | "often", "most days", "regularly", clear disruption |
+| Near-daily/persistent AND severe impact | 3 | "every day", "nearly every day", "can't function" |
+| Explicit denial of symptom | 0 | "I'm sleeping fine", "my appetite is good" |
+| No evidence for CLIENT+timeframe | null | not discussed / not scorable |"""
+
+PHQ8_ASSERTION_RULES_V2: str = """- present (score 1-3): Symptom clearly described by CLIENT for current/recent timeframe
+- denied (score 0): CLIENT explicitly denies symptom
+- possible (score 1): Hedged/uncertain mention by CLIENT ("maybe", "I guess")
+- not_mentioned (score null): No evidence for CLIENT in target timeframe"""
+
+PHQ8_CONTEXT_RULES_V2: str = """- Experiencer: Score ONLY symptoms attributed to the CLIENT (not family/others)
+- Temporality: Score current/recent symptoms ONLY (not historical/resolved)
+- Hypothetical: Exclude "what if" / conditional / future statements
+- Negation: Explicit denial → score=0, assertion="denied" """
+
+PHQ8_EVIDENCE_CONSTRAINTS_V2: str = """Evidence requirements:
+- Maximum 3 snippets per item
+- Each snippet: ≤50 words, ≤400 characters
+- Quote CLIENT language, not therapist paraphrasing
+- For not_mentioned: evidence=[], confidence=null"""
+
+PHQ8_JSON_SKELETON_V2: str = """{
+  "anhedonia": {"discussed": true, "score": 2, "assertion": "present", "confidence": 0.85, "evidence": ["quote"]},
+  "depressed_mood": {"discussed": true, "score": 0, "assertion": "denied", "confidence": 0.90, "evidence": ["I feel fine"]},
+  "sleep": {"discussed": false, "score": null, "assertion": "not_mentioned", "confidence": null, "evidence": []},
+  "fatigue": {"discussed": true, "score": 1, "assertion": "possible", "confidence": 0.55, "evidence": ["maybe tired"]},
+  "appetite": {"discussed": false, "score": null, "assertion": "not_mentioned", "confidence": null, "evidence": []},
+  "guilt": {"discussed": true, "score": 1, "assertion": "present", "confidence": 0.70, "evidence": ["quote"]},
+  "concentration": {"discussed": false, "score": null, "assertion": "not_mentioned", "confidence": null, "evidence": []},
+  "psychomotor": {"discussed": false, "score": null, "assertion": "not_mentioned", "confidence": null, "evidence": []},
+  "total_score": 4,
+  "discussed_count": 4,
+  "mentions_self_harm": false,
+  "self_harm_evidence": []
+}"""
+
+# === JUDGE V2 CONSTANTS (SPEC-17) ===
+JUDGE_ASSERTION_GUIDANCE_V2: str = """
+ASSERTION TYPES
+===============
+
+When resolving contested items, you must determine the appropriate assertion:
+
+- **present**: Client clearly indicates experiencing the symptom with severity > 0
+  → Score must be 1, 2, or 3
+
+- **denied**: Client explicitly denies or negates the symptom
+  → Score must be 0
+
+- **possible**: Symptom domain is clearly referenced, but severity/intensity is hedged/uncertain
+  → Default to score=1 (low severity)
+
+- **not_mentioned**: Symptom was never discussed in the transcript
+  → Score must be null (no score assigned)
+  → ONLY use if the symptom domain is not referenced at all for the CLIENT+timeframe
+"""
+
+JUDGE_NA_HANDLING_V2: str = """
+HANDLING NA VOTES
+=================
+
+When jurors have voted "not_mentioned" (None) for some votes:
+
+1. If ALL jurors voted not_mentioned → confirm not_mentioned
+2. If MAJORITY (> 50%) voted not_mentioned but some provided numeric scores:
+   - Review the evidence from numeric jurors carefully
+   - If evidence is compelling and clearly references the symptom → override to numeric
+   - If evidence is weak or tangential → confirm not_mentioned
+3. If MINORITY (≤ 50%) voted not_mentioned:
+   - Default to numeric resolution using evidence from other jurors
+   - Only confirm not_mentioned if numeric evidence is clearly mistaken
+
+CRITICAL: "Not mentioned" means the symptom was NEVER discussed. If there's ANY
+evidence of the symptom being mentioned (even to deny it), it was discussed.
+"""
+
+JUDGE_JSON_SKELETON_V2: str = """{
+  "item": "anhedonia",
+  "discussed": true,
+  "final_score": 2,
+  "assertion": "present",
+  "confidence": 0.85,
+  "evidence": ["Client: I can't enjoy anything anymore."],
+  "rationale": "Client explicitly describes loss of interest and impairment."
+}"""
 
 
 def phq8_rubric_hash() -> str:

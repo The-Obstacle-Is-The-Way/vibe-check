@@ -11,10 +11,15 @@ from vibe_check.constants import (
     COHENS_D_MIN,
     CRONBACH_ALPHA_MIN,
     KRIPPENDORFF_ALPHA_MIN,
+    MAX_CORPUS_NA_RATE,
+    MIN_DIALOGUE_MIN_COVERAGE_RATE,
+    MIN_ITEM_COVERAGE,
     P_VALUE_MAX,
 )
 from vibe_check.diagnostics.arbitration import ArbitrationMetrics  # noqa: TC001
-from vibe_check.diagnostics.separation import SeparationMetrics  # noqa: TC001
+from vibe_check.diagnostics.assertions import AssertionDistribution  # noqa: TC001
+from vibe_check.diagnostics.coverage import CoverageMetrics  # noqa: TC001
+from vibe_check.diagnostics.separation import SeparationMetricsNA  # noqa: TC001
 
 
 class ReliabilityMetrics(BaseModel):
@@ -50,11 +55,14 @@ class DiagnosticReport(BaseModel):
 
     reliability: ReliabilityMetrics
     consistency: ConsistencyMetrics
-    separation: SeparationMetrics
+    coverage: CoverageMetrics
+    assertion_distribution: AssertionDistribution
+    separation: SeparationMetricsNA
     arbitration: ArbitrationMetrics
 
     passes_reliability_gate: bool
     passes_consistency_gate: bool
+    passes_coverage_gate: bool
     passes_separation_gate: bool
     passes_arbitration_gate: bool
 
@@ -64,6 +72,7 @@ class DiagnosticReport(BaseModel):
             [
                 self.passes_reliability_gate,
                 self.passes_consistency_gate,
+                self.passes_coverage_gate,
                 self.passes_separation_gate,
                 self.passes_arbitration_gate,
             ]
@@ -80,11 +89,21 @@ class DiagnosticReport(BaseModel):
 
     @property
     def mdd_mean_total(self) -> float:
-        return self.separation.mdd_mean_total
+        if (
+            self.separation.gate_basis == "prorated"
+            and self.separation.mdd_mean_prorated is not None
+        ):
+            return float(self.separation.mdd_mean_prorated)
+        return float(self.separation.mdd_mean_imputed)
 
     @property
     def control_mean_total(self) -> float:
-        return self.separation.control_mean_total
+        if (
+            self.separation.gate_basis == "prorated"
+            and self.separation.control_mean_prorated is not None
+        ):
+            return float(self.separation.control_mean_prorated)
+        return float(self.separation.control_mean_imputed)
 
     @property
     def arbitration_rate(self) -> float:
@@ -112,13 +131,44 @@ def render_diagnostic_report_markdown(report: DiagnosticReport) -> str:
         f"{'PASS' if report.passes_consistency_gate else 'FAIL'} "
         f"(alpha={report.consistency.cronbach_alpha:.3f})"
     )
+    min_cov_rate = (
+        (report.coverage.dialogues_with_min_coverage / report.n_dialogues)
+        if report.n_dialogues
+        else 0.0
+    )
+    lines.append(
+        f"- Coverage (min_item_coverage>={MIN_ITEM_COVERAGE:.2f}, "
+        f"corpus_na_rate<={MAX_CORPUS_NA_RATE:.2f}, "
+        f"min_coverage_rate>={MIN_DIALOGUE_MIN_COVERAGE_RATE:.2f}): "
+        f"{'PASS' if report.passes_coverage_gate else 'FAIL'} "
+        f"(min_item_coverage={report.coverage.min_item_coverage:.3f}, "
+        f"corpus_na_rate={report.coverage.corpus_na_rate:.3f}, "
+        f"min_coverage_rate={min_cov_rate:.3f})"
+    )
+
+    if report.separation.gate_basis == "prorated":
+        mdd_mean = report.separation.mdd_mean_prorated or 0.0
+        mdd_std = report.separation.mdd_std_prorated or 0.0
+        control_mean = report.separation.control_mean_prorated or 0.0
+        control_std = report.separation.control_std_prorated or 0.0
+        cohens_d = report.separation.cohens_d_prorated or 0.0
+        p_value = report.separation.p_value_prorated or 1.0
+    else:
+        mdd_mean = report.separation.mdd_mean_imputed
+        mdd_std = report.separation.mdd_std_imputed
+        control_mean = report.separation.control_mean_imputed
+        control_std = report.separation.control_std_imputed
+        cohens_d = report.separation.cohens_d_imputed
+        p_value = report.separation.p_value_imputed
+
     lines.append(
         f"- Separation (MDD > control, p<{P_VALUE_MAX:g}, d>={COHENS_D_MIN:g}): "
         f"{'PASS' if report.passes_separation_gate else 'FAIL'} "
-        f"(mdd_mean={report.separation.mdd_mean:.2f}, "
-        f"control_mean={report.separation.control_mean:.2f}, "
-        f"d={report.separation.cohens_d:.2f}, "
-        f"p={report.separation.p_value:.3g})"
+        f"(basis={report.separation.gate_basis}, "
+        f"mdd_mean={mdd_mean:.2f}, "
+        f"control_mean={control_mean:.2f}, "
+        f"d={cohens_d:.2f}, "
+        f"p={p_value:.3g})"
     )
     lines.append(
         f"- Arbitration (rate < {ARBITRATION_RATE_MAX:.2f}): "
@@ -137,12 +187,19 @@ def render_diagnostic_report_markdown(report: DiagnosticReport) -> str:
     lines.append("## Consistency")
     lines.append(f"- Cronbach alpha: {report.consistency.cronbach_alpha:.3f}")
     lines.append("")
+    lines.append("## Coverage")
+    lines.append(f"- Corpus NA rate: {report.coverage.corpus_na_rate:.3f}")
+    lines.append(f"- Min item coverage: {report.coverage.min_item_coverage:.3f}")
+    lines.append(
+        f"- Dialogues proration-valid: {report.coverage.dialogues_with_proration_valid}/{report.n_dialogues}"
+    )
+    lines.append("")
     lines.append("## Separation")
     lines.append(
-        f"- MDD mean total: {report.separation.mdd_mean:.2f} (std={report.separation.mdd_std:.2f})"
+        f"- MDD mean total ({report.separation.gate_basis}): {mdd_mean:.2f} (std={mdd_std:.2f})"
     )
     lines.append(
-        f"- Control mean total: {report.separation.control_mean:.2f} (std={report.separation.control_std:.2f})"
+        f"- Control mean total ({report.separation.gate_basis}): {control_mean:.2f} (std={control_std:.2f})"
     )
     lines.append("")
     lines.append("## Arbitration")
