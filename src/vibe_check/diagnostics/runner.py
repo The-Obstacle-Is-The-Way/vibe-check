@@ -81,7 +81,12 @@ class RunDiagnostics:
         kripp = compute_krippendorff_alpha(votes)
         kripp_per_item = compute_krippendorff_alpha_per_item(votes, item_names=list(PHQ8_ITEMS))
 
-        # ICC on flattened units (dialogues x items) with 6 raters
+        # ICC on flattened units (dialogues x items) with 6 raters.
+        # NOTE: ICC does not natively handle missing data. We impute NaN → 0 as a
+        # simple proxy. This is NOT statistically rigorous for missing-at-random data
+        # and may bias ICC estimates. Krippendorff alpha (computed above) is the
+        # PRIMARY reliability metric as it properly handles missingness. ICC values
+        # should be interpreted cautiously when corpus_na_rate > 0.
         icc_votes = np.nan_to_num(votes, nan=0.0)
         flat = icc_votes.reshape(n_dialogues * n_items, n_jurors)
         icc_consistency, icc_agreement, icc_ci = _compute_icc_metrics(flat)

@@ -79,7 +79,7 @@ class AggregatedPHQ8(BaseModel):
     mentions_self_harm: bool = False
     self_harm_evidence: list[str] = Field(default_factory=list)
 
-    juror_reports: list[PHQ8Report]
+    juror_reports: list[PHQ8Report] = Field(min_length=1)
     judge_resolution: dict[str, Any] | None = None
     judge_usage: TokenUsage | None = None
 
