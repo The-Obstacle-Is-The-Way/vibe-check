@@ -48,7 +48,22 @@ def build_judge_agent_v2(
     model_settings: ModelSettings | None = None,
     retries: int = 2,
 ) -> Agent[None, JudgeItemResolutionNA]:
-    """Build a PydanticAI agent for NA-aware judge arbitration (SPEC-17)."""
+    """Build a PydanticAI agent for NA-aware judge arbitration (SPEC-17).
+
+    Args:
+        model: The LLM model to use (e.g., "anthropic:claude-opus-4-5").
+        prompt_version: Version string for prompt tracking (must be v2.*).
+        model_settings: Optional model settings for temperature, top_p, etc.
+        retries: Number of retries for validation failures (default: 2, per ADR-001).
+
+    Returns:
+        Agent configured with JudgeItemResolutionNA for NA-aware resolution.
+
+    Notes:
+        The `retries` parameter handles Layer 1 (validation retries) of ADR-001's
+        three-layer resilience strategy. This agent supports not_mentioned assertions
+        with null scores per SPEC-13 assertion/score invariants.
+    """
     return Agent(
         model=model,
         output_type=JudgeItemResolutionNA,

@@ -235,6 +235,5 @@ def build_real_judge_item(
 
         return await _call_with_retry()
 
-    attr = "model_id"
-    setattr(judge_fn, attr, settings.judge_model)
+    judge_fn.model_id = settings.judge_model  # type: ignore[attr-defined]
     return judge_fn
