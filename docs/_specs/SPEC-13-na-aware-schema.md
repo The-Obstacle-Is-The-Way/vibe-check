@@ -721,16 +721,6 @@ class TestPHQ8TotalScore:
         assert abs(total.prorated_total - 14.857142857142858) < 0.001
         assert total.prorated_total_rounded == 15  # Round half up
 
-    def test_proration_exact_half_rounds_up(self):
-        # Edge case: exactly 0.5 should round up
-        # 7 items, sum=7 → prorated = (7/7)*8 = 8.0 (no rounding needed)
-        # Try: 7 items, sum=21 → prorated = (21/7)*8 = 24.0
-        # For half-up test: need X/7*8 to end in .5
-        # 7 items, sum=14 → 16.0, sum=15 → 17.14, sum=16 → 18.29...
-        # Actually: 7 items, sum=10.5 would be (10.5/7)*8=12.0... can't get .5 with ints
-        # Skip exact .5 test for integers
-        pass
-
     def test_low_coverage_6_items(self):
         # 6 items, proration NOT valid (< 7)
         scores = {
@@ -799,26 +789,7 @@ class TestPHQ8TotalScore:
 
 The existing `aggregated_to_export_record()` function in `src/vibe_check/export/writer.py` must continue to produce int-only scores by imputing NA→0.
 
-```python
-# TEST: SPEC-08 export produces int-only scores (NA→0)
-def test_spec08_export_imputes_na_as_zero():
-    """aggregated_to_export_record() imputes NA as 0."""
-    # Create aggregated result with NA items
-    aggregated = make_aggregated_with_na()  # fatigue=NA, appetite=NA
-
-    export = aggregated_to_export_record(
-        aggregated,
-        scoring_text="...",
-        dialogue_view="client_qa",
-        run_id="test-run",
-    )
-
-    # NA items become 0 in export
-    assert isinstance(export.phq8_item_4, int)  # fatigue
-    assert export.phq8_item_4 == 0
-    assert isinstance(export.phq8_item_5, int)  # appetite
-    assert export.phq8_item_5 == 0
-```
+**Test coverage location**: SPEC-08 compatibility is verified in SPEC-16 (export specs), including type-level checks that `ScoredDialogueExport` remains int-only and rejects `None` inputs.
 
 ### 7.2 PHQ8Report Compatibility
 

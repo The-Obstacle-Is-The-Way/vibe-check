@@ -81,6 +81,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from vibe_check.constants import PHQ8_ITEMS
+from vibe_check.constants import MAX_EVIDENCE_SNIPPET_CHARS, MAX_EVIDENCE_SNIPPET_WORDS
 from vibe_check.schemas.scoring import TokenUsage
 
 Assertion = Literal["present", "denied", "possible", "not_mentioned"]
@@ -103,6 +104,11 @@ class JudgeItemResolutionNA(BaseModel):
     confidence: float | None = Field(
         ge=0.0, le=1.0, description="Confidence (None if not_mentioned)"
     )
+    evidence: list[str] = Field(
+        default_factory=list,
+        max_length=3,
+        description="Up to 3 supporting quotes (empty for not_mentioned)",
+    )
     rationale: str = Field(min_length=1, description="Reasoning for decision")
 
     @model_validator(mode="after")
@@ -122,6 +128,8 @@ class JudgeItemResolutionNA(BaseModel):
                 raise ValueError("not_mentioned requires final_score=None")
             if self.confidence is not None:
                 raise ValueError("not_mentioned requires confidence=None")
+            if self.evidence:
+                raise ValueError("not_mentioned requires evidence=[]")
         else:
             # present, denied, possible all require discussed=True
             if self.discussed is not True:
@@ -130,13 +138,16 @@ class JudgeItemResolutionNA(BaseModel):
                 raise ValueError(f"{self.assertion} requires final_score != None")
             if self.confidence is None:
                 raise ValueError(f"{self.assertion} requires confidence != None")
+            if not self.evidence:
+                raise ValueError(f"{self.assertion} requires at least one evidence snippet")
 
             # Assertion-specific score constraints
             if self.assertion == "denied" and self.final_score != 0:
                 raise ValueError("denied requires final_score=0")
             if self.assertion == "present" and self.final_score not in (1, 2, 3):
                 raise ValueError("present requires final_score in {1, 2, 3}")
-            # possible allows any score 0-3
+            if self.assertion == "possible" and self.final_score != 1:
+                raise ValueError("possible requires final_score=1 (SSOT Q4 answer)")
 
         return self
 
@@ -168,12 +179,12 @@ When resolving contested items, you must determine the appropriate assertion:
 - **denied**: Client explicitly denies or negates the symptom
   → Score must be 0
 
-- **possible**: Symptom mentioned but evidence is ambiguous or uncertain
-  → Score can be 0, 1, 2, or 3 based on best estimate
+- **possible**: Symptom domain is clearly referenced, but severity/intensity is hedged/uncertain
+  → Default to score=1 (low severity)
 
 - **not_mentioned**: Symptom was never discussed in the transcript
   → Score must be null (no score assigned)
-  → ONLY use if NO juror provided evidence for this item
+  → ONLY use if the symptom domain is not referenced at all for the CLIENT+timeframe
 """
 
 JUDGE_NA_HANDLING_V2: str = """
@@ -201,17 +212,8 @@ JUDGE_JSON_SKELETON_V2: str = """{
   "final_score": 2,
   "assertion": "present",
   "confidence": 0.85,
-  "rationale": "Client explicitly states loss of interest..."
-}
-
-// For not_mentioned:
-{
-  "item": "psychomotor",
-  "discussed": false,
-  "final_score": null,
-  "assertion": "not_mentioned",
-  "confidence": null,
-  "rationale": "No juror provided evidence; symptom never discussed in transcript."
+  "evidence": ["Client: I can't enjoy anything anymore."],
+  "rationale": "Client explicitly describes loss of interest and impairment."
 }"""
 ```
 
@@ -225,8 +227,10 @@ from vibe_check.constants import (
     JUDGE_JSON_SKELETON_V2,
     JUDGE_NA_HANDLING_V2,
     PHQ8_ITEMS,
-    PHQ8_RUBRIC_V2,
+    PHQ8_RUBRIC,
     PHQ8_TIME_FRAME_V2,
+    MAX_EVIDENCE_SNIPPET_CHARS,
+    MAX_EVIDENCE_SNIPPET_WORDS,
 )
 
 
@@ -235,7 +239,7 @@ def build_judge_system_prompt_v2(prompt_version: str) -> str:
 
     Uses v2 constants with clinical inference (no frequency anchors).
     """
-    rubric_items = "\n".join(f'  - {item}: "{PHQ8_RUBRIC_V2[item]}"' for item in PHQ8_ITEMS)
+    rubric_items = "\n".join(f'  - {item}: "{PHQ8_RUBRIC[item]}"' for item in PHQ8_ITEMS)
 
     return f"""You are an expert judge resolving contested PHQ-8 item scores.
 Prompt version: {prompt_version}.
@@ -264,6 +268,13 @@ When jurors disagree on a score:
 4. If assertion is not_mentioned: set score to null
 5. Higher confidence when evidence is consistent; lower when contradictory
 
+EVIDENCE CONSTRAINTS
+====================
+- Provide up to 3 evidence snippets.
+- Each snippet must be <= {MAX_EVIDENCE_SNIPPET_WORDS} words and <= {MAX_EVIDENCE_SNIPPET_CHARS} characters.
+- Evidence must quote CLIENT language (not therapist paraphrasing).
+- For not_mentioned: evidence must be [] and confidence must be null.
+
 Return JSON ONLY. No markdown, no code fences, no prose.
 
 JSON SKELETON:
@@ -276,7 +287,7 @@ def build_judge_item_prompt_v2(
     scoring_text: str,
     item: str,
     juror_votes: list[int | None],
-    juror_assertions: list[str],
+    juror_assertions: list[Assertion],
     juror_evidence: list[str],
 ) -> str:
     """Build NA-aware judge item prompt.
@@ -291,7 +302,7 @@ def build_judge_item_prompt_v2(
     if item not in PHQ8_ITEMS:
         raise ValueError(f"Unknown PHQ-8 item: {item!r}")
 
-    item_definition = PHQ8_RUBRIC_V2[item]
+    item_definition = PHQ8_RUBRIC[item]
 
     # Format votes showing NA explicitly
     formatted_votes = [str(v) if v is not None else "not_mentioned" for v in juror_votes]
@@ -326,7 +337,7 @@ Based on the transcript and juror evidence:
 3. If NOT discussed: assertion=not_mentioned, score=null
 
 Respond with JSON only:
-{{"item": "{item}", "discussed": true/false, "final_score": 0-3 or null, "assertion": "...", "confidence": 0.0-1.0 or null, "rationale": "..."}}
+{{"item": "{item}", "discussed": true/false, "final_score": 0-3 or null, "assertion": "...", "confidence": 0.0-1.0 or null, "evidence": ["..."], "rationale": "..."}}
 """
 ```
 
@@ -356,6 +367,7 @@ class TestJudgeItemResolutionNA:
             final_score=2,
             assertion="present",
             confidence=0.85,
+            evidence=["Client: I can't enjoy anything."],
             rationale="Client clearly states loss of interest in activities.",
         )
         assert resolution.final_score == 2
@@ -369,19 +381,21 @@ class TestJudgeItemResolutionNA:
             final_score=0,
             assertion="denied",
             confidence=0.9,
+            evidence=["Client: I don't blame myself."],
             rationale="Client explicitly denies feeling guilty.",
         )
         assert resolution.final_score == 0
         assert resolution.assertion == "denied"
 
     def test_valid_possible_resolution(self):
-        """possible assertion with any score 0-3 is valid."""
+        """possible assertion defaults to score=1 (SSOT Q4)."""
         resolution = JudgeItemResolutionNA(
             item="sleep",
             discussed=True,
             final_score=1,
             assertion="possible",
             confidence=0.6,
+            evidence=["Client: Maybe I've been sleeping a bit worse."],
             rationale="Evidence is ambiguous but suggests mild sleep issues.",
         )
         assert resolution.final_score == 1
@@ -395,6 +409,7 @@ class TestJudgeItemResolutionNA:
             final_score=None,
             assertion="not_mentioned",
             confidence=None,
+            evidence=[],
             rationale="Symptom never discussed in transcript.",
         )
         assert resolution.final_score is None
@@ -409,6 +424,7 @@ class TestJudgeItemResolutionNA:
                 final_score=0,  # WRONG: present needs 1-3
                 assertion="present",
                 confidence=0.8,
+                evidence=["Client: ..."],
                 rationale="...",
             )
         assert "present requires final_score in {1, 2, 3}" in str(exc_info.value)
@@ -422,9 +438,24 @@ class TestJudgeItemResolutionNA:
                 final_score=2,  # WRONG: denied needs 0
                 assertion="denied",
                 confidence=0.8,
+                evidence=["Client: ..."],
                 rationale="...",
             )
         assert "denied requires final_score=0" in str(exc_info.value)
+
+    def test_possible_requires_score_1(self):
+        """possible with score!=1 raises ValidationError."""
+        with pytest.raises(ValidationError) as exc_info:
+            JudgeItemResolutionNA(
+                item="sleep",
+                discussed=True,
+                final_score=2,  # WRONG: possible must be 1
+                assertion="possible",
+                confidence=0.8,
+                evidence=["Client: ..."],
+                rationale="...",
+            )
+        assert "possible requires final_score=1" in str(exc_info.value)
 
     def test_not_mentioned_requires_discussed_false(self):
         """not_mentioned with discussed=True raises ValidationError."""
@@ -435,6 +466,7 @@ class TestJudgeItemResolutionNA:
                 final_score=None,
                 assertion="not_mentioned",
                 confidence=None,
+                evidence=[],
                 rationale="...",
             )
         assert "not_mentioned requires discussed=False" in str(exc_info.value)
@@ -448,6 +480,7 @@ class TestJudgeItemResolutionNA:
                 final_score=0,  # WRONG: not_mentioned needs None
                 assertion="not_mentioned",
                 confidence=None,
+                evidence=[],
                 rationale="...",
             )
         assert "not_mentioned requires final_score=None" in str(exc_info.value)
@@ -461,9 +494,24 @@ class TestJudgeItemResolutionNA:
                 final_score=None,
                 assertion="not_mentioned",
                 confidence=0.5,  # WRONG: not_mentioned needs None
+                evidence=[],
                 rationale="...",
             )
         assert "not_mentioned requires confidence=None" in str(exc_info.value)
+
+    def test_not_mentioned_requires_empty_evidence(self):
+        """not_mentioned must not include evidence."""
+        with pytest.raises(ValidationError) as exc_info:
+            JudgeItemResolutionNA(
+                item="psychomotor",
+                discussed=False,
+                final_score=None,
+                assertion="not_mentioned",
+                confidence=None,
+                evidence=["Client: ..."],  # WRONG
+                rationale="...",
+            )
+        assert "not_mentioned requires evidence=[]" in str(exc_info.value)
 
     def test_invalid_item_name(self):
         """Invalid item name raises ValidationError."""
@@ -487,6 +535,7 @@ class TestJudgeItemResolutionNA:
                 final_score=1,
                 assertion="present",
                 confidence=0.8,
+                evidence=["Client: test"],
                 rationale=f"Test for {item}",
             )
             assert resolution.item == item
@@ -503,7 +552,7 @@ from vibe_check.constants import (
     JUDGE_JSON_SKELETON_V2,
     JUDGE_NA_HANDLING_V2,
     PHQ8_ITEMS,
-    PHQ8_RUBRIC_V2,
+    PHQ8_RUBRIC,
 )
 from vibe_check.judge.prompting import (
     build_judge_item_prompt_v2,
@@ -524,7 +573,7 @@ class TestBuildJudgeSystemPromptV2:
         prompt = build_judge_system_prompt_v2("v2.0.0")
         for item in PHQ8_ITEMS:
             assert item in prompt
-            assert PHQ8_RUBRIC_V2[item] in prompt
+            assert PHQ8_RUBRIC[item] in prompt
 
     def test_contains_assertion_guidance(self):
         """System prompt includes assertion type guidance."""
@@ -543,8 +592,9 @@ class TestBuildJudgeSystemPromptV2:
     def test_contains_json_skeleton(self):
         """System prompt includes JSON response skeleton."""
         prompt = build_judge_system_prompt_v2("v2.0.0")
-        assert '"discussed":' in prompt or '"discussed"' in prompt
-        assert '"assertion":' in prompt or '"assertion"' in prompt
+        assert '"discussed"' in prompt
+        assert '"assertion"' in prompt
+        assert '"evidence"' in prompt
 
     def test_no_frequency_anchors(self):
         """v2 prompt avoids frequency-based scoring language."""
@@ -625,7 +675,7 @@ class TestBuildJudgeItemPromptV2:
             juror_assertions=["present", "present", "present"],
             juror_evidence=["Hard to focus"],
         )
-        assert PHQ8_RUBRIC_V2["concentration"] in prompt
+        assert PHQ8_RUBRIC["concentration"] in prompt
 ```
 
 ### 5.3 Integration Tests
@@ -648,9 +698,18 @@ class TestJudgeAgentNA:
     @pytest.fixture
     def judge_agent(self) -> Agent[None, JudgeItemResolutionNA]:
         """Create judge agent with TestModel for deterministic testing."""
+        output = {
+            "item": "anhedonia",
+            "discussed": True,
+            "final_score": 2,
+            "assertion": "present",
+            "confidence": 0.85,
+            "evidence": ["Client: I can't enjoy anything."],
+            "rationale": "Deterministic test output.",
+        }
         return Agent(
-            model=TestModel(),
-            result_type=JudgeItemResolutionNA,
+            model=TestModel(custom_output_args=output),
+            output_type=JudgeItemResolutionNA,
             system_prompt=build_judge_system_prompt_v2("v2.0.0-test"),
         )
 
@@ -672,6 +731,7 @@ class TestJudgeAgentNA:
             "final_score": 2,
             "assertion": "present",
             "confidence": 0.85,
+            "evidence": ["Client: ..."],
             "rationale": "TestModel rationale",
         }
         resolution = JudgeItemResolutionNA.model_validate(valid_data)
@@ -681,45 +741,13 @@ class TestJudgeAgentNA:
 
 ---
 
-## 6. Arbitration Logic Updates
+## 6. Integration with Aggregation (SPEC-15)
 
-### 6.1 When to Invoke Judge (Updated)
+The Judge is invoked only for items that the aggregation layer flags as `needs_arbitration=True` (see SPEC-15). The Judge prompt/schema must be able to handle:
 
-```python
-# src/vibe_check/aggregation/engine.py (conceptual changes)
-
-def should_arbitrate_item_na(
-    votes: list[int | None],
-    assertions: list[str],
-    *,
-    disagreement_range_threshold: int,
-) -> bool:
-    """Determine if item needs judge arbitration with NA awareness.
-
-    Args:
-        votes: Juror scores (int 0-3 or None).
-        assertions: Juror assertion types.
-        disagreement_range_threshold: Max range before arbitration.
-
-    Returns:
-        True if judge should arbitrate.
-    """
-    numeric_votes = [v for v in votes if v is not None]
-    na_count = len(votes) - len(numeric_votes)
-
-    # All unanimous NA -> no arbitration needed
-    if na_count == len(votes):
-        return False
-
-    # All unanimous numeric -> check spread
-    if na_count == 0:
-        vote_range = max(numeric_votes) - min(numeric_votes)
-        return vote_range > disagreement_range_threshold
-
-    # Mixed NA + numeric -> always arbitrate
-    # Judge decides if it's truly NA or numeric
-    return True
-```
+- unanimous NA (should not be arbitrated by default)
+- mixed NA + numeric (when arbitration is triggered)
+- numeric disagreement (existing)
 
 ---
 
@@ -730,7 +758,6 @@ def should_arbitrate_item_na(
 | `src/vibe_check/judge/schema.py` | **EXTEND** - Add `JudgeItemResolutionNA` |
 | `src/vibe_check/judge/prompting.py` | **EXTEND** - Add v2 prompt builders |
 | `src/vibe_check/constants.py` | **EXTEND** - Add judge v2 constants |
-| `src/vibe_check/aggregation/engine.py` | **MODERATE** - Update arbitration trigger |
 | `tests/unit/test_judge_schema_na.py` | **NEW** |
 | `tests/unit/test_judge_prompts_na.py` | **NEW** |
 | `tests/unit/test_judge_na_integration.py` | **NEW** |

@@ -442,7 +442,7 @@ class TestGlobalArbitrationNA:
 
 ---
 
-## 5. Schema: `AggregatedPHQ8NA` (Updated)
+## 5. Schema: `AggregatedPHQ8` (Updated; NA-Aware)
 
 ```python
 # File: src/vibe_check/schemas/output.py (updated AggregatedPHQ8)
@@ -494,6 +494,181 @@ class AggregatedPHQ8(BaseModel):
     judge_usage: TokenUsage | None = None
     prompt_version: str
     scored_at: datetime
+```
+
+### 5.1 Shared Test Utility: `make_minimal_aggregated_phq8_na`
+
+SPEC-16 (export) and SPEC-18 (diagnostics) require deterministic integration tests that can create a valid NA-aware `AggregatedPHQ8` without any live LLM calls. Define the following shared helper:
+
+```python
+# File: tests/unit/utils.py
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from typing import Literal
+
+from vibe_check.constants import PHQ8_ITEMS, SEVERITY_BUCKETS, SeverityBucket
+from vibe_check.schemas.output import AggregatedPHQ8, ItemAggregationNA
+from vibe_check.schemas.scoring import PHQ8Report, PHQ8TotalScore
+
+
+def _bucket_for(total: int) -> SeverityBucket:
+    for name, (lo, hi) in SEVERITY_BUCKETS.items():
+        if lo <= total <= hi:
+            return name
+    raise ValueError(f"total out of range: {total}")
+
+
+def make_minimal_aggregated_phq8_na(
+    *,
+    file_id: str,
+    condition: Literal["mdd", "control"] = "mdd",
+    na_items: set[str] | None = None,
+    base_score: int = 1,
+    prompt_version: str = "v2.0.0-clinical",
+) -> AggregatedPHQ8:
+    """Deterministic AggregatedPHQ8 constructor for unit/integration tests.
+
+    Rules:
+    - Items in na_items are consensus not_mentioned (score=None).
+    - Non-NA items use base_score for both jurors.
+      - base_score=0 => assertion="denied"
+      - base_score=1..3 => assertion="present"
+    - Produces 2 juror reports: model_id="test-model", run_number in {1,2}.
+    """
+    na_items = na_items or set()
+
+    if base_score not in (0, 1, 2, 3):
+        raise ValueError("base_score must be 0..3")
+
+    discussed_assertion = "denied" if base_score == 0 else "present"
+
+    # Juror reports (SPEC-13 schema; NA items have score=None)
+    juror_reports: list[PHQ8Report] = []
+    for run_number in (1, 2):
+        report_payload: dict[str, object] = {}
+        total_score = 0
+        discussed_count = 0
+        for item in PHQ8_ITEMS:
+            if item in na_items:
+                report_payload[item] = {
+                    "discussed": False,
+                    "score": None,
+                    "assertion": "not_mentioned",
+                    "confidence": None,
+                    "evidence": [],
+                }
+            else:
+                report_payload[item] = {
+                    "discussed": True,
+                    "score": base_score,
+                    "assertion": discussed_assertion,
+                    "confidence": 0.8,
+                    "evidence": [f"Client: evidence for {item}."],
+                }
+                total_score += int(base_score)
+                discussed_count += 1
+
+        report_payload["total_score"] = total_score
+        report_payload["discussed_count"] = discussed_count
+        report_payload["mentions_self_harm"] = False
+        report_payload["self_harm_evidence"] = []
+        report_payload["model_id"] = "test-model"
+        report_payload["run_number"] = run_number
+
+        juror_reports.append(PHQ8Report.model_validate(report_payload))
+
+    # ItemAggregationNA (jury consensus = unanimous in this helper)
+    items: dict[str, ItemAggregationNA] = {}
+    for item in PHQ8_ITEMS:
+        if item in na_items:
+            votes: list[int | None] = [None, None]
+            assertions = ["not_mentioned", "not_mentioned"]
+            items[item] = ItemAggregationNA(
+                votes=votes,
+                assertions=assertions,
+                numeric_votes=[],
+                vote_counts={str(i): 0 for i in range(4)},
+                posterior=None,
+                mode=None,
+                expected=None,
+                entropy=None,
+                vote_range=None,
+                clinical_prob=None,
+                na_count=2,
+                p_not_mentioned=1.0,
+                consensus_score=None,
+                consensus_assertion="not_mentioned",
+            )
+        else:
+            votes = [base_score, base_score]
+            assertions = [discussed_assertion, discussed_assertion]
+            vote_counts = {str(i): 0 for i in range(4)}
+            vote_counts[str(base_score)] = 2
+            posterior = {str(i): 0.0 for i in range(4)}
+            posterior[str(base_score)] = 1.0
+            items[item] = ItemAggregationNA(
+                votes=votes,
+                assertions=assertions,
+                numeric_votes=[base_score, base_score],
+                vote_counts=vote_counts,
+                posterior=posterior,
+                mode=base_score,
+                expected=float(base_score),
+                entropy=0.0,
+                vote_range=0,
+                clinical_prob=(1.0 if base_score >= 2 else 0.0),
+                na_count=0,
+                p_not_mentioned=0.0,
+                consensus_score=base_score,
+                consensus_assertion=discussed_assertion,
+            )
+
+    totals = PHQ8TotalScore.from_item_scores(
+        {item: (None if item in na_items else base_score) for item in PHQ8_ITEMS}
+    )
+
+    final_item_scores = {item: (0 if item in na_items else int(base_score)) for item in PHQ8_ITEMS}
+    final_total_score = sum(final_item_scores.values())
+
+    severity_bucket = _bucket_for(final_total_score)
+    severity_bucket_probs = {k: (1.0 if k == severity_bucket else 0.0) for k in SEVERITY_BUCKETS}
+
+    severity_bucket_phq_like: SeverityBucket | None = None
+    if totals.is_proration_valid and totals.prorated_total_rounded is not None:
+        severity_bucket_phq_like = _bucket_for(int(totals.prorated_total_rounded))
+
+    total_posterior = {i: 0.0 for i in range(25)}
+    total_posterior[final_total_score] = 1.0
+
+    return AggregatedPHQ8(
+        file_id=file_id,
+        condition=condition,
+        items=items,
+        totals=totals,
+        total_mode=final_total_score,
+        total_expected=float(final_total_score),
+        total_std=0.0,
+        total_posterior=total_posterior,
+        total_ci_90=(final_total_score, final_total_score),
+        severity_bucket=severity_bucket,
+        severity_bucket_phq_like=severity_bucket_phq_like,
+        severity_bucket_probs=severity_bucket_probs,
+        final_item_scores=final_item_scores,
+        final_total_score=final_total_score,
+        final_severity_bucket=severity_bucket,
+        final_source="jury_mode",
+        triggered_arbitration=False,
+        arbitration_items=[],
+        arbitration_reasons={},
+        mentions_self_harm=False,
+        self_harm_evidence=[],
+        juror_reports=juror_reports,
+        judge_resolution=None,
+        judge_usage=None,
+        prompt_version=prompt_version,
+        scored_at=datetime(2020, 1, 1, tzinfo=UTC),
+    )
 ```
 
 ---

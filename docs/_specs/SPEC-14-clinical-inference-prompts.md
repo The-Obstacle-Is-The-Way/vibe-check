@@ -326,9 +326,9 @@ class TestExtraInstructions:
         assert "CUSTOM" not in prompt
 
     def test_empty_extra_instructions(self):
-        prompt = build_juror_system_prompt("v2.0.0", extra_instructions="  ")
-        # Should handle gracefully (stripped to empty)
-        # Implementation detail: may or may not add newline
+        prompt_none = build_juror_system_prompt("v2.0.0", extra_instructions=None)
+        prompt_blank = build_juror_system_prompt("v2.0.0", extra_instructions="  ")
+        assert prompt_blank == prompt_none
 ```
 
 ### 5.2 Schema Parse Tests (TestModel)
@@ -337,6 +337,7 @@ class TestExtraInstructions:
 # File: tests/unit/test_prompting_parse.py
 
 import pytest
+from pydantic import ValidationError
 from pydantic_ai.models.test import TestModel
 from vibe_check.schemas.scoring import PHQ8Assessment
 
@@ -434,32 +435,61 @@ class TestV2SchemaParsing:
 class TestV2SchemaRejection:
     """Test that invalid V2 responses are rejected."""
 
+    def _valid_assessment_json(self) -> dict:
+        """Return a fully-valid PHQ8Assessment JSON payload (SPEC-13)."""
+        item = {
+            "discussed": True,
+            "score": 1,
+            "assertion": "present",
+            "confidence": 0.8,
+            "evidence": ["Client: ..."],
+        }
+        return {
+            "anhedonia": dict(item),
+            "depressed_mood": dict(item),
+            "sleep": dict(item),
+            "fatigue": dict(item),
+            "appetite": dict(item),
+            "guilt": dict(item),
+            "concentration": dict(item),
+            "psychomotor": dict(item),
+            "total_score": 8,
+            "discussed_count": 8,
+            "mentions_self_harm": False,
+            "self_harm_evidence": [],
+        }
+
     def test_reject_score_0_with_present_assertion(self):
         """present assertion cannot have score=0."""
-        raw_json = {
-            "anhedonia": {"discussed": True, "score": 0, "assertion": "present",
-                         "confidence": 0.85, "evidence": ["quote"]},
-            # ... other items omitted for brevity
-        }
-        with pytest.raises(Exception):  # ValidationError
+        raw_json = self._valid_assessment_json()
+        raw_json["anhedonia"]["score"] = 0
+        with pytest.raises(ValidationError, match="present requires score in"):
             PHQ8Assessment.model_validate(raw_json)
 
     def test_reject_score_2_with_not_mentioned(self):
         """not_mentioned must have score=None."""
-        raw_json = {
-            "anhedonia": {"discussed": False, "score": 2, "assertion": "not_mentioned",
-                         "confidence": None, "evidence": []},
+        raw_json = self._valid_assessment_json()
+        raw_json["anhedonia"] = {
+            "discussed": False,
+            "score": 2,  # INVALID: must be None
+            "assertion": "not_mentioned",
+            "confidence": None,
+            "evidence": [],
         }
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError, match="not_mentioned requires score=None"):
             PHQ8Assessment.model_validate(raw_json)
 
     def test_reject_discussed_true_with_not_mentioned(self):
         """not_mentioned requires discussed=False."""
-        raw_json = {
-            "anhedonia": {"discussed": True, "score": None, "assertion": "not_mentioned",
-                         "confidence": None, "evidence": []},
+        raw_json = self._valid_assessment_json()
+        raw_json["anhedonia"] = {
+            "discussed": True,  # INVALID: must be False
+            "score": None,
+            "assertion": "not_mentioned",
+            "confidence": None,
+            "evidence": [],
         }
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError, match="not_mentioned requires discussed=False"):
             PHQ8Assessment.model_validate(raw_json)
 ```
 
