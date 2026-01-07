@@ -74,7 +74,7 @@ class Settings(BaseSettings):
 
     # Output
     output_dir: str = "./data/outputs"
-    prompt_version: str = "v1.0.0"
+    prompt_version: str = "v2.0.0-clinical"
 
     def pydantic_ai_model_settings(self) -> ModelSettings:
         """Return PydanticAI ModelSettings for all LLM calls."""

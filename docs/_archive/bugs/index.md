@@ -59,19 +59,22 @@ All bugs in this directory have been **resolved**. Bug numbers are permanent ide
 | BUG-049 | [Hardcoded diagnostic thresholds](bug-049-hardcoded-diagnostic-thresholds.md) | P3 | RESOLVED |
 | BUG-050 | [Remaining magic numbers](bug-050-remaining-magic-numbers.md) | P4 | RESOLVED |
 | BUG-051 | [DAIC-WOZ PHQ-8 ground truth integrity](bug-051-daic-woz-ground-truth-integrity.md) | P1 | RESOLVED |
+| BUG-052 | [Live run breaks with NA-aware schema (judge + prompt defaults)](bug-052-live-run-breaks-with-na-aware-schema.md) | P0 | RESOLVED |
+| BUG-053 | [SPEC-08 export crashes on NA juror votes](bug-053-spec-08-export-crashes-on-na-votes.md) | P1 | RESOLVED |
+| BUG-054 | [HuggingFace export missing `judge_model` provenance](bug-054-hf-export-missing-judge-model.md) | P2 | RESOLVED |
 
 ---
 
 ## Statistics
 
-- **Total bugs**: 51
-- **Resolved/Fixed**: 51
+- **Total bugs**: 54
+- **Resolved/Fixed**: 54
 - **Open**: 0
 
 ---
 
 ## Next Bug Number
 
-When filing new bugs, use: **BUG-052**
+When filing new bugs, use: **BUG-055**
 
 Place new bugs in `docs/_bugs/` (not `_archive`). Move to archive when resolved.

@@ -39,7 +39,7 @@ class TestBuildRealJury:
 
     def test_uses_passed_prompt_version_not_settings(self, mock_settings: Settings) -> None:
         """BUG-027: build_real_jury must use passed prompt_version, not settings."""
-        passed_version = "cli_version_v2"
+        passed_version = "v2.0.0-clinical"
 
         with patch("vibe_check.run.factory.build_juror_agent") as mock_build_agent:
             mock_build_agent.return_value = MagicMock()
@@ -72,7 +72,7 @@ class TestBuildRealJury:
 
             build_real_jury(
                 mock_settings,
-                prompt_version="v1.0.0",
+                prompt_version="v2.0.0-clinical",
                 dialogue_view=passed_view,
             )
 
@@ -95,7 +95,7 @@ class TestBuildRealJury:
 
             jurors = build_real_jury(
                 mock_settings,
-                prompt_version="v1.0.0",
+                prompt_version="v2.0.0-clinical",
                 dialogue_view="client_qa",
             )
 
@@ -115,10 +115,10 @@ class TestBuildRealJudgeItem:
 
     def test_uses_passed_prompt_version_not_settings(self, mock_settings: Settings) -> None:
         """BUG-027: build_real_judge_item must use passed prompt_version."""
-        passed_version = "cli_version_v2"
+        passed_version = "v2.0.0-clinical"
 
         # Patch at the source module since it's imported inside the function
-        with patch("vibe_check.judge.agent.build_judge_agent") as mock_build_agent:
+        with patch("vibe_check.judge.agent.build_judge_agent_v2") as mock_build_agent:
             mock_build_agent.return_value = MagicMock()
 
             build_real_judge_item(
@@ -137,6 +137,16 @@ class TestBuildRealJudgeItem:
             assert model_settings["max_tokens"] == 1234
             assert model_settings["timeout"] == pytest.approx(12.5)
             assert model_settings["seed"] == 42
+
+    def test_rejects_v1_prompt_version(self, mock_settings: Settings) -> None:
+        with pytest.raises(ValueError, match="v2\\.\\* prompt_version"):
+            build_real_judge_item(mock_settings, prompt_version="v1.0.0")
+
+
+class TestLivePromptVersionGuards:
+    def test_real_jury_rejects_v1_prompt_version(self, mock_settings: Settings) -> None:
+        with pytest.raises(ValueError, match="v2\\.\\* prompt_version"):
+            build_real_jury(mock_settings, prompt_version="v1.0.0", dialogue_view="client_qa")
 
 
 class TestBackwardsCompatibility:

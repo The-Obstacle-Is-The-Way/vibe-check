@@ -40,10 +40,12 @@ vibe-check score-corpus \
 |----------|---------|-------------|
 | `--live` | False | Use real LLM APIs (costs money) |
 | `--limit` | None | Limit number of dialogues (for debugging) |
-| `--prompt-version` | `v1.0.0` | Prompt version label embedded in outputs |
+| `--prompt-version` | `v2.0.0-clinical` | Prompt version label embedded in outputs |
 | `--dialogue-view` | `client_qa` | View to use: `client_qa` or `client_only` |
 | `--max-concurrency` | 50 | Max concurrent dialogue processing |
 | `--force` | False | Reset existing run if config differs (see below) |
+
+**Note**: `--live` runs require `--prompt-version` starting with `v2` (NA-aware schema).
 
 #### Config Mismatch Protection
 
@@ -73,7 +75,7 @@ vibe-check score-corpus \
     --checkpoint sqlite:///data/outputs/checkpoint.db \
     --output data/outputs \
     --live \
-    --prompt-version v1.0.0
+    --prompt-version v2.0.0-clinical
 ```
 
 #### Output Files

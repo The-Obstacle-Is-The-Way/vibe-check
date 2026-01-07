@@ -5,9 +5,13 @@ from pydantic import ValidationError
 from pydantic_ai.models.test import TestModel
 
 from vibe_check.constants import PHQ8_RUBRIC, PHQ8_SCORE_SCALE, PHQ8_TIME_FRAME
-from vibe_check.judge.agent import build_judge_agent
-from vibe_check.judge.prompting import build_judge_item_prompt, build_judge_system_prompt
-from vibe_check.judge.schema import JudgeItemResolution
+from vibe_check.judge.agent import build_judge_agent, build_judge_agent_v2
+from vibe_check.judge.prompting import (
+    build_judge_item_prompt,
+    build_judge_item_prompt_v2,
+    build_judge_system_prompt,
+)
+from vibe_check.judge.schema import JudgeItemResolution, JudgeItemResolutionNA
 
 
 def test_build_judge_system_prompt_includes_version() -> None:
@@ -85,3 +89,32 @@ def test_judge_item_resolution_rejects_invalid_item_name() -> None:
                 "rationale": "nope",
             }
         )
+
+
+def test_judge_agent_v2_end_to_end_allows_not_mentioned() -> None:
+    output = {
+        "item": "sleep",
+        "discussed": False,
+        "final_score": None,
+        "assertion": "not_mentioned",
+        "confidence": None,
+        "evidence": [],
+        "rationale": "Sleep not discussed.",
+    }
+    model = TestModel(custom_output_args=output)
+
+    agent = build_judge_agent_v2(model=model, prompt_version="v2.0.0-clinical")
+    prompt = build_judge_item_prompt_v2(
+        scoring_text="Client: ...",
+        item="sleep",
+        juror_votes=[None, None, None],
+        juror_assertions=["not_mentioned", "not_mentioned", "not_mentioned"],
+        juror_evidence=[],
+    )
+
+    result = agent.run_sync(prompt)
+    resolved = result.data if hasattr(result, "data") else result.output
+    assert isinstance(resolved, JudgeItemResolutionNA)
+    assert resolved.item == "sleep"
+    assert resolved.assertion == "not_mentioned"
+    assert resolved.final_score is None

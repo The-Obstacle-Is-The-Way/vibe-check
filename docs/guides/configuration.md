@@ -86,7 +86,7 @@ GOOGLE_API_KEY=...
 |----------|---------|-------------|
 | `OUTPUT_DIR` | `./data/outputs` | Default output directory |
 | `CHECKPOINT_DB` | `sqlite:///data/checkpoints/vibe_check.db` | Checkpoint database |
-| `PROMPT_VERSION` | `v1.0.0` | Prompt version label |
+| `PROMPT_VERSION` | `v2.0.0-clinical` | Prompt version label |
 
 ---
 
