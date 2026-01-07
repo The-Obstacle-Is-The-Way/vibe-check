@@ -119,6 +119,7 @@ async def score_corpus_async(
             "module": getattr(judge_item, "__module__", None),
             "name": getattr(judge_item, "__name__", None),
             "class": judge_item.__class__.__name__,
+            "model_id": getattr(judge_item, "model_id", None),
         },
     }
     run_config_json = json.dumps(run_config, sort_keys=True, separators=(",", ":"))

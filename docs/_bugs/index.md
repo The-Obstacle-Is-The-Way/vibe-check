@@ -12,6 +12,9 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
+| BUG-054 | P2 | resolved | [HuggingFace export missing `judge_model` provenance](../_archive/bugs/bug-054-hf-export-missing-judge-model.md) |
+| BUG-053 | P1 | resolved | [SPEC-08 export crashes on NA juror votes](../_archive/bugs/bug-053-spec-08-export-crashes-on-na-votes.md) |
+| BUG-052 | P0 | resolved | [Live run breaks with NA-aware schema (judge + prompt defaults)](../_archive/bugs/bug-052-live-run-breaks-with-na-aware-schema.md) |
 | BUG-051 | P1 | resolved | [DAIC-WOZ PHQ-8 Ground Truth Integrity](../_archive/bugs/bug-051-daic-woz-ground-truth-integrity.md) |
 | BUG-050 | P4 | resolved | [Remaining Magic Numbers in Codebase](../_archive/bugs/bug-050-remaining-magic-numbers.md) |
 | BUG-049 | P3 | resolved | [Hardcoded Diagnostic Thresholds](../_archive/bugs/bug-049-hardcoded-diagnostic-thresholds.md) |

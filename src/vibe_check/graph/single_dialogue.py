@@ -16,7 +16,7 @@ from vibe_check.aggregation.aggregate import (
 from vibe_check.constants import PHQ8_ITEMS
 from vibe_check.data import load_corpus, preprocess_dialogue
 from vibe_check.graph.state import ScoringState
-from vibe_check.judge.schema import JudgeItemReport
+from vibe_check.judge.schema import JudgeItemReport, JudgeItemReportNA
 from vibe_check.schemas.scoring import PHQ8Report, TokenUsage
 
 if TYPE_CHECKING:
@@ -30,7 +30,9 @@ class Juror(Protocol):
     async def ascore(self, scoring_text: str) -> PHQ8Report: ...
 
 
-JudgeItemFn = Callable[[str, str, list[PHQ8Report], str], Awaitable[JudgeItemReport]]
+JudgeItemFn = Callable[
+    [str, str, list[PHQ8Report], str], Awaitable[JudgeItemReport | JudgeItemReportNA]
+]
 
 DialogueViewName = Literal["client_qa", "client_only"]
 
@@ -107,7 +109,7 @@ def build_single_dialogue_graph(
         if not contested:
             return {"final_output": agg, "needs_arbitration": False}
 
-        resolutions: dict[str, JudgeItemReport] = {}
+        resolutions: dict[str, JudgeItemReport | JudgeItemReportNA] = {}
         for item in contested:
             resolutions[item] = await judge_item(
                 state["scoring_text"],

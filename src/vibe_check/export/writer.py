@@ -29,7 +29,7 @@ def aggregated_to_export_record(
     final_items = aggregated.final_item_scores
     votes: dict[str, list[int]] = {}
     for item in PHQ8_ITEMS:
-        votes[item] = [int(getattr(r, item).score) for r in aggregated.juror_reports]
+        votes[item] = [int(getattr(r, item).score or 0) for r in aggregated.juror_reports]
 
     arbitration_triggered = dict.fromkeys(PHQ8_ITEMS, False)
     if "__total__" in aggregated.arbitration_items:

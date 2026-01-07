@@ -53,7 +53,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Use real provider-backed jurors/judge (requires API keys; may cost money).",
     )
     score.add_argument(
-        "--prompt-version", default="v1.0.0", help="Prompt version label to embed in outputs."
+        "--prompt-version",
+        default="v2.0.0-clinical",
+        help="Prompt version label to embed in outputs.",
     )
     score.add_argument(
         "--dialogue-view",
@@ -144,6 +146,11 @@ def main(argv: list[str] | None = None) -> int:
         )
 
         if args.live:
+            if not str(args.prompt_version).startswith("v2"):
+                parser.error(
+                    "--live requires a v2.* prompt version (NA-aware schema); "
+                    f"got --prompt-version={args.prompt_version!r}"
+                )
             missing: list[str] = []
             if not settings.openai_api_key:
                 missing.append("OPENAI_API_KEY")

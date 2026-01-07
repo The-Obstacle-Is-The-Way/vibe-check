@@ -77,7 +77,7 @@ uv run vibe-check score-corpus \
     --checkpoint sqlite:///data/outputs/checkpoint.db \
     --output data/outputs \
     --live \
-    --prompt-version v1.0.0
+    --prompt-version v2.0.0-clinical
 ```
 
 ### Flags Explained
@@ -108,7 +108,8 @@ uv run vibe-check score-corpus \
     --input data/sqpsychconv/qwen-2.5 \
     --checkpoint sqlite:///data/outputs/checkpoint.db \
     --output data/outputs \
-    --live
+    --live \
+    --prompt-version v2.0.0-clinical
 ```
 
 Resume uses two SQLite databases:

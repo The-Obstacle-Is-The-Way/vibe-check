@@ -16,8 +16,12 @@ from vibe_check.scoring.usage import token_usage_from_run_usage
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Sequence
 
-    from vibe_check.judge.schema import JudgeItemReport, JudgeItemResolution
-    from vibe_check.schemas.scoring import PHQ8Report
+    from vibe_check.judge.schema import (
+        JudgeItemReport,
+        JudgeItemReportNA,
+        JudgeItemResolutionNA,
+    )
+    from vibe_check.schemas.scoring import Assertion, PHQ8Report
     from vibe_check.settings import Settings
 
 
@@ -42,7 +46,7 @@ class JudgeItemFn(Protocol):
         item: str,
         juror_reports: list[PHQ8Report],
         prompt_version: str,
-    ) -> Awaitable[JudgeItemReport]:
+    ) -> Awaitable[JudgeItemReport | JudgeItemReportNA]:
         """Resolve a single contested item."""
         ...
 
@@ -87,6 +91,10 @@ def build_real_jury(
     Note (BUG-027 fix): prompt_version and dialogue_view are now explicit params
     to ensure CLI args flow through to agent prompts, not Settings defaults.
     """
+    if not prompt_version.startswith("v2"):
+        raise ValueError(
+            f"Live jurors require a v2.* prompt_version (NA-aware schema); got {prompt_version!r}"
+        )
     # PydanticAI provider prefixes: openai, anthropic, google-gla (not "google")
     configs = [
         ("openai", settings.juror_gpt_model),
@@ -153,19 +161,23 @@ def build_real_judge_item(
     Note (BUG-027 fix): prompt_version is now an explicit param to ensure CLI args
     flow through to agent prompts, not Settings defaults.
     """
+    if not prompt_version.startswith("v2"):
+        raise ValueError(
+            f"Live judge requires a v2.* prompt_version (NA-aware schema); got {prompt_version!r}"
+        )
     from typing import cast
 
     from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential_jitter
 
-    from vibe_check.judge.agent import build_judge_agent
-    from vibe_check.judge.prompting import build_judge_item_prompt
-    from vibe_check.judge.schema import JudgeItemReport
+    from vibe_check.judge.agent import build_judge_agent_v2
+    from vibe_check.judge.prompting import build_judge_item_prompt_v2
+    from vibe_check.judge.schema import JudgeItemReportNA
     from vibe_check.resilience import _is_transient_error
 
     full_model_name = f"anthropic:{settings.judge_model}"
 
     # Layer 1: PydanticAI validation retries
-    agent = build_judge_agent(
+    agent = build_judge_agent_v2(
         model=full_model_name,
         prompt_version=prompt_version,
         retries=settings.validation_retries,
@@ -183,19 +195,22 @@ def build_real_judge_item(
         item: str,
         juror_reports: list[PHQ8Report],
         prompt_version: str,
-    ) -> JudgeItemReport:
+    ) -> JudgeItemReportNA:
         _ = prompt_version
         evidence_pool: list[str] = []
-        votes: list[int] = []
+        votes_na: list[int | None] = []
+        assertions: list[Assertion] = []
         for r in juror_reports:
             item_score = getattr(r, item)
-            votes.append(int(item_score.score))
+            votes_na.append(item_score.score)
+            assertions.append(item_score.assertion)
             evidence_pool.extend(item_score.evidence)
 
-        prompt = build_judge_item_prompt(
+        prompt = build_judge_item_prompt_v2(
             scoring_text=scoring_text,
             item=item,
-            juror_votes=votes,
+            juror_votes=votes_na,
+            juror_assertions=assertions,
             juror_evidence=evidence_pool,
         )
 
@@ -210,14 +225,16 @@ def build_real_judge_item(
             retry=retry_if_exception(_is_transient_error),
             reraise=True,
         )
-        async def _call_with_retry() -> JudgeItemReport:
+        async def _call_with_retry() -> JudgeItemReportNA:
             result = await agent.run(prompt)
             # PydanticAI v1+ puts structured output in .data
             output = getattr(result, "data", getattr(result, "output", None))
-            resolution = cast("JudgeItemResolution", output)
             usage = token_usage_from_run_usage(result.usage())
-            return JudgeItemReport(**resolution.model_dump(), usage=usage)
+            resolution_na = cast("JudgeItemResolutionNA", output)
+            return JudgeItemReportNA(**resolution_na.model_dump(), usage=usage)
 
         return await _call_with_retry()
 
+    attr = "model_id"
+    setattr(judge_fn, attr, settings.judge_model)
     return judge_fn

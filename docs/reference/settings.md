@@ -201,7 +201,7 @@ Default output paths and versioning.
 | Field | Env Variable | Type | Default | Description |
 |-------|--------------|------|---------|-------------|
 | `output_dir` | `OUTPUT_DIR` | `str` | `./data/outputs` | Default output directory |
-| `prompt_version` | `PROMPT_VERSION` | `str` | `v1.0.0` | Prompt version label |
+| `prompt_version` | `PROMPT_VERSION` | `str` | `v2.0.0-clinical` | Prompt version label |
 
 **Notes**:
 - `prompt_version` is embedded in outputs for reproducibility
@@ -264,7 +264,7 @@ GRAPH_RECURSION_LIMIT=25
 
 # Output
 OUTPUT_DIR=./data/outputs
-PROMPT_VERSION=v1.0.0
+PROMPT_VERSION=v2.0.0-clinical
 ```
 
 ---

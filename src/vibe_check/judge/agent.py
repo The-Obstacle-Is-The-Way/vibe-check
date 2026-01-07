@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 from pydantic_ai import Agent
 
-from vibe_check.judge.prompting import build_judge_system_prompt
-from vibe_check.judge.schema import JudgeItemResolution
+from vibe_check.judge.prompting import build_judge_system_prompt, build_judge_system_prompt_v2
+from vibe_check.judge.schema import JudgeItemResolution, JudgeItemResolutionNA
 
 if TYPE_CHECKING:
     from pydantic_ai.models import KnownModelName, Model
@@ -38,4 +38,21 @@ def build_judge_agent(
         retries=retries,
         model_settings=model_settings,
         system_prompt=build_judge_system_prompt(prompt_version),
+    )
+
+
+def build_judge_agent_v2(
+    *,
+    model: Model | KnownModelName | str | None,
+    prompt_version: str,
+    model_settings: ModelSettings | None = None,
+    retries: int = 2,
+) -> Agent[None, JudgeItemResolutionNA]:
+    """Build a PydanticAI agent for NA-aware judge arbitration (SPEC-17)."""
+    return Agent(
+        model=model,
+        output_type=JudgeItemResolutionNA,
+        retries=retries,
+        model_settings=model_settings,
+        system_prompt=build_judge_system_prompt_v2(prompt_version),
     )
