@@ -33,7 +33,7 @@ def test_juror_scorer_end_to_end_with_testmodel() -> None:
     assert isinstance(report, PHQ8Report)
     assert report.model_id == "fake-model"
     assert report.run_number == 1
-    assert report.total_score == sum(report.item_scores.values())
+    assert report.total_score == sum((s or 0) for s in report.item_scores.values())
     assert report.usage is not None
 
 

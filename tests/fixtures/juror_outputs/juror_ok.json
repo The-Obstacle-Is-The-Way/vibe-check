@@ -1,43 +1,59 @@
 {
   "anhedonia": {
+    "discussed": true,
     "score": 1,
+    "assertion": "present",
     "confidence": 0.75,
     "evidence": ["Client reports low interest in hobbies."]
   },
   "depressed_mood": {
+    "discussed": true,
     "score": 1,
+    "assertion": "present",
     "confidence": 0.8,
     "evidence": ["Client reports feeling down several days."]
   },
   "sleep": {
+    "discussed": true,
     "score": 2,
+    "assertion": "present",
     "confidence": 0.7,
     "evidence": ["Client reports trouble sleeping most nights.", "Extra evidence 1", "Extra evidence 2"]
   },
   "fatigue": {
+    "discussed": true,
     "score": 1,
+    "assertion": "present",
     "confidence": 0.7,
     "evidence": ["Client reports low energy."]
   },
   "appetite": {
+    "discussed": true,
     "score": 0,
+    "assertion": "denied",
     "confidence": 0.65,
-    "evidence": []
+    "evidence": ["Client denies appetite changes."]
   },
   "guilt": {
+    "discussed": true,
     "score": 1,
+    "assertion": "present",
     "confidence": 0.7,
     "evidence": ["Client reports feeling like a burden."]
   },
   "concentration": {
+    "discussed": true,
     "score": 1,
+    "assertion": "present",
     "confidence": 0.6,
     "evidence": ["Client reports difficulty focusing."]
   },
   "psychomotor": {
+    "discussed": true,
     "score": 0,
+    "assertion": "denied",
     "confidence": 0.55,
-    "evidence": []
+    "evidence": ["Client denies noticeable psychomotor changes."]
   },
   "mentions_self_harm": false,
   "self_harm_evidence": []

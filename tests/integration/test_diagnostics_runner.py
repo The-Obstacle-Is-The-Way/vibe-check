@@ -19,12 +19,22 @@ Score = Literal[0, 1, 2, 3]
 
 
 def _make_uniform_report(*, model_id: str, run_number: int, score: Score) -> PHQ8Report:
-    item = PHQ8ItemScore(
-        score=score,
-        confidence=0.9,
-        evidence=["evidence"],
-        insufficient_evidence=False,
-    )
+    if score == 0:
+        item = PHQ8ItemScore(
+            discussed=True,
+            score=0,
+            assertion="denied",
+            confidence=0.9,
+            evidence=["evidence"],
+        )
+    else:
+        item = PHQ8ItemScore(
+            discussed=True,
+            score=score,
+            assertion="present",
+            confidence=0.9,
+            evidence=["evidence"],
+        )
     return PHQ8Report(
         model_id=model_id,
         run_number=run_number,
@@ -37,6 +47,7 @@ def _make_uniform_report(*, model_id: str, run_number: int, score: Score) -> PHQ
         concentration=item,
         psychomotor=item,
         total_score=int(score) * len(PHQ8_ITEMS),
+        discussed_count=len(PHQ8_ITEMS),
         mentions_self_harm=False,
         self_harm_evidence=[],
         usage=TokenUsage(input_tokens=1, output_tokens=1, reasoning_tokens=0, total_tokens=2),

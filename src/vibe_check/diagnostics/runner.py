@@ -12,19 +12,24 @@ from vibe_check.constants import (
     ARBITRATION_RATE_MAX,
     CRONBACH_ALPHA_MIN,
     KRIPPENDORFF_ALPHA_MIN,
+    MAX_CORPUS_NA_RATE,
+    MIN_DIALOGUE_MIN_COVERAGE_RATE,
+    MIN_ITEM_COVERAGE,
     PHQ8_ITEMS,
 )
 from vibe_check.diagnostics.arbitration import compute_arbitration_metrics
+from vibe_check.diagnostics.assertions import compute_assertion_distribution
 from vibe_check.diagnostics.consistency import (
     compute_cronbach_alpha,
     compute_item_total_correlations,
 )
+from vibe_check.diagnostics.coverage import compute_coverage_metrics
 from vibe_check.diagnostics.reliability import (
     compute_krippendorff_alpha,
     compute_krippendorff_alpha_per_item,
 )
 from vibe_check.diagnostics.report import ConsistencyMetrics, DiagnosticReport, ReliabilityMetrics
-from vibe_check.diagnostics.separation import compute_condition_separation
+from vibe_check.diagnostics.separation import compute_separation_metrics_na
 from vibe_check.schemas.output import AggregatedPHQ8
 
 
@@ -64,19 +69,26 @@ class RunDiagnostics:
         # Reliability (juror vote tensor)
         n_items = len(PHQ8_ITEMS)
         n_jurors = len(rows[0].juror_reports)
-        votes = np.zeros((n_dialogues, n_items, n_jurors), dtype=float)
+        votes = np.full((n_dialogues, n_items, n_jurors), np.nan, dtype=float)
         for i, row in enumerate(rows):
             if len(row.juror_reports) != n_jurors:
                 raise ValueError("inconsistent juror count across rows")
             for j, item in enumerate(PHQ8_ITEMS):
                 for k, report in enumerate(row.juror_reports):
-                    votes[i, j, k] = int(getattr(report, item).score)
+                    score = getattr(report, item).score
+                    votes[i, j, k] = float(score) if score is not None else np.nan
 
         kripp = compute_krippendorff_alpha(votes)
         kripp_per_item = compute_krippendorff_alpha_per_item(votes, item_names=list(PHQ8_ITEMS))
 
-        # ICC on flattened units (dialogues x items) with 6 raters
-        flat = votes.reshape(n_dialogues * n_items, n_jurors)
+        # ICC on flattened units (dialogues x items) with 6 raters.
+        # NOTE: ICC does not natively handle missing data. We impute NaN → 0 as a
+        # simple proxy. This is NOT statistically rigorous for missing-at-random data
+        # and may bias ICC estimates. Krippendorff alpha (computed above) is the
+        # PRIMARY reliability metric as it properly handles missingness. ICC values
+        # should be interpreted cautiously when corpus_na_rate > 0.
+        icc_votes = np.nan_to_num(votes, nan=0.0)
+        flat = icc_votes.reshape(n_dialogues * n_items, n_jurors)
         icc_consistency, icc_agreement, icc_ci = _compute_icc_metrics(flat)
 
         reliability = ReliabilityMetrics(
@@ -95,21 +107,30 @@ class RunDiagnostics:
         item_corr = compute_item_total_correlations(final_scores, item_names=list(PHQ8_ITEMS))
         consistency = ConsistencyMetrics(cronbach_alpha=cronbach, item_total_correlations=item_corr)
 
-        # Separation
-        mdd_totals = np.array([float(r.final_total_score) for r in rows if r.condition == "mdd"])
-        control_totals = np.array(
-            [float(r.final_total_score) for r in rows if r.condition == "control"]
-        )
-        separation = compute_condition_separation(
-            mdd_totals=mdd_totals, control_totals=control_totals
-        )
+        # Coverage + assertion distributions
+        coverage = compute_coverage_metrics(rows)
+        assertion_distribution = compute_assertion_distribution(rows)
+
+        # Separation (imputed + prorated; explicit gate basis)
+        separation = compute_separation_metrics_na(rows)
 
         # Arbitration
         arbitration = compute_arbitration_metrics(rows)
 
         passes_reliability = reliability.krippendorff_alpha >= KRIPPENDORFF_ALPHA_MIN
         passes_consistency = consistency.cronbach_alpha >= CRONBACH_ALPHA_MIN
-        passes_separation = separation.is_valid
+
+        min_cov_rate = (coverage.dialogues_with_min_coverage / n_dialogues) if n_dialogues else 0.0
+        passes_coverage = (
+            coverage.min_item_coverage >= MIN_ITEM_COVERAGE
+            and coverage.corpus_na_rate <= MAX_CORPUS_NA_RATE
+            and min_cov_rate >= MIN_DIALOGUE_MIN_COVERAGE_RATE
+        )
+
+        if separation.gate_basis == "prorated":
+            passes_separation = bool(separation.is_prorated_valid)
+        else:
+            passes_separation = bool(separation.is_imputed_valid)
         passes_arbitration = arbitration.overall_rate < ARBITRATION_RATE_MAX
 
         return DiagnosticReport(
@@ -119,10 +140,13 @@ class RunDiagnostics:
             n_control=n_control,
             reliability=reliability,
             consistency=consistency,
+            coverage=coverage,
+            assertion_distribution=assertion_distribution,
             separation=separation,
             arbitration=arbitration,
             passes_reliability_gate=passes_reliability,
             passes_consistency_gate=passes_consistency,
+            passes_coverage_gate=passes_coverage,
             passes_separation_gate=passes_separation,
             passes_arbitration_gate=passes_arbitration,
         )

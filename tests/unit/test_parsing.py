@@ -13,7 +13,8 @@ def test_phq8assessment_canonicalizes_total_score_from_items() -> None:
     data["total_score"] = 0
 
     assessment = PHQ8Assessment(**data)
-    assert assessment.total_score == sum(assessment.item_scores.values())
+    expected_total = sum(score or 0 for score in assessment.item_scores.values())
+    assert assessment.total_score == expected_total
 
 
 def test_phq8report_canonicalizes_total_score_from_items() -> None:
@@ -21,7 +22,8 @@ def test_phq8report_canonicalizes_total_score_from_items() -> None:
     base["total_score"] = 0
 
     report = PHQ8Report(**base)
-    assert report.total_score == sum(report.item_scores.values())
+    expected_total = sum(score or 0 for score in report.item_scores.values())
+    assert report.total_score == expected_total
 
 
 def test_phq8assessment_canonicalizes_missing_total_score() -> None:
@@ -30,4 +32,5 @@ def test_phq8assessment_canonicalizes_missing_total_score() -> None:
     data.pop("total_score", None)
 
     assessment = PHQ8Assessment(**data)
-    assert assessment.total_score == sum(assessment.item_scores.values())
+    expected_total = sum(score or 0 for score in assessment.item_scores.values())
+    assert assessment.total_score == expected_total

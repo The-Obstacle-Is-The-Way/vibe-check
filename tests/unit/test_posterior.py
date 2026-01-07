@@ -7,6 +7,7 @@ from vibe_check.aggregation.posterior import (
     compute_credible_interval,
     compute_item_posterior,
     convolve_posteriors,
+    convolve_posteriors_with_na,
 )
 
 
@@ -35,6 +36,29 @@ def test_convolution_with_uncertainty_expected_value() -> None:
     total = convolve_posteriors(item_posteriors)
     expected_value = float(np.dot(total, np.arange(25)))
     assert expected_value == pytest.approx(4.0)
+
+
+def test_convolve_posteriors_with_na_all_discussed_8_items() -> None:
+    posteriors = [np.array([0.1, 0.4, 0.3, 0.2]) for _ in range(8)]
+    total_dist = convolve_posteriors_with_na(posteriors, na_indices=[])
+    assert total_dist.shape == (25,)
+    assert float(total_dist.sum()) == pytest.approx(1.0)
+
+
+def test_convolve_posteriors_with_na_3_na_items_still_25_bins() -> None:
+    posteriors = [np.array([0.1, 0.4, 0.3, 0.2]) for _ in range(8)]
+    total_dist = convolve_posteriors_with_na(posteriors, na_indices=[2, 4, 6])
+    assert total_dist.shape == (25,)
+    assert float(total_dist.sum()) == pytest.approx(1.0)
+    assert float(total_dist[20:].sum()) < 0.01
+
+
+def test_convolve_posteriors_with_na_all_na_items_point_mass_at_zero() -> None:
+    posteriors = [np.array([0.1, 0.4, 0.3, 0.2]) for _ in range(8)]
+    total_dist = convolve_posteriors_with_na(posteriors, na_indices=list(range(8)))
+    assert total_dist.shape == (25,)
+    assert float(total_dist[0]) == pytest.approx(1.0)
+    assert float(total_dist[1:].sum()) < 1e-9
 
 
 def test_credible_interval_covers_mode() -> None:

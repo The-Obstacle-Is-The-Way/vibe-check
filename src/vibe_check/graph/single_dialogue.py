@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
 
 from langgraph.graph import END, START, StateGraph
 
-from vibe_check.aggregation.aggregate import aggregate_reports, get_severity_bucket
+from vibe_check.aggregation.aggregate import (
+    aggregate_reports,
+    get_severity_bucket,
+    get_severity_bucket_phq_like,
+)
 from vibe_check.constants import PHQ8_ITEMS
 from vibe_check.data import load_corpus, preprocess_dialogue
 from vibe_check.graph.state import ScoringState
@@ -134,9 +138,21 @@ def build_single_dialogue_graph(
         )
 
         final_item_scores = dict(agg.final_item_scores)
+        consensus_scores: dict[str, int | None] = {
+            item: agg.items[item].consensus_score for item in PHQ8_ITEMS
+        }
         for item, resolution in resolutions.items():
-            final_item_scores[item] = int(resolution.final_score)
+            score = getattr(resolution, "final_score", None)
+            if score is None:
+                final_item_scores[item] = 0
+                consensus_scores[item] = None
+            else:
+                final_item_scores[item] = int(score)
+                consensus_scores[item] = int(score)
 
+        from vibe_check.schemas.scoring import PHQ8TotalScore
+
+        totals = PHQ8TotalScore.from_item_scores(consensus_scores)
         final_total_score = sum(final_item_scores.values())
         updated: AggregatedPHQ8 = agg.model_copy(
             update={
@@ -144,6 +160,8 @@ def build_single_dialogue_graph(
                 "final_total_score": final_total_score,
                 "final_severity_bucket": get_severity_bucket(final_total_score),
                 "final_source": "judge_override",
+                "totals": totals,
+                "severity_bucket_phq_like": get_severity_bucket_phq_like(totals),
                 "judge_resolution": {k: v.model_dump() for k, v in resolutions.items()},
                 "judge_usage": judge_usage,
             }
