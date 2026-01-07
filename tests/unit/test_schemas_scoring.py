@@ -132,6 +132,38 @@ class TestPHQ8ItemScoreValid:
 class TestPHQ8ItemScoreInvalid:
     """Invalid construction tests - must raise ValidationError."""
 
+    # --- Type strictness (avoid boolean coercion) ---
+
+    def test_discussed_must_be_boolean(self) -> None:
+        with pytest.raises(ValidationError, match="discussed must be a boolean"):
+            PHQ8ItemScore(
+                discussed="true",  # type: ignore[arg-type]
+                score=2,
+                assertion="present",
+                confidence=0.80,
+                evidence=["feeling down"],
+            )
+
+    def test_score_must_not_be_boolean(self) -> None:
+        with pytest.raises(ValidationError, match="score must be an integer 0-3"):
+            PHQ8ItemScore(
+                discussed=True,
+                score=True,  # type: ignore[arg-type]
+                assertion="present",
+                confidence=0.80,
+                evidence=["feeling down"],
+            )
+
+    def test_confidence_must_not_be_boolean(self) -> None:
+        with pytest.raises(ValidationError, match=r"confidence must be a number 0\.0-1\.0"):
+            PHQ8ItemScore(
+                discussed=True,
+                score=2,
+                assertion="present",
+                confidence=True,
+                evidence=["feeling down"],
+            )
+
     # --- Assertion/score consistency ---
 
     def test_present_requires_score_1_2_3_not_0(self) -> None:
@@ -471,6 +503,45 @@ class TestPHQ8AssessmentNA:
         assert scores["guilt"] is None
         assert scores["concentration"] == 2
         assert scores["psychomotor"] is None
+
+
+class TestPHQ8AssessmentInvalidTypes:
+    def _valid_item_dict(
+        self, *, score: int | None, discussed: bool, assertion: Assertion
+    ) -> dict[str, object]:
+        if assertion == "not_mentioned":
+            return {
+                "discussed": False,
+                "score": None,
+                "assertion": "not_mentioned",
+                "confidence": None,
+                "evidence": [],
+            }
+        return {
+            "discussed": discussed,
+            "score": score,
+            "assertion": assertion,
+            "confidence": 0.8,
+            "evidence": ["quote"],
+        }
+
+    def test_model_validate_rejects_discussed_string(self) -> None:
+        payload: dict[str, object] = {
+            "anhedonia": {
+                **self._valid_item_dict(score=1, discussed=True, assertion="present"),
+                "discussed": "true",
+            },
+            "depressed_mood": self._valid_item_dict(score=1, discussed=True, assertion="present"),
+            "sleep": self._valid_item_dict(score=1, discussed=True, assertion="present"),
+            "fatigue": self._valid_item_dict(score=1, discussed=True, assertion="present"),
+            "appetite": self._valid_item_dict(score=0, discussed=True, assertion="denied"),
+            "guilt": self._valid_item_dict(score=1, discussed=True, assertion="present"),
+            "concentration": self._valid_item_dict(score=1, discussed=True, assertion="present"),
+            "psychomotor": self._valid_item_dict(score=0, discussed=True, assertion="denied"),
+        }
+
+        with pytest.raises(ValidationError, match="discussed must be a boolean"):
+            PHQ8Assessment.model_validate(payload)
 
 
 # =============================================================================

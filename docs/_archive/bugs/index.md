@@ -62,19 +62,20 @@ All bugs in this directory have been **resolved**. Bug numbers are permanent ide
 | BUG-052 | [Live run breaks with NA-aware schema (judge + prompt defaults)](bug-052-live-run-breaks-with-na-aware-schema.md) | P0 | RESOLVED |
 | BUG-053 | [SPEC-08 export crashes on NA juror votes](bug-053-spec-08-export-crashes-on-na-votes.md) | P1 | RESOLVED |
 | BUG-054 | [HuggingFace export missing `judge_model` provenance](bug-054-hf-export-missing-judge-model.md) | P2 | RESOLVED |
+| BUG-055 | [LLM output schemas allow boolean coercion in numeric fields](bug-055-llm-output-schemas-boolean-coercion.md) | P1 | RESOLVED |
 
 ---
 
 ## Statistics
 
-- **Total bugs**: 54
-- **Resolved/Fixed**: 54
+- **Total bugs**: 55
+- **Resolved/Fixed**: 55
 - **Open**: 0
 
 ---
 
 ## Next Bug Number
 
-When filing new bugs, use: **BUG-055**
+When filing new bugs, use: **BUG-056**
 
 Place new bugs in `docs/_bugs/` (not `_archive`). Move to archive when resolved.

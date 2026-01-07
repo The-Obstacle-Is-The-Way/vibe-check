@@ -94,7 +94,7 @@ def load_sqpsychconv_dialogues(path: Path, limit: int | None = None) -> list[dic
             continue
         split = ds[split_name]
         for row in split:
-            if limit and len(dialogues) >= limit:
+            if limit is not None and len(dialogues) >= limit:
                 break
             dialogues.append(
                 {

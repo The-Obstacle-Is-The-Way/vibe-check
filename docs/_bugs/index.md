@@ -12,6 +12,7 @@
 
 | ID | Severity | Status | Title |
 |----|----------|--------|-------|
+| BUG-055 | P1 | resolved | [LLM output schemas allow boolean coercion in numeric fields](../_archive/bugs/bug-055-llm-output-schemas-boolean-coercion.md) |
 | BUG-054 | P2 | resolved | [HuggingFace export missing `judge_model` provenance](../_archive/bugs/bug-054-hf-export-missing-judge-model.md) |
 | BUG-053 | P1 | resolved | [SPEC-08 export crashes on NA juror votes](../_archive/bugs/bug-053-spec-08-export-crashes-on-na-votes.md) |
 | BUG-052 | P0 | resolved | [Live run breaks with NA-aware schema (judge + prompt defaults)](../_archive/bugs/bug-052-live-run-breaks-with-na-aware-schema.md) |
@@ -56,15 +57,15 @@ All resolved bugs are in [`docs/_archive/bugs/`](../_archive/bugs/index.md).
 | BUG-040 to BUG-041 | 2 | PHQ-8 rubric + config cleanup |
 | BUG-042 to BUG-042 | 1 | Preprocessing truncation audit |
 | BUG-043 to BUG-050 | 8 | Reproducibility + diagnostics + hygiene |
-| BUG-051 to BUG-054 | 4 | NA-aware pipeline fixes |
+| BUG-051 to BUG-055 | 5 | NA-aware pipeline fixes |
 
-**Total resolved**: 54 bugs
+**Total resolved**: 55 bugs
 
 ---
 
 ## Filing New Bugs
 
-1. Use the next available number: **BUG-055**
+1. Use the next available number: **BUG-056**
 2. Create file in this directory: `BUG-NNN-short-description.md`
 3. Include: Severity, Status, Date, Summary, Root Cause, Fix
 4. When resolved, move to `docs/_archive/bugs/`
