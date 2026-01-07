@@ -86,6 +86,42 @@ class TestJudgeItemResolutionNAValid:
 class TestJudgeItemResolutionNAInvalid:
     """Test invalid NA-aware judge schema constructions."""
 
+    def test_discussed_must_be_boolean(self) -> None:
+        with pytest.raises(ValidationError, match="discussed must be a boolean"):
+            JudgeItemResolutionNA(
+                item="anhedonia",
+                discussed="true",  # type: ignore[arg-type]
+                final_score=2,
+                assertion="present",
+                confidence=0.8,
+                evidence=["Client: ..."],
+                rationale="...",
+            )
+
+    def test_final_score_must_not_be_boolean(self) -> None:
+        with pytest.raises(ValidationError, match="final_score must be an integer 0-3 or null"):
+            JudgeItemResolutionNA(
+                item="anhedonia",
+                discussed=True,
+                final_score=True,  # type: ignore[arg-type]
+                assertion="present",
+                confidence=0.8,
+                evidence=["Client: ..."],
+                rationale="...",
+            )
+
+    def test_confidence_must_not_be_boolean(self) -> None:
+        with pytest.raises(ValidationError, match=r"confidence must be a number 0\.0-1\.0"):
+            JudgeItemResolutionNA(
+                item="anhedonia",
+                discussed=True,
+                final_score=2,
+                assertion="present",
+                confidence=True,
+                evidence=["Client: ..."],
+                rationale="...",
+            )
+
     def test_present_requires_score_1_to_3(self) -> None:
         """present with score=0 raises ValidationError."""
         with pytest.raises(ValidationError, match="present requires final_score in"):

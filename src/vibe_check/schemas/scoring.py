@@ -58,6 +58,27 @@ class PHQ8ItemScore(BaseModel):
         description="Up to 3 supporting quotes (empty for not_mentioned)",
     )
 
+    @field_validator("discussed", mode="before")
+    @classmethod
+    def _validate_discussed_type(cls, value: Any) -> Any:
+        if not isinstance(value, bool):
+            raise ValueError("discussed must be a boolean (true/false), not a string or number")
+        return value
+
+    @field_validator("score", mode="before")
+    @classmethod
+    def _reject_boolean_score(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("score must be an integer 0-3 (not boolean)")
+        return value
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def _reject_boolean_confidence(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("confidence must be a number 0.0-1.0 (not boolean)")
+        return value
+
     @field_validator("evidence")
     @classmethod
     def _validate_evidence_snippets(cls, value: list[str]) -> list[str]:

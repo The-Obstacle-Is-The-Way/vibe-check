@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -62,6 +62,27 @@ class JudgeItemResolutionNA(BaseModel):
         description="Up to 3 supporting quotes (empty for not_mentioned)",
     )
     rationale: str = Field(min_length=1, description="Reasoning for decision")
+
+    @field_validator("discussed", mode="before")
+    @classmethod
+    def _validate_discussed_type(cls, value: Any) -> Any:
+        if not isinstance(value, bool):
+            raise ValueError("discussed must be a boolean (true/false), not a string or number")
+        return value
+
+    @field_validator("final_score", mode="before")
+    @classmethod
+    def _reject_boolean_final_score(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("final_score must be an integer 0-3 or null (not boolean)")
+        return value
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def _reject_boolean_confidence(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("confidence must be a number 0.0-1.0 (not boolean)")
+        return value
 
     @model_validator(mode="after")
     def _validate_item_name(self) -> JudgeItemResolutionNA:
