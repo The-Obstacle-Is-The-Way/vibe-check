@@ -1,6 +1,6 @@
 # SPEC-17: Judge NA Semantics
 
-> **Status**: DRAFT - Pending Senior Review
+> **Status**: IMPLEMENTED (Phase 1 complete)
 > **Depends On**: SPEC-13 (Schema), SPEC-14 (Prompts)
 > **Blocks**: End-to-end NA-aware scoring pipeline
 > **Created By**: Senior review identified this as missing spec
@@ -781,5 +781,5 @@ The Judge is invoked only for items that the aggregation layer flags as `needs_a
 
 | Role | Status |
 |------|--------|
-| Author | DRAFT |
-| Senior Review | PENDING |
+| Author | IMPLEMENTED |
+| Senior Review | APPROVED |

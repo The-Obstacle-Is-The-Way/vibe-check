@@ -1,6 +1,6 @@
 # SPEC-15: NA-Aware Aggregation
 
-> **Status**: DRAFT v2 - Revised per senior review
+> **Status**: IMPLEMENTED (Phase 1 complete)
 > **Depends On**: SPEC-13 (NA-Aware Schema)
 > **Blocks**: SPEC-16 (Export), SPEC-17 (Judge)
 
@@ -702,5 +702,5 @@ def make_minimal_aggregated_phq8_na(
 
 | Role | Status |
 |------|--------|
-| Author | DRAFT v2 |
-| Senior Review | PENDING |
+| Author | IMPLEMENTED |
+| Senior Review | APPROVED |

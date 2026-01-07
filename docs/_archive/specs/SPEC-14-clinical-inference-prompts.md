@@ -1,6 +1,6 @@
 # SPEC-14: Clinical Inference Prompts
 
-> **Status**: DRAFT v2 - Revised per senior review
+> **Status**: IMPLEMENTED (Phase 1 complete)
 > **Depends On**: SPEC-13 (NA-Aware Schema), clinical-alignment-review.md §12.3 (APPROVED)
 > **Blocks**: Pilot scoring run, SPEC-17 (Judge)
 
@@ -523,5 +523,5 @@ class TestV2SchemaRejection:
 
 | Role | Status |
 |------|--------|
-| Author | DRAFT v2 |
-| Senior Review | PENDING |
+| Author | IMPLEMENTED |
+| Senior Review | APPROVED |

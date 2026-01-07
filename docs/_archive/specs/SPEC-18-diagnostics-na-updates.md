@@ -1,6 +1,6 @@
 # SPEC-18: Diagnostics NA Updates (Phase 1)
 
-> **Status**: DRAFT v2 (post-senior review)
+> **Status**: IMPLEMENTED (Phase 1 complete)
 > **Depends On**: SPEC-13 (NA-aware juror schema), SPEC-15 (NA-aware aggregation), SPEC-17 (NA-aware judge)
 > **Blocks**: Pilot quality gates for NA-aware runs
 
@@ -549,5 +549,5 @@ def test_cli_diagnostics_with_na(tmp_path: Path):
 
 | Role | Status |
 |------|--------|
-| Author | DRAFT v2 |
-| Senior Review | PENDING |
+| Author | IMPLEMENTED |
+| Senior Review | APPROVED |

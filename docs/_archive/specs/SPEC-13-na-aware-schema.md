@@ -1,6 +1,6 @@
 # SPEC-13: NA-Aware Schema Changes
 
-> **Status**: DRAFT v2 - Revised per senior review
+> **Status**: IMPLEMENTED (Phase 1 complete)
 > **Depends On**: clinical-alignment-review.md §12.1–12.2 (APPROVED)
 > **Blocks**: SPEC-14, SPEC-15, SPEC-16, SPEC-17
 
@@ -826,5 +826,5 @@ The existing `aggregated_to_export_record()` function in `src/vibe_check/export/
 
 | Role | Status |
 |------|--------|
-| Author | DRAFT v2 |
-| Senior Review | PENDING |
+| Author | IMPLEMENTED |
+| Senior Review | APPROVED |

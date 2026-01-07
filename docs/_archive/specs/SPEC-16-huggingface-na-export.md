@@ -1,6 +1,6 @@
 # SPEC-16: HuggingFace NA-Aware Export (Phase 1)
 
-> **Status**: DRAFT v2 (post-senior review)
+> **Status**: IMPLEMENTED (Phase 1 complete)
 > **Depends On**: SPEC-13 (NA-aware juror schema), SPEC-15 (NA-aware aggregation), SPEC-17 (NA-aware judge)
 > **Must Not Modify**: `src/vibe_check/export/schemas.py` (SPEC-08 stable public contract)
 
@@ -586,5 +586,5 @@ def test_cli_export_all_formats(tmp_path: Path):
 
 | Role | Status |
 |------|--------|
-| Author | DRAFT v2 |
-| Senior Review | PENDING |
+| Author | IMPLEMENTED |
+| Senior Review | APPROVED |
